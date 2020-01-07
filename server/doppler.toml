@@ -1,0 +1,22 @@
+host = "0.0.0.0"
+port = 10001
+token-limit = 1000
+read-timeout = 3
+
+[log]
+level = "info"
+
+    #file log related config.
+    [log.file]
+
+    #Log filename, leave empty to disable file log.
+    filename = "tire.log"
+
+    #Max size for a single file, in MB and cannot be large than 4096MB.
+    max-size = 10
+
+    #Max log keep days, default is never deleting.
+    max-days = 10
+
+    #Maximum number of old log files to retain.
+    max-backups = 90
