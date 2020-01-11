@@ -57,14 +57,6 @@ func (th *Handler) Handle(ctx context.Context, cc *tcp.ClientConn, header []byte
 	valueSlice := data[s : s+i]
 	s += i + 1
 
-
-	if l.GetLevel() >= l.DebugLevel {
-		logutil.Logger(ctx).Debug("Handle",
-			zap.String("name", string(name)),
-			zap.String("value", string(valueSlice)),
-
-		)
-	}
 	if len(data[s:]) == 0 {
 		return ErrNoMetricType
 	}
@@ -103,9 +95,27 @@ func (th *Handler) Handle(ctx context.Context, cc *tcp.ClientConn, header []byte
 		if i < 0 { //no tags
 			rateSlice = data
 
+			if l.GetLevel() >= l.DebugLevel {
+				logutil.Logger(ctx).Debug("Handle",
+					zap.String("name", string(name)),
+					zap.String("value", string(valueSlice)),
+					zap.String("symbol", string(symbol)),
+					zap.String("rate", string(rateSlice)),
+				)
+			}
+
 		} else { //i > 0 with tags
 			rateSlice = data[s : s+i]
 			s += i + 1
+
+			if l.GetLevel() >= l.DebugLevel {
+				logutil.Logger(ctx).Debug("Handle",
+					zap.String("name", string(name)),
+					zap.String("value", string(valueSlice)),
+					zap.String("symbol", string(symbol)),
+					zap.String("rate", string(rateSlice)),
+				)
+			}
 
 			//read tags
 			if !(len(data[s:]) >= 2 && data[0] == '#') {
@@ -115,7 +125,7 @@ func (th *Handler) Handle(ctx context.Context, cc *tcp.ClientConn, header []byte
 
 			tagSlice = data[s:]
 
-			//todo: parse tags
+			//parse tags
 			splitSlice = bytes.Split(tagSlice, []byte(","))
 			for _, tag := range splitSlice {
 				tagPair := bytes.Split(tag, []byte(":"))
@@ -139,7 +149,6 @@ func (th *Handler) Handle(ctx context.Context, cc *tcp.ClientConn, header []byte
 		if len(rateSlice) > 0 {
 
 		}
-
 
 	}
 
