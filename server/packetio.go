@@ -1,17 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"context"
-	"fmt"
 	"github.com/frankhang/util/errors"
-	"github.com/frankhang/util/hack"
-	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/util/tcp"
-	l "github.com/sirupsen/logrus"
-	"go.uber.org/zap"
-	"io"
-	"strconv"
-	"strings"
 )
 
 const (
@@ -33,45 +26,50 @@ func NewPacketIO(packetIO *tcp.PacketIO, driver *Driver) *PacketIO {
 	}
 }
 
-func (p *PacketIO) ReadPacket(ctx context.Context) (header []byte, data []byte, err error) {
 
-	var size int
+func (p *PacketIO) ReadPacket(ctx context.Context) ([]byte, []byte, error) {
 
-	header = p.Alloc.AllocWithLen(sizeHead, sizeHead)
-	p.SetReadTimeout()
-	if _, err = io.ReadFull(p.BufReadConn, header[:]); err != nil {
-		return nil, nil, errors.Trace(err)
-	}
+	var frag []byte
+	var full [][]byte
+	var err error
 
-	if l.GetLevel() >= l.DebugLevel {
-		logutil.Logger(ctx).Debug("ReadPacket",
-			zap.String("header", fmt.Sprintf("%x", header)),
-			zap.String("headerStr", fmt.Sprintf("%s", header)),
-		)
+	var delim byte = '\n'
 
-	}
-
-	s := hack.String(header[locSize : locSize+3])
-	if size, err = strconv.Atoi(strings.TrimSpace(s)); err != nil {
-		return nil, nil, errors.Trace(err)
-	}
-
-	if l.GetLevel() >= l.DebugLevel {
-		logutil.Logger(ctx).Debug("ReadPacket",
-			zap.Int("size", size),
-		)
-
-	}
-
-	if size > sizeHead {
-		data = p.Alloc.AllocWithLen(size-sizeHead, size-sizeHead)
-
-		p.SetReadTimeout()
-		if _, err = io.ReadFull(p.BufReadConn, data); err != nil {
-			return nil, nil, errors.Trace(err)
+	bufReader := p.BufReadConn.BufReader
+	for {
+		var e error
+		frag, e = bufReader.ReadSlice(delim)
+		if e == nil { // got final fragment
+			break
+		}
+		if e != bufio.ErrBufferFull { // unexpected error
+			err = e
+			break
 		}
 
+		// Make a copy of the buffer.
+		//l := len(frag)
+		//buf := p.Alloc.AllocWithLen(l, l)
+		//copy(buf, frag)
+		//full = append(full, buf)
+		full = append(full, frag)
 	}
 
-	return
+	// Allocate new buffer to hold the full pieces and the fragment.
+	n := 0
+	for i := range full {
+		n += len(full[i])
+	}
+	n += len(frag)
+
+	// Copy full pieces and fragment in.
+	buf := p.Alloc.AllocWithLen(n, n)
+	n = 0
+	for i := range full {
+		n += copy(buf[n:], full[i])
+	}
+	copy(buf[n:], frag)
+
+	return nil, buf, errors.Trace(err)
+
 }
