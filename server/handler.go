@@ -151,20 +151,6 @@ func (th *Handler) Handle(ctx context.Context, cc *tcp.ClientConn, header []byte
 		}
 
 	}
-
-	//cmd := hack.String(header[:2])
-	////dispach cmd process logic to controller
-	//switch cmd {
-	//case "55":
-	//	ctl.ctx = logutil.WithString(ctx, "method", "TirePressureReport")
-	//	err := ctl.TirePressureReport(header, data)
-	//	return errors.Trace(err)
-	//case "57":
-	//	ctl.ctx = logutil.WithString(ctx, "method", "TireReplaceAck")
-	//	err := ctl.TireReplaceAck(header, data)
-	//	return errors.Trace(err)
-	//}
-
-	logutil.Logger(ctx).Warn("no controller method found")
+	
 	return nil
 }
