@@ -7,6 +7,8 @@ replace github.com/frankhang/util => /Users/hang/go/src/github.com/frankhang/uti
 replace github.com/frankhang/doppler => /Users/hang/go/src/github.com/frankhang/doppler
 
 require (
+	github.com/DataDog/datadog-go v3.3.1+incompatible
+	github.com/frankhang/doppler v0.0.0-00010101000000-000000000000 // indirect
 	github.com/frankhang/util v0.0.0-00010101000000-000000000000
 	github.com/opentracing/opentracing-go v1.1.0
 	github.com/prometheus/client_golang v1.3.0

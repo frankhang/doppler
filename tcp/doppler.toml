@@ -1,16 +1,16 @@
 host = "0.0.0.0"
 port = 10001
 token-limit = 1000
-read-timeout = 3
+read-timeout = 15
 
 [log]
-level = "info"
+level = "debug"
 
     #file log related config.
     [log.file]
 
     #Log filename, leave empty to disable file log.
-    filename = "tire.log"
+    filename = "doppler.log"
 
     #Max size for a single file, in MB and cannot be large than 4096MB.
     max-size = 10

@@ -35,9 +35,11 @@ func (p *PacketIO) ReadPacket(ctx context.Context) ([]byte, []byte, error) {
 
 	var delim byte = '\n'
 
+
 	bufReader := p.BufReadConn.BufReader
 	for {
 		var e error
+		p.SetReadTimeout()
 		frag, e = bufReader.ReadSlice(delim)
 		if e == nil { // got final fragment
 			break
@@ -63,6 +65,7 @@ func (p *PacketIO) ReadPacket(ctx context.Context) ([]byte, []byte, error) {
 	n += len(frag)
 
 	// Copy full pieces and fragment in.
+	//buf := make([]byte, n)
 	buf := p.Alloc.AllocWithLen(n, n)
 	n = 0
 	for i := range full {
