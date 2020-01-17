@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frankhang/util/config"
+
 	"github.com/frankhang/util/sys/linux"
 	"github.com/frankhang/util/tcp"
 
@@ -77,17 +77,12 @@ var (
 )
 
 var (
-	cfg      *config.Config
 	svr      *tcp.Server
 	graceful bool
 )
 
-var deprecatedConfig = map[string]struct{}{
-	"pessimistic-txn.ttl": {},
-	"log.rotate":          {},
-}
+
 // hotReloadConfigItems lists all config items which support hot-reload.
-var hotReloadConfigItems = []string{"Performance.MaxProcs", "Performance.MaxMemory", "OOMAction", "MemQuotaQuery"}
 
 func main() {
 	flag.Parse()
@@ -121,8 +116,8 @@ func main() {
 	setupMetrics()
 	createServer()
 	signal.SetupSignalHandler(serverShutdown)
-	runServer()
-	cleanup()
+	//runServer()
+	//cleanup()
 	syncLog()
 }
 
@@ -224,11 +219,6 @@ func flagBoolean(name string, defaultVal bool, usage string) *bool {
 	return flag.Bool(name, defaultVal, usage)
 }
 
-//var deprecatedConfig = map[string]struct{}{
-//	"pessimistic-txn.ttl": {},
-//	"log.rotate":          {},
-//}
-
 
 func setGlobalVars() {
 
@@ -258,10 +248,10 @@ func printInfo() {
 }
 
 func createServer() {
-	tierDriver := NewTireDriver(cfg)
-	var err error
-	svr, err = tcp.NewServer(cfg, tierDriver)
-	errors.MustNil(err)
+	//tierDriver := NewTireDriver(cfg)
+	//var err error
+	//svr, err = tcp.NewServer(cfg, tierDriver)
+	//errors.MustNil(err)
 
 }
 
@@ -311,8 +301,8 @@ func setupTracing() {
 }
 
 func runServer() {
-	err := svr.Run()
-	errors.MustNil(err)
+	//err := svr.Run()
+	//errors.MustNil(err)
 }
 
 func cleanup() {
@@ -324,17 +314,7 @@ func cleanup() {
 
 }
 
-func reloadConfig(nc, c *config.Config) {
-	// Just a part of config items need to be reload explicitly.
-	// Some of them like OOMAction are always used by getting from global config directly
-	// like config.GetGlobalConfig().OOMAction.
-	// These config items will become available naturally after the global config pointer
-	// is updated in function ReloadGlobalConfig.
-	if nc.Performance.MaxMemory != c.Performance.MaxMemory {
-		//
-	}
 
-}
 
 
 
@@ -347,41 +327,7 @@ func isDeprecatedConfigItem(items []string) bool {
 	}
 	return true
 }
-func loadConfig() string {
-	cfg = config.GetGlobalConfig()
-	if *configPath != "" {
-		// Not all config items are supported now.
-		config.SetConfReloader(*configPath, reloadConfig, hotReloadConfigItems...)
 
-		err := cfg.Load(*configPath)
-		if err == nil {
-			return ""
-		}
-
-		// Unused config item erro turns to warnings.
-		if tmp, ok := err.(*config.ErrConfigValidationFailed); ok {
-			if isDeprecatedConfigItem(tmp.UndecodedItems) {
-				return err.Error()
-			}
-			// This block is to accommodate an interim situation where strict config checking
-			// is not the default behavior of server. The warning message must be deferred until
-			// logging has been set up. After strict config checking is the default behavior,
-			// This should all be removed.
-			if !*configCheck && !*configStrict {
-				return err.Error()
-			}
-		}
-
-		errors.MustNil(err)
-	} else {
-		// configCheck should have the config file specified.
-		if *configCheck {
-			fmt.Fprintln(os.Stderr, "config check failed", errors.New("no config file specified for config-check"))
-			os.Exit(1)
-		}
-	}
-	return ""
-}
 
 func overrideConfig() {
 	actualFlags := make(map[string]bool)

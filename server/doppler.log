@@ -1,0 +1,4 @@
+[2020/01/17 21:53:23.405 +08:00] [INFO] [main.go:175] ["disable Prometheus push client"]
+[2020/01/17 21:53:23.405 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/17 21:54:19.719 +08:00] [INFO] [main.go:175] ["disable Prometheus push client"]
+[2020/01/17 21:54:19.719 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]

@@ -3,6 +3,8 @@ port = 10001
 token-limit = 1000
 read-timeout = 15
 write-timeout = 15
+Test = "t2"
+TT = "t3"
 
 [log]
 level = "debug"
