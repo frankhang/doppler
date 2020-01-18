@@ -1,5 +1,5 @@
 host = "0.0.0.0"
-port = 10001
+port = 8125
 token-limit = 1000
 read-timeout = 15
 write-timeout = 15

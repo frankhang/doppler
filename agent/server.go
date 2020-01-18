@@ -22,7 +22,6 @@ import (
 	"sync"
 	"time"
 
-	l "github.com/sirupsen/logrus"
 	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/mapper"
 	"github.com/frankhang/doppler/metrics"
@@ -31,7 +30,7 @@ import (
 	"github.com/frankhang/doppler/telemetry"
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/doppler/util/log"
-
+	l "github.com/sirupsen/logrus"
 )
 
 var (
@@ -108,8 +107,8 @@ func NewServer(samplePool *metrics.MetricSamplePool, samplesOut chan<- []metrics
 		metricsStats = true
 	}
 
-	packetsChannel := make(chan Packets, Cfg.QueueSize)
-	packetPool := NewPacketPool(Cfg.BufferSize)
+	packetsChannel := make(chan Packets, Cfg.AgentQueueSize)
+	packetPool := NewPacketPool(Cfg.AgentBufferSize)
 	tmpListeners := make([]StatsdListener, 0, 2)
 
 	//socketPath := config.Datadog.GetString("dogstatsd_socket")
@@ -121,14 +120,14 @@ func NewServer(samplePool *metrics.MetricSamplePool, samplesOut chan<- []metrics
 	//		tmpListeners = append(tmpListeners, unixListener)
 	//	}
 	//}
-	//if config.Datadog.GetInt("dogstatsd_port") > 0 {
-	//	udpListener, err := NewUDPListener(packetsChannel, packetPool)
-	//	if err != nil {
-	//		log.Errorf(err.Error())
-	//	} else {
-	//		tmpListeners = append(tmpListeners, udpListener)
-	//	}
-	//}
+	if Cfg.Port > 0 {
+		udpListener, err := NewUDPListener(packetsChannel, packetPool)
+		if err != nil {
+			return nil, errors.Trace(err)
+		} else {
+			tmpListeners = append(tmpListeners, udpListener)
+		}
+	}
 
 	if len(tmpListeners) == 0 {
 		err := fmt.Errorf("listening on neither udp nor socket, please check your configuration")
@@ -186,7 +185,7 @@ func NewServer(samplePool *metrics.MetricSamplePool, samplesOut chan<- []metrics
 		if err != nil {
 			logutil.BgLogger().Warn("Could not connect to statsd forward host", zap.Error(err))
 		} else {
-			s.packetsIn = make(chan Packets, Cfg.QueueSize)
+			s.packetsIn = make(chan Packets, Cfg.AgentQueueSize)
 			go s.forwarder(con, packetsChannel)
 		}
 	}

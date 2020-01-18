@@ -8,25 +8,28 @@ package agent
 import (
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/errors"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"net"
+	"strconv"
 	"strings"
+	"time"
 
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
-
-	"github.com/frankhang/doppler/config"
 )
 
 var (
-	udpExpvars             = expvar.NewMap("dogstatsd-udp")
+	udpExpvars             = expvar.NewMap("agent-udp")
 	udpPacketReadingErrors = expvar.Int{}
 	udpPackets             = expvar.Int{}
 	udpBytes               = expvar.Int{}
 
-	tlmUDPPackets = telemetry.NewCounter("dogstatsd", "udp_packets",
-		[]string{"state"}, "Dogstatsd UDP packets count")
-	tlmUDPPacketsBytes = telemetry.NewCounter("dogstatsd", "udp_packets_bytes",
-		[]string{}, "Dogstatsd UDP packets bytes count")
+	tlmUDPPackets = telemetry.NewCounter("agent", "udp_packets",
+		[]string{"state"}, "Agent UDP packets count")
+	tlmUDPPacketsBytes = telemetry.NewCounter("agent", "udp_packets_bytes",
+		[]string{}, "Agent UDP packets bytes count")
 )
 
 func init() {
@@ -52,28 +55,30 @@ func NewUDPListener(packetOut chan Packets, packetPool *PacketPool) (*UDPListene
 	var err error
 	var url string
 
-	if config.Datadog.GetBool("dogstatsd_non_local_traffic") == true {
+	if Cfg.AgentNonLocalTraffic{
 		// Listen to all network interfaces
-		url = fmt.Sprintf(":%d", config.Datadog.GetInt("dogstatsd_port"))
+		url = fmt.Sprintf(":%d", Cfg.Port)
 	} else {
-		url = net.JoinHostPort(config.Datadog.GetString("bind_host"), config.Datadog.GetString("dogstatsd_port"))
+		url = net.JoinHostPort(Cfg.Host, strconv.Itoa(int(Cfg.Port)))
 	}
 
 	conn, err = net.ListenPacket("udp", url)
 
-	if rcvbuf := config.Datadog.GetInt("dogstatsd_so_rcvbuf"); rcvbuf != 0 {
+	if err != nil {
+		err := fmt.Errorf("can't listen: %s", err)
+		return nil, errors.Trace(err)
+	}
+
+	if rcvbuf := Cfg.AgentSoRcvbuf; rcvbuf != 0 {
 		if err := conn.(*net.UDPConn).SetReadBuffer(rcvbuf); err != nil {
-			return nil, fmt.Errorf("could not set socket rcvbuf: %s", err)
+			err := fmt.Errorf("could not set socket rcvbuf: %s", err)
+			return nil, errors.Trace(err)
 		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("can't listen: %s", err)
-	}
-
-	bufferSize := config.Datadog.GetInt("dogstatsd_buffer_size")
-	packetsBufferSize := config.Datadog.GetInt("dogstatsd_packet_buffer_size")
-	flushTimeout := config.Datadog.GetDuration("dogstatsd_packet_buffer_flush_timeout")
+	bufferSize := Cfg.AgentBufferSize
+	packetsBufferSize := Cfg.AgentPacketBufferSize
+	flushTimeout := time.Duration(Cfg.AgentPacketBufferFlushTimeout) * time.Millisecond
 
 	buffer := make([]byte, bufferSize)
 	packetsBuffer := newPacketsBuffer(uint(packetsBufferSize), flushTimeout, packetOut)
@@ -85,13 +90,13 @@ func NewUDPListener(packetOut chan Packets, packetPool *PacketPool) (*UDPListene
 		packetBuffer:  packetBuffer,
 		buffer:        buffer,
 	}
-	log.Debugf("dogstatsd-udp: %s successfully initialized", conn.LocalAddr())
+	logutil.BgLogger().Info("agent-udp: successfully initialized", zap.String("addr", conn.LocalAddr().String()))
 	return listener, nil
 }
 
 // Listen runs the intake loop. Should be called in its own goroutine
 func (l *UDPListener) Listen() {
-	log.Infof("dogstatsd-udp: starting to listen on %s", l.conn.LocalAddr())
+	logutil.BgLogger().Info("agent-udp: starting to listen...", zap.String("addr", l.conn.LocalAddr().String()))
 	for {
 		udpPackets.Add(1)
 		n, _, err := l.conn.ReadFrom(l.buffer)
@@ -101,7 +106,7 @@ func (l *UDPListener) Listen() {
 				return
 			}
 
-			log.Errorf("dogstatsd-udp: error reading packet: %v", err)
+			logutil.BgLogger().Error("agent-udp: error reading packet", zap.Error(err))
 			udpPacketReadingErrors.Add(1)
 			tlmUDPPackets.Inc("error")
 			continue

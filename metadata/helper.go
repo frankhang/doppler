@@ -94,7 +94,7 @@ func addDefaultCollector(name string, sch *Scheduler) error {
 // configuration.
 func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) error {
 	if !Cfg.EnableMetadataCollection {
-		logutil.BgLogger().Warn("Metadata collection disabled, only do that if another agent/dogstatsd is running on this host")
+		logutil.BgLogger().Warn("Metadata collection disabled, only do that if another agent running on this host")
 		return nil
 	}
 
