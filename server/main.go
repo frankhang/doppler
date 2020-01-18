@@ -4,23 +4,40 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/frankhang/doppler/api/healthprobe"
+	"github.com/frankhang/doppler/forwarder"
+	"github.com/frankhang/doppler/metadata"
+	"github.com/frankhang/doppler/serializer"
+	"github.com/frankhang/doppler/agent"
+	"github.com/frankhang/doppler/aggregator"
+	. "github.com/frankhang/doppler/config"
+	"github.com/frankhang/doppler/metrics"
+	"github.com/frankhang/doppler/status/health"
+	"github.com/frankhang/doppler/tagger"
+	"github.com/frankhang/doppler/util"
+	"github.com/frankhang/util/config"
 	"github.com/frankhang/util/logutil"
+
+
 	"go.uber.org/automaxprocs/maxprocs"
 	"os"
+	"os/signal"
 	"runtime"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
-
+	//l "github.com/sirupsen/logrus"
+	sig "github.com/frankhang/util/signal"
 	"github.com/frankhang/util/sys/linux"
 	"github.com/frankhang/util/tcp"
 
 	"github.com/frankhang/util/errors"
 	"github.com/frankhang/util/log"
 
-	"github.com/frankhang/util/metrics"
-	"github.com/frankhang/util/signal"
+	m "github.com/frankhang/util/metrics"
+
 	"github.com/frankhang/util/systimemon"
 	"github.com/opentracing/opentracing-go"
 
@@ -74,6 +91,9 @@ var (
 	metricsAddr     = flag.String(nmMetricsAddr, "", "prometheus pushgateway address, leaves it empty will disable prometheus push.")
 	metricsInterval = flag.Uint(nmMetricsInterval, 15, "prometheus client push interval in second, set \"0\" to disable prometheus push.")
 
+	metaScheduler *metadata.Scheduler
+	statsd        *agent.Server
+
 )
 
 var (
@@ -94,7 +114,7 @@ func main() {
 	registerMetrics()
 	configWarning := loadConfig()
 	overrideConfig()
-	if err := cfg.Valid(); err != nil {
+	if err := Cfg.Valid(); err != nil {
 		fmt.Fprintln(os.Stderr, "invalidx config", err)
 		os.Exit(1)
 	}
@@ -115,8 +135,8 @@ func main() {
 	printInfo()
 	setupMetrics()
 	createServer()
-	signal.SetupSignalHandler(serverShutdown)
-	//runServer()
+	sig.SetupSignalHandler(serverShutdown)
+	runServer()
 	//cleanup()
 	syncLog()
 }
@@ -158,7 +178,7 @@ func setCPUAffinity() {
 }
 
 func registerMetrics() {
-	metrics.RegisterMetrics()
+	m.RegisterMetrics()
 }
 
 // Prometheus push.
@@ -195,7 +215,7 @@ func instanceName() string {
 	if err != nil {
 		return "unknown"
 	}
-	return fmt.Sprintf("%s_%d", hostname, cfg.Port)
+	return fmt.Sprintf("%s_%d", hostname, Cfg.Port)
 }
 
 // parseDuration parses lease argument string.
@@ -222,16 +242,16 @@ func flagBoolean(name string, defaultVal bool, usage string) *bool {
 
 func setGlobalVars() {
 
-	runtime.GOMAXPROCS(int(cfg.Performance.MaxProcs))
+	runtime.GOMAXPROCS(int(Cfg.Performance.MaxProcs))
 
 }
 
 
 func setupLog() {
-	err := logutil.InitZapLogger(cfg.Log.ToLogConfig())
+	err := logutil.InitZapLogger(Cfg.Log.ToLogConfig())
 	errors.MustNil(err)
 
-	err = logutil.InitLogger(cfg.Log.ToLogConfig())
+	err = logutil.InitLogger(Cfg.Log.ToLogConfig())
 	errors.MustNil(err)
 	// Disable automaxprocs log
 	nopLog := func(string, ...interface{}) {}
@@ -266,7 +286,7 @@ func setupMetrics() {
 	// Enable the mutex profile, 1/10 of mutex blocking event sampling.
 	runtime.SetMutexProfileFraction(10)
 	systimeErrHandler := func() {
-		metrics.TimeJumpBackCounter.Inc()
+		m.TimeJumpBackCounter.Inc()
 	}
 	callBackCount := 0
 	sucessCallBack := func() {
@@ -274,13 +294,13 @@ func setupMetrics() {
 		// It is callback by monitor per second, we increase metrics.KeepAliveCounter per 5s.
 		if callBackCount >= 5 {
 			callBackCount = 0
-			metrics.KeepAliveCounter.Inc()
+			m.KeepAliveCounter.Inc()
 			updateCPUUsageMetrics()
 		}
 	}
 	go systimemon.StartMonitor(time.Now, systimeErrHandler, sucessCallBack)
 
-	pushMetric(cfg.Status.MetricsAddr, time.Duration(cfg.Status.MetricsInterval)*time.Second)
+	pushMetric(Cfg.Status.MetricsAddr, time.Duration(Cfg.Status.MetricsInterval)*time.Second)
 }
 
 func updateCPUUsageMetrics() {
@@ -288,11 +308,11 @@ func updateCPUUsageMetrics() {
 	if err != nil {
 		return
 	}
-	metrics.CPUUsagePercentageGauge.Set(sysInfo.CPU)
+	m.CPUUsagePercentageGauge.Set(sysInfo.CPU)
 }
 
 func setupTracing() {
-	tracingCfg := cfg.OpenTracing.ToTracingConfig()
+	tracingCfg := Cfg.OpenTracing.ToTracingConfig()
 	tracer, _, err := tracingCfg.New("tire")
 	if err != nil {
 		log.Fatal("setup jaeger tracer failed", zap.String("error message", err.Error()))
@@ -300,10 +320,6 @@ func setupTracing() {
 	opentracing.SetGlobalTracer(tracer)
 }
 
-func runServer() {
-	//err := svr.Run()
-	//errors.MustNil(err)
-}
 
 func cleanup() {
 	if graceful {
@@ -314,14 +330,9 @@ func cleanup() {
 
 }
 
-
-
-
-
-
 func isDeprecatedConfigItem(items []string) bool {
 	for _, item := range items {
-		if _, ok := deprecatedConfig[item]; !ok {
+		if _, ok := DeprecatedConfig[item]; !ok {
 			return false
 		}
 	}
@@ -337,50 +348,208 @@ func overrideConfig() {
 
 	// Base
 	if actualFlags[nmHost] {
-		cfg.Host = *host
+		Cfg.Host = *host
 	}
-	if len(cfg.AdvertiseAddress) == 0 {
-		cfg.AdvertiseAddress = cfg.Host
+	if len(Cfg.AdvertiseAddress) == 0 {
+		Cfg.AdvertiseAddress = Cfg.Host
 	}
 	var err error
 	if actualFlags[nmPort] {
 		var p int
 		p, err = strconv.Atoi(*port)
 		errors.MustNil(err)
-		cfg.Port = uint(p)
+		Cfg.Port = uint(p)
 	}
 
 	if actualFlags[nmTokenLimit] {
-		cfg.TokenLimit = uint(*tokenLimit)
+		Cfg.TokenLimit = uint(*tokenLimit)
 	}
 
 	// Log
 	if actualFlags[nmLogLevel] {
-		cfg.Log.Level = *logLevel
+		Cfg.Log.Level = *logLevel
 	}
 	if actualFlags[nmLogFile] {
-		cfg.Log.File.Filename = *logFile
+		Cfg.Log.File.Filename = *logFile
 	}
 
 	// Status
 	if actualFlags[nmReportStatus] {
-		cfg.Status.ReportStatus = *reportStatus
+		Cfg.Status.ReportStatus = *reportStatus
 	}
 	if actualFlags[nmStatusHost] {
-		cfg.Status.StatusHost = *statusHost
+		Cfg.Status.StatusHost = *statusHost
 	}
 	if actualFlags[nmStatusPort] {
 		var p int
 		p, err = strconv.Atoi(*statusPort)
 		errors.MustNil(err)
-		cfg.Status.StatusPort = uint(p)
+		Cfg.Status.StatusPort = uint(p)
 	}
 	if actualFlags[nmMetricsAddr] {
-		cfg.Status.MetricsAddr = *metricsAddr
+		Cfg.Status.MetricsAddr = *metricsAddr
 	}
 	if actualFlags[nmMetricsInterval] {
-		cfg.Status.MetricsInterval = *metricsInterval
+		Cfg.Status.MetricsInterval = *metricsInterval
 	}
 
 
 }
+
+
+
+func loadConfig() string {
+	Cfg = GetGlobalConfig()
+	if *configPath != "" {
+		// Not all config items are supported now.
+		config.SetConfReloader(*configPath, reloadConfig, HotReloadConfigItems...)
+
+		err := Cfg.Load(*configPath)
+		if err == nil {
+			return ""
+		}
+
+		// Unused config item erro turns to warnings.
+		if tmp, ok := err.(*config.ErrConfigValidationFailed); ok {
+			if isDeprecatedConfigItem(tmp.UndecodedItems) {
+				return err.Error()
+			}
+			// This block is to accommodate an interim situation where strict config checking
+			// is not the default behavior of server. The warning message must be deferred until
+			// logging has been set up. After strict config checking is the default behavior,
+			// This should all be removed.
+			if !*configCheck && !*configStrict {
+				return err.Error()
+			}
+		}
+
+		errors.MustNil(err)
+	} else {
+		// configCheck should have the config file specified.
+		if *configCheck {
+			fmt.Fprintln(os.Stderr, "config check failed", errors.New("no config file specified for config-check"))
+			os.Exit(1)
+		}
+	}
+	return ""
+}
+
+
+func reloadConfig(nc, c *config.Config) {
+	// Just a part of config items need to be reload explicitly.
+	// Some of them like OOMAction are always used by getting from global config directly
+	// like config.GetGlobalConfig().OOMAction.
+	// These config items will become available naturally after the global config pointer
+	// is updated in function ReloadGlobalConfig.
+	if nc.Performance.MaxMemory != c.Performance.MaxMemory {
+		//
+	}
+
+}
+
+
+func runServer() {
+
+
+	mainCtx, mainCtxCancel, err := runAgent()
+	errors.MustNil(err)
+	// Setup a channel to catch OS signals
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+
+	// Block here until we receive the interrupt signal
+	<-signalCh
+
+	stopAgent(mainCtx, mainCtxCancel)
+
+}
+
+
+func runAgent() (mainCtx context.Context, mainCtxCancel context.CancelFunc, err error) {
+	// Main context passed to components
+	mainCtx, mainCtxCancel = context.WithCancel(context.Background())
+
+
+	//if !config.Datadog.IsSet("api_key") {
+	//	log.Critical("no API key configured, exiting")
+	//	return
+	//}
+
+	// Setup healthcheck port
+	var healthPort = Cfg.HealthPort
+	if healthPort > 0 {
+		err = healthprobe.Serve(mainCtx, healthPort)
+		if err != nil {
+			err = errors.Trace(err)
+			return
+		}
+		logutil.BgLogger().Info("Health check listening...", zap.Int("port", healthPort))
+	}
+
+	// setup the forwarder
+	keysPerDomain, err := GetMultipleEndpoints()
+	if err != nil {
+		logutil.BgLogger().Error("Misconfiguration of agent endpoints", zap.Error(err))
+	}
+	f := forwarder.NewDefaultForwarder(keysPerDomain)
+	f.Start()
+	s := serializer.NewSerializer(f)
+
+	hname, err := util.GetHostname()
+	if err != nil {
+		logutil.BgLogger().Warn("Error getting hostname", zap.Error(err))
+		hname = ""
+	}
+	logutil.BgLogger().Info("Using hostname", zap.String("hostname", hname))
+
+
+	// setup the metadata collector
+	metaScheduler = metadata.NewScheduler(s)
+	if err = metadata.SetupMetadataCollection(metaScheduler, []string{"host"}); err != nil {
+		metaScheduler.Stop()
+		return
+	}
+
+	if Cfg.InventoriesEnabled {
+		if err = metadata.SetupInventories(metaScheduler, nil, nil); err != nil {
+			return
+		}
+	}
+
+	// container tagging initialisation if origin detection is on
+	if Cfg.AgentOriginDetection {
+		tagger.Init()
+	}
+
+	metricSamplePool := metrics.NewMetricSamplePool(32)
+	aggregatorInstance := aggregator.InitAggregator(s, metricSamplePool, hname, "agent")
+	sampleC, eventC, serviceCheckC := aggregatorInstance.GetBufferedChannels()
+	statsd, err = agent.NewServer(metricSamplePool, sampleC, eventC, serviceCheckC)
+	if err != nil {
+		logutil.BgLogger().Error("Unable to start dogstatsd")
+		err = errors.Trace(err)
+		return
+	}
+	return
+}
+
+func stopAgent(ctx context.Context, cancel context.CancelFunc) {
+	// retrieve the agent health before stopping the components
+	// GetStatusNonBlocking has a 100ms timeout to avoid blocking
+	health, err := health.GetStatusNonBlocking()
+	if err != nil {
+		logutil.BgLogger().Warn("Agent: health unknown", zap.Error(err))
+	} else if len(health.Unhealthy) > 0 {
+		logutil.BgLogger().Warn("Agent: some components were unhealthy", zap.Strings("components", health.Unhealthy))
+	}
+
+	// gracefully shut down any component
+	cancel()
+
+	metaScheduler.Stop()
+	statsd.Stop()
+	logutil.BgLogger().Info("See ya!")
+	//log.Flush()
+	return
+}
+
