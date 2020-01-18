@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/common"
 )
 
@@ -55,7 +55,7 @@ func IsRunningOn() bool {
 // GetHostname returns the hostname querying GCE Metadata api
 func GetHostname() (string, error) {
 	hostname, err := getResponseWithMaxLength(metadataURL+"/instance/hostname",
-		config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+		Cfg.MetadataEndpointsMaxHostnameSize)
 	if err != nil {
 		return "", fmt.Errorf("unable to retrieve hostname from GCE: %s", err)
 	}
@@ -65,13 +65,13 @@ func GetHostname() (string, error) {
 // GetHostAlias returns the host alias from GCE
 func GetHostAlias() (string, error) {
 	instanceName, err := getResponseWithMaxLength(metadataURL+"/instance/name",
-		config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+		Cfg.MetadataEndpointsMaxHostnameSize)
 	if err != nil {
 		return "", fmt.Errorf("unable to retrieve instance name from GCE: %s", err)
 	}
 
 	projectID, err := getResponseWithMaxLength(metadataURL+"/project/project-id",
-		config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+		Cfg.MetadataEndpointsMaxHostnameSize)
 	if err != nil {
 		return "", fmt.Errorf("unable to retrieve project ID from GCE: %s", err)
 	}
@@ -81,7 +81,7 @@ func GetHostAlias() (string, error) {
 // GetClusterName returns the name of the cluster containing the current GCE instance
 func GetClusterName() (string, error) {
 	clusterName, err := getResponseWithMaxLength(metadataURL+"/instance/attributes/cluster-name",
-		config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+		Cfg.MetadataEndpointsMaxHostnameSize)
 	if err != nil {
 		return "", fmt.Errorf("unable to retrieve clustername from GCE: %s", err)
 	}

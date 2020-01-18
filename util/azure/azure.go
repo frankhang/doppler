@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 )
 
 // declare these as vars not const to ease testing
@@ -36,7 +36,7 @@ func IsRunningOn() bool {
 // GetHostAlias returns the VM ID from the Azure Metadata api
 func GetHostAlias() (string, error) {
 	res, err := getResponseWithMaxLength(metadataURL+"/metadata/instance/compute/vmId?api-version=2017-04-02&format=text",
-		config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+		Cfg.MetadataEndpointsMaxHostnameSize)
 	if err != nil {
 		return "", fmt.Errorf("Azure HostAliases: unable to query metadata endpoint: %s", err)
 	}

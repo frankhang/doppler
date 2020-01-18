@@ -8,7 +8,7 @@ package common
 import (
 	"strings"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/version"
 )
 
@@ -34,7 +34,7 @@ func GetPayload(hostname string) *Payload {
 
 func getAPIKey() string {
 	if apiKey == "" {
-		apiKey = strings.Split(config.Datadog.GetString("api_key"), ",")[0]
+		apiKey = strings.Split(Cfg.ApiKey, ",")[0]
 	}
 
 	return apiKey

@@ -8,9 +8,9 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"time"
-
-	"github.com/frankhang/doppler/util/log"
 
 	"github.com/frankhang/doppler/agent/common/signals"
 	"github.com/frankhang/doppler/serializer"
@@ -50,7 +50,7 @@ func NewScheduler(s *serializer.Serializer) *Scheduler {
 	if enableFirstRunCollection {
 		err := scheduler.firstRun()
 		if err != nil {
-			log.Errorf("Unable to send host metadata at first run: %v", err)
+			logutil.BgLogger().Error("Unable to send host metadata at first run", zap.Error(err))
 		}
 	}
 
@@ -98,7 +98,7 @@ func (c *Scheduler) AddCollector(name string, interval time.Duration) error {
 				// Note we call `p.Send` on the collector *after* resetting the Timer, so
 				// the time spent by `p.Send` is not added to the total time between runs.
 				if err := p.Send(c.srl); err != nil {
-					log.Errorf("Unable to send '%s' metadata: %v", name, err)
+					logutil.BgLogger().Error("Unable to send metadata", zap.String("name", name), zap.Error(err))
 				}
 			}
 		}
@@ -128,7 +128,7 @@ func (c *Scheduler) TriggerAndResetCollectorTimer(name string, delay time.Durati
 	sc, found := c.collectors[name]
 
 	if !found {
-		log.Errorf("Unable to find '" + name + "' in the running metadata collectors!")
+		logutil.BgLogger().Error("Unable to find metadata in the running metadata collectors!", zap.String("name", name))
 	}
 
 	if !sc.sendTimer.Stop() {
@@ -147,7 +147,7 @@ func (c *Scheduler) TriggerAndResetCollectorTimer(name string, delay time.Durati
 func (c *Scheduler) firstRun() error {
 	p, found := catalog["host"]
 	if !found {
-		log.Error("Unable to find 'host' metadata collector in the catalog!")
+		logutil.BgLogger().Error("Unable to find metadata collector in the catalog", zap.String("name", "host"))
 		signals.ErrorStopper <- true
 	}
 	return p.Send(c.srl)

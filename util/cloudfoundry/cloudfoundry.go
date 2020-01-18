@@ -10,7 +10,6 @@ import (
 
 	"github.com/frankhang/doppler/util/log"
 
-	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util"
 )
 

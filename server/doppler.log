@@ -2,3 +2,408 @@
 [2020/01/17 21:53:23.405 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
 [2020/01/17 21:54:19.719 +08:00] [INFO] [main.go:175] ["disable Prometheus push client"]
 [2020/01/17 21:54:19.719 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/18 23:49:29.624 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/18 23:49:29.624 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/18 23:49:29.624 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/18 23:49:29.626 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/18 23:49:29.629 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/18 23:49:29.629 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/18 23:49:29.629 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/18 23:49:29.630 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/18 23:49:29.638 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/18 23:49:29.638 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/18 23:49:39.508 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/18 23:49:39.509 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/18 23:49:39.509 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/18 23:49:39.509 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/18 23:49:39.518 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/18 23:49:39.518 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/18 23:49:39.518 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/18 23:49:39.518 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/18 23:49:39.529 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/18 23:49:39.529 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/18 23:50:00.226 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:50:00.530 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:50:00.530 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/18 23:50:00.572 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/18 23:50:00.876 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:50:00.877 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/18 23:50:00.877 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/18 23:50:00.877 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/18 23:50:01.182 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:50:06.125 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/18 23:50:06.125 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/18 23:50:06.125  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/18 23:50:10.106 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:50:10.110 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/18 23:50:10.111 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/18 23:50:10.168 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/18 23:50:10.169 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/18 23:50:10.169 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/18 23:50:10.171 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/18 23:50:10.171 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/18 23:50:10.171 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/18 23:50:14.986 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/18 23:50:14.987 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/18 23:50:14.994  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/18 23:50:38.864 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/18 23:50:38.865 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/18 23:50:38.865 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/18 23:50:38.865 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/18 23:50:38.866 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/18 23:50:38.866 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/18 23:50:38.866 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/18 23:50:38.868 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/18 23:50:38.875 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/18 23:50:38.875 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/18 23:51:09.446 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:51:09.751 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:51:09.751 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/18 23:51:09.789 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/18 23:51:10.094 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:51:10.094 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/18 23:51:10.400 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:51:10.400 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/18 23:51:10.400 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/18 23:51:15.204 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/18 23:51:15.204 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/18 23:51:15.204  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/18 23:56:11.881 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/18 23:56:11.881 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/18 23:56:11.881 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/18 23:56:11.883 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/18 23:56:11.885 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/18 23:56:11.886 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/18 23:56:11.886 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/18 23:56:11.886 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/18 23:56:11.896 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/18 23:56:11.896 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/18 23:56:42.461 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:56:42.766 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:56:42.766 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/18 23:56:42.801 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/18 23:56:43.104 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:56:43.104 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/18 23:56:43.104 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/18 23:56:43.104 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/18 23:56:43.409 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:56:48.708 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/18 23:56:48.708 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+[2020/01/18 23:58:20.310 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/18 23:58:20.311 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/18 23:58:20.311 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/18 23:58:20.311 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/18 23:58:20.312 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/18 23:58:20.313 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/18 23:58:20.313 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/18 23:58:20.313 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/18 23:58:20.323 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/18 23:58:20.323 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/18 23:58:50.891 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/18 23:58:50.894 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/18 23:58:50.895 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/18 23:58:50.939 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/18 23:58:50.948 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/18 23:58:50.948 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/18 23:58:50.950 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/18 23:58:50.950 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/18 23:58:50.950 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/18 23:58:55.710 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/18 23:58:55.710 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/18 23:58:55.710  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/19 00:03:21.933 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/19 00:03:21.933 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/19 00:03:21.933 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/19 00:03:21.933 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/19 00:03:21.934 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/19 00:03:21.934 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/19 00:03:21.934 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/19 00:03:21.934 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/19 00:03:21.939 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/19 00:03:21.939 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/19 00:03:52.531 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:03:52.836 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:03:52.836 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/19 00:03:52.892 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/19 00:03:53.195 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:03:53.195 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/19 00:03:53.499 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:03:53.499 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/19 00:03:53.499 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/19 00:03:58.305 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/19 00:03:58.305 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/19 00:03:58.305  [panic] listening on neither udp nor socket, please check your configuration
+[2020/01/19 00:05:13.013 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/19 00:05:13.013 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/19 00:05:13.013 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/19 00:05:13.017 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/19 00:05:13.017 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/19 00:05:13.017 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/19 00:05:13.017 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/19 00:05:13.018 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/19 00:05:13.024 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/19 00:05:13.024 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/19 00:05:43.613 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:05:43.618 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/19 00:05:43.618 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/19 00:05:43.656 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/19 00:05:43.657 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/19 00:05:43.657 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/19 00:05:43.657 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/19 00:05:43.657 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/19 00:05:43.658 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/19 00:05:48.399 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/19 00:05:48.400 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/19 00:05:48.401  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/19 00:12:47.224 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/19 00:12:47.224 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/19 00:12:47.224 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/19 00:12:47.224 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/19 00:12:47.227 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/19 00:12:47.227 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/19 00:12:47.227 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/19 00:12:47.229 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/19 00:12:47.236 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/19 00:12:47.236 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/19 00:13:17.804 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:13:17.808 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/19 00:13:17.808 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/19 00:13:17.869 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/19 00:13:17.869 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/19 00:13:17.870 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/19 00:13:17.874 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/19 00:13:17.874 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/19 00:13:17.876 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/19 00:13:22.705 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/19 00:13:22.705 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/19 00:13:22.705  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/19 00:45:30.232 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/19 00:45:30.232 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/19 00:45:30.232 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/19 00:45:30.232 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/19 00:45:30.233 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/19 00:45:30.233 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/19 00:45:30.233 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/19 00:45:30.233 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/19 00:45:30.238 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/19 00:45:30.238 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/19 00:46:00.810 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:46:00.820 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/19 00:46:00.821 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/19 00:46:00.864 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/19 00:46:00.866 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/19 00:46:00.866 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/19 00:46:00.868 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/19 00:46:00.868 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/19 00:46:00.869 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/19 00:46:05.844 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/19 00:46:05.845 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/19 00:46:05.845 errors.go:533: [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/19 00:47:36.834 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/19 00:47:36.834 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/19 00:47:36.834 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/19 00:47:36.840 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/19 00:47:36.841 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/19 00:47:36.841 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/19 00:47:36.842 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/19 00:47:36.841 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/19 00:47:36.854 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/19 00:47:36.854 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/19 00:48:07.427 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:48:07.434 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/19 00:48:07.434 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/19 00:48:07.483 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/19 00:48:07.484 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/19 00:48:07.484 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/19 00:48:07.485 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/19 00:48:07.485 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/19 00:48:07.486 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/19 00:48:12.291 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/19 00:48:12.292 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/19 00:48:12.292 errors.go:534: [error] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/19 00:49:53.053 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/19 00:49:53.053 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/19 00:49:53.053 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/19 00:49:53.055 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/19 00:49:53.057 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/19 00:49:53.061 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/19 00:49:53.061 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/19 00:49:53.058 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/19 00:49:53.070 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/19 00:49:53.070 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/19 00:50:23.638 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:50:23.645 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/19 00:50:23.645 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/19 00:50:23.693 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/19 00:50:23.695 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/19 00:50:23.695 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/19 00:50:23.696 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/19 00:50:23.696 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/19 00:50:23.696 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/19 00:50:28.464 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/19 00:50:28.464 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/19 00:50:28.465  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:530
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357
+[2020/01/19 00:53:30.648 +08:00] [WARN] [main.go:132] ["config file doppler.toml contained unknown configuration options: TT"]
+[2020/01/19 00:53:30.648 +08:00] [INFO] [main.go:190] ["disable Prometheus push client"]
+[2020/01/19 00:53:30.648 +08:00] [INFO] [systime_mon.go:12] ["start system time monitor"]
+[2020/01/19 00:53:30.649 +08:00] [INFO] [main.go:453] [runServer...]
+[2020/01/19 00:53:30.649 +08:00] [ERROR] [forwarder_health.go:91] ["No valid api key found, reporting the forwarder as unhealthy."]
+[2020/01/19 00:53:30.649 +08:00] [INFO] [hostname.go:158] ["Unable to get the hostname from the config file"] [error="hostname is empty"]
+[2020/01/19 00:53:30.649 +08:00] [INFO] [hostname.go:159] ["Trying to determine a reliable host name automatically..."]
+[2020/01/19 00:53:30.649 +08:00] [INFO] [hostname.go:172] ["GetHostname trying FQDN/`hostname -f`..."]
+[2020/01/19 00:53:30.654 +08:00] [INFO] [hostname.go:219] ["GetHostname trying EC2 metadata..."]
+[2020/01/19 00:53:30.655 +08:00] [INFO] [main.go:503] ["Using hostname"] [hostname=bogon]
+[2020/01/19 00:54:01.224 +08:00] [INFO] [host.go:92] ["no Alibaba Host Alias"] [error="Alibaba HostAliases: unable to query metadata endpoint: Get http://100.100.100.200/latest/meta-data/instance-id: net/http: request canceled (Client.Timeout exceeded while awaiting headers)"]
+[2020/01/19 00:54:01.231 +08:00] [INFO] [host.go:99] ["no Azure Host Alias"] [error="Azure HostAliases: unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/vmId?api-version=2017-04-02&format=text: EOF"]
+[2020/01/19 00:54:01.231 +08:00] [INFO] [host.go:120] ["no Kubernetes Host Alias (through kubelet API)"] [error="Kubernetes support not build: couldn't extract a host alias from the kubelet"]
+[2020/01/19 00:54:01.272 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the gce API..."]
+[2020/01/19 00:54:01.273 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the gce API"] [error="unable to retrieve clustername from GCE: Get http://169.254.169.254/computeMetadata/v1/instance/attributes/cluster-name: EOF"]
+[2020/01/19 00:54:01.273 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the azure API..."]
+[2020/01/19 00:54:01.275 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the azure API"] [error="unable to query metadata endpoint: Get http://169.254.169.254/metadata/instance/compute/resourceGroupName?api-version=2017-08-01&format=text: EOF"]
+[2020/01/19 00:54:01.275 +08:00] [INFO] [clustername.go:80] ["Trying to auto discover the cluster name from the ec2 API..."]
+[2020/01/19 00:54:01.275 +08:00] [INFO] [clustername.go:83] ["Unable to auto discover the cluster name from the ec2 API"] [error="unable to parse cluster name from EC2 tags"]
+[2020/01/19 00:54:05.944 +08:00] [WARN] [helper.go:97] ["Metadata collection disabled, only do that if another agent/dogstatsd is running on this host"]
+[2020/01/19 00:54:05.945 +08:00] [ERROR] [main.go:529] ["Unable to start agent"]
+2020/01/19 00:54:05.945  [panic] listening on neither udp nor socket, please check your configuration
+github.com/frankhang/util/errors.AddStack
+	/Users/hang/go/src/github.com/frankhang/util/errors/errors.go:179
+github.com/frankhang/util/errors.Trace
+	/Users/hang/go/src/github.com/frankhang/util/errors/juju_adaptor.go:15
+github.com/frankhang/doppler/agent.NewServer
+	/Users/hang/go/src/github.com/frankhang/doppler/agent/server.go:135
+main.runAgent
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:527
+main.runServer
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:454
+main.main
+	/Users/hang/go/src/github.com/frankhang/doppler/server/main.go:139
+runtime.main
+	/Users/hang/soft/go/src/runtime/proc.go:203
+runtime.goexit
+	/Users/hang/soft/go/src/runtime/asm_amd64.s:1357

@@ -6,18 +6,13 @@
 package config
 
 import (
-
 	"fmt"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
-
 	//yaml "gopkg.in/yaml.v2"
-
-
 
 	"github.com/frankhang/doppler/version"
 )
@@ -60,11 +55,7 @@ var (
 	ForceDefaultPython string
 )
 
-// MetadataProviders helps unmarshalling `metadata_providers` config param
-type MetadataProviders struct {
-	Name     string        `mapstructure:"name"`
-	Interval time.Duration `mapstructure:"interval"`
-}
+
 
 // ConfigurationProviders helps unmarshalling `config_providers` config param
 type ConfigurationProviders struct {
@@ -229,10 +220,7 @@ func getMultipleEndpointsWithConfig(config Config) (map[string][]string, error) 
 	return nil, nil
 }
 
-// IsContainerized returns whether the Agent is running on a Docker container
-func IsContainerized() bool {
-	return os.Getenv("DOCKER_DD_AGENT") != ""
-}
+
 
 // FileUsedDir returns the absolute path to the folder containing the config
 // file used to populate the registry

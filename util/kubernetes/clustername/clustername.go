@@ -6,10 +6,13 @@
 package clustername
 
 import (
+	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"regexp"
 	"sync"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/azure"
 	"github.com/frankhang/doppler/util/ec2"
 	"github.com/frankhang/doppler/util/gce"
@@ -59,14 +62,14 @@ func getClusterName(data *clusterNameData) string {
 	defer data.mutex.Unlock()
 
 	if !data.initDone {
-		data.clusterName = config.Datadog.GetString("cluster_name")
+		data.clusterName = Cfg.ClusterName
 		if data.clusterName != "" {
 			log.Infof("Got cluster name %s from config", data.clusterName)
 			if !validClusterName.MatchString(data.clusterName) || len(data.clusterName) > 40 {
-				log.Errorf("%q isn’t a valid cluster name. It must be dot-separated tokens where tokens "+
+				logutil.BgLogger().Error(fmt.Sprintf("%q isn’t a valid cluster name. It must be dot-separated tokens where tokens "+
 					"start with a lowercase letter followed by up to 39 lowercase letters, numbers, or "+
-					"hyphens, and cannot end with a hyphen nor have a dot adjacent to a hyphen.", data.clusterName)
-				log.Errorf("As a consequence, the cluster name provided by the config will be ignored")
+					"hyphens, and cannot end with a hyphen nor have a dot adjacent to a hyphen.", data.clusterName))
+				logutil.BgLogger().Error("As a consequence, the cluster name provided by the config will be ignored")
 				data.clusterName = ""
 			}
 		}
@@ -74,15 +77,15 @@ func getClusterName(data *clusterNameData) string {
 		// autodiscover clustername through k8s providers' API
 		if data.clusterName == "" {
 			for cloudProvider, getClusterNameFunc := range ProviderCatalog {
-				log.Debugf("Trying to auto discover the cluster name from the %s API...", cloudProvider)
+				logutil.BgLogger().Info(fmt.Sprintf("Trying to auto discover the cluster name from the %s API...", cloudProvider))
 				clusterName, err := getClusterNameFunc()
 				if err != nil {
-					log.Debugf("Unable to auto discover the cluster name from the %s API: %s", cloudProvider, err)
+					logutil.BgLogger().Info(fmt.Sprintf("Unable to auto discover the cluster name from the %s API", cloudProvider), zap.Error(err))
 					// try the next cloud provider
 					continue
 				}
 				if clusterName != "" {
-					log.Infof("Using cluster name %s auto discovered from the %s API", clusterName, cloudProvider)
+					logutil.BgLogger().Info(fmt.Sprintf("Using cluster name %s auto discovered from the %s API", clusterName, cloudProvider))
 					data.clusterName = clusterName
 					break
 				}
@@ -92,7 +95,7 @@ func getClusterName(data *clusterNameData) string {
 		if data.clusterName == "" {
 			clusterName, err := hostinfo.GetNodeClusterNameLabel()
 			if err != nil {
-				log.Debugf("Unable to auto discover the cluster name from node label : %s", err)
+				logutil.BgLogger().Info("Unable to auto discover the cluster name from node label", zap.Error(err))
 			} else {
 				data.clusterName = clusterName
 			}

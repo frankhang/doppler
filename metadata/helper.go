@@ -2,10 +2,13 @@ package metadata
 
 import (
 	"fmt"
+	"github.com/frankhang/util/errors"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"runtime"
 	"time"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/log"
 )
 
@@ -90,31 +93,33 @@ func addDefaultCollector(name string, sch *Scheduler) error {
 // collectors listed in 'additionalCollectors' if they're not listed in the
 // configuration.
 func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) error {
-	if !config.Datadog.GetBool("enable_metadata_collection") {
-		log.Warnf("Metadata collection disabled, only do that if another agent/dogstatsd is running on this host")
+	if !Cfg.EnableMetadataCollection {
+		logutil.BgLogger().Warn("Metadata collection disabled, only do that if another agent/dogstatsd is running on this host")
 		return nil
 	}
 
 	collectorAdded := map[string]interface{}{}
-	var C []config.MetadataProviders
-	err := config.Datadog.UnmarshalKey("metadata_providers", &C)
+	//var C []MetadataProviders
+	//err := config.Datadog.UnmarshalKey("metadata_providers", &C)
+	C := Cfg.MetadataProviders
+	var err error = nil
 	if err == nil {
-		log.Debugf("Adding configured providers to the metadata collector")
+		logutil.BgLogger().Info("Adding configured providers to the metadata collector")
 		for _, c := range C {
 			if c.Interval == 0 {
-				log.Infof("Interval of metadata provider '%v' set to 0, skipping provider", c.Name)
+				logutil.BgLogger().Info("Interval of metadata provider set to 0, skipping provider", zap.String("provider", c.Name))
 				continue
 			}
 
 			intl := c.Interval * time.Second
 			if err := addCollector(c.Name, intl, sch); err != nil {
-				log.Error(err.Error())
+				errors.Log(err)
 			} else {
 				collectorAdded[c.Name] = nil
 			}
 		}
 	} else {
-		log.Errorf("Unable to parse metadata_providers config: %v", err)
+		logutil.BgLogger().Error("Unable to parse metadata_providers config", zap.Error(err))
 	}
 
 	// Adding default collectors if they were not listed in the configuration
@@ -124,7 +129,7 @@ func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) erro
 		}
 
 		if err := addDefaultCollector(name, sch); err != nil {
-			return err
+			return errors.Trace(err)
 		}
 	}
 	return nil

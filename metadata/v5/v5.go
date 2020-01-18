@@ -8,7 +8,7 @@
 package v5
 
 import (
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/metadata/common"
 	"github.com/frankhang/doppler/metadata/gohai"
 	"github.com/frankhang/doppler/metadata/host"
@@ -31,7 +31,7 @@ func GetPayload(hostnameData util.HostnameData) *Payload {
 		p.ResourcesPayload = ResourcesPayload{*rp}
 	}
 
-	if config.Datadog.GetBool("enable_gohai") {
+	if Cfg.EnableGohai {
 		p.GohaiPayload = GohaiPayload{MarshalledGohaiPayload{*gohai.GetPayload()}}
 	}
 

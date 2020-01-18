@@ -6,12 +6,14 @@
 package host
 
 import (
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"os"
 	"path"
 	"sync"
 	"time"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/metadata/common"
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/doppler/util/alibaba"
@@ -20,9 +22,7 @@ import (
 
 	"github.com/frankhang/doppler/metadata/host/container"
 	"github.com/frankhang/doppler/util/azure"
-	"github.com/frankhang/doppler/util/cloudfoundry"
 	"github.com/frankhang/doppler/util/ec2"
-	"github.com/frankhang/doppler/util/gce"
 	kubelet "github.com/frankhang/doppler/util/hostname/kubelet"
 )
 
@@ -89,35 +89,35 @@ func getHostAliases() []string {
 
 	alibabaAlias, err := alibaba.GetHostAlias()
 	if err != nil {
-		log.Debugf("no Alibaba Host Alias: %s", err)
+		logutil.BgLogger().Info("no Alibaba Host Alias", zap.Error(err))
 	} else if alibabaAlias != "" {
 		aliases = append(aliases, alibabaAlias)
 	}
 
 	azureAlias, err := azure.GetHostAlias()
 	if err != nil {
-		log.Debugf("no Azure Host Alias: %s", err)
+		logutil.BgLogger().Info("no Azure Host Alias", zap.Error(err))
 	} else if azureAlias != "" {
 		aliases = append(aliases, azureAlias)
 	}
 
-	gceAlias, err := gce.GetHostAlias()
-	if err != nil {
-		log.Debugf("no GCE Host Alias: %s", err)
-	} else {
-		aliases = append(aliases, gceAlias)
-	}
-
-	cfAliases, err := cloudfoundry.GetHostAliases()
-	if err != nil {
-		log.Debugf("no Cloud Foundry Host Alias: %s", err)
-	} else if cfAliases != nil {
-		aliases = append(aliases, cfAliases...)
-	}
+	//gceAlias, err := gce.GetHostAlias()
+	//if err != nil {
+	//	log.Debugf("no GCE Host Alias: %s", err)
+	//} else {
+	//	aliases = append(aliases, gceAlias)
+	//}
+	//
+	//cfAliases, err := cloudfoundry.GetHostAliases()
+	//if err != nil {
+	//	log.Debugf("no Cloud Foundry Host Alias: %s", err)
+	//} else if cfAliases != nil {
+	//	aliases = append(aliases, cfAliases...)
+	//}
 
 	k8sAlias, err := kubelet.GetHostAlias()
 	if err != nil {
-		log.Debugf("no Kubernetes Host Alias (through kubelet API): %s", err)
+		logutil.BgLogger().Info("no Kubernetes Host Alias (through kubelet API)", zap.Error(err))
 	} else if k8sAlias != "" {
 		aliases = append(aliases, k8sAlias)
 	}
@@ -133,7 +133,7 @@ func getMeta(hostnameData util.HostnameData) *Meta {
 
 	var agentHostname string
 
-	if config.Datadog.GetBool("hostname_force_config_as_canonical") &&
+	if Cfg.HostnameForceConfigAsCanonical &&
 		hostnameData.Provider == util.HostnameProviderConfiguration {
 		agentHostname = hostnameData.Hostname
 	}

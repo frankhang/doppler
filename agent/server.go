@@ -131,7 +131,8 @@ func NewServer(samplePool *metrics.MetricSamplePool, samplesOut chan<- []metrics
 	//}
 
 	if len(tmpListeners) == 0 {
-		return nil, fmt.Errorf("listening on neither udp nor socket, please check your configuration")
+		err := fmt.Errorf("listening on neither udp nor socket, please check your configuration")
+		return nil, errors.Trace(err)
 	}
 
 	// check configuration for custom namespace

@@ -450,7 +450,7 @@ func reloadConfig(nc, c *config.Config) {
 
 func runServer() {
 
-
+	logutil.BgLogger().Info("runServer...")
 	mainCtx, mainCtxCancel, err := runAgent()
 	errors.MustNil(err)
 	// Setup a channel to catch OS signals
@@ -526,9 +526,8 @@ func runAgent() (mainCtx context.Context, mainCtxCancel context.CancelFunc, err 
 	sampleC, eventC, serviceCheckC := aggregatorInstance.GetBufferedChannels()
 	statsd, err = agent.NewServer(metricSamplePool, sampleC, eventC, serviceCheckC)
 	if err != nil {
-		logutil.BgLogger().Error("Unable to start dogstatsd")
-		err = errors.Trace(err)
-		return
+		logutil.BgLogger().Error("Unable to start agent")
+		return nil, nil, errors.Trace(err)
 	}
 	return
 }

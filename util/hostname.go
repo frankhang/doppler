@@ -8,6 +8,9 @@ package util
 import (
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/errors"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"net"
 	"os"
 	"runtime"
@@ -16,7 +19,7 @@ import (
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/log"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/ec2"
 	"github.com/frankhang/doppler/util/ecs"
@@ -72,7 +75,7 @@ func setHostnameProvider(name string) {
 // In those uncertain cases, it returns `true`.
 func isOSHostnameUsable() (osHostnameUsable bool) {
 	// If the agent is not containerized, just skip all this detection logic
-	if !config.IsContainerized() {
+	if !IsContainerized() {
 		return true
 	}
 
@@ -139,22 +142,22 @@ func GetHostnameData() (HostnameData, error) {
 	var provider string
 
 	// try the name provided in the configuration file
-	configName := config.Datadog.GetString("hostname")
+	configName := Cfg.HostName
 	err = validate.ValidHostname(configName)
 	if err == nil {
 		hostnameData := saveHostnameData(cacheHostnameKey, configName, HostnameProviderConfiguration)
-		if !isHostnameCanonicalForIntake(configName) && !config.Datadog.GetBool("hostname_force_config_as_canonical") {
-			_ = log.Warnf("Hostname '%s' defined in configuration will not be used as the in-app hostname. For more information: https://dtdg.co/agent-hostname-force-config-as-canonical", configName)
+		if !isHostnameCanonicalForIntake(configName) && !Cfg.HostnameForceConfigAsCanonical {
+			logutil.BgLogger().Warn("Hostname defined in configuration will not be used as the in-app hostname. For more information: https://dtdg.co/agent-hostname-force-config-as-canonical", zap.String("hostname", configName))
 		}
-		return hostnameData, err
+		return hostnameData, nil
 	}
 
 	expErr := new(expvar.String)
 	expErr.Set(err.Error())
 	hostnameErrors.Set("configuration/environment", expErr)
 
-	log.Debugf("Unable to get the hostname from the config file: %s", err)
-	log.Debug("Trying to determine a reliable host name automatically...")
+	logutil.BgLogger().Info("Unable to get the hostname from the config file", zap.Error(err))
+	logutil.BgLogger().Info("Trying to determine a reliable host name automatically...")
 
 	// if fargate we strip the hostname
 	if ecs.IsFargateInstance() {
@@ -162,27 +165,14 @@ func GetHostnameData() (HostnameData, error) {
 		return hostnameData, nil
 	}
 
-	// GCE metadata
-	log.Debug("GetHostname trying GCE metadata...")
-	if getGCEHostname, found := hostname.ProviderCatalog["gce"]; found {
-		gceName, err := getGCEHostname()
-		if err == nil {
-			hostnameData := saveHostnameData(cacheHostnameKey, gceName, "gce")
-			return hostnameData, err
-		}
-		expErr := new(expvar.String)
-		expErr.Set(err.Error())
-		hostnameErrors.Set("gce", expErr)
-		log.Debug("Unable to get hostname from GCE: ", err)
-	}
 
 	// FQDN
 	var fqdn string
 	canUseOSHostname := isOSHostnameUsable()
 	if canUseOSHostname {
-		log.Debug("GetHostname trying FQDN/`hostname -f`...")
+		logutil.BgLogger().Info("GetHostname trying FQDN/`hostname -f`...")
 		fqdn, err = getSystemFQDN()
-		if config.Datadog.GetBool("hostname_fqdn") && err == nil {
+		if Cfg.HostNameFqdn && err == nil {
 			hostName = fqdn
 			provider = "fqdn"
 		} else {
@@ -191,7 +181,7 @@ func GetHostnameData() (HostnameData, error) {
 				expErr.Set(err.Error())
 				hostnameErrors.Set("fqdn", expErr)
 			}
-			log.Debug("Unable to get FQDN from system: ", err)
+			logutil.BgLogger().Info("Unable to get FQDN from system: ", zap.Error(err))
 		}
 	}
 
@@ -209,7 +199,7 @@ func GetHostnameData() (HostnameData, error) {
 
 	if canUseOSHostname && hostName == "" {
 		// os
-		log.Debug("GetHostname trying os...")
+		logutil.BgLogger().Info("GetHostname trying os...")
 		systemName, err := os.Hostname()
 		if err == nil {
 			hostName = systemName
@@ -218,7 +208,7 @@ func GetHostnameData() (HostnameData, error) {
 			expErr := new(expvar.String)
 			expErr.Set(err.Error())
 			hostnameErrors.Set("os", expErr)
-			log.Debug("Unable to get hostname from OS: ", err)
+			logutil.BgLogger().Info("Unable to get hostname from OS", zap.Error(err))
 		}
 	}
 
@@ -227,7 +217,7 @@ func GetHostnameData() (HostnameData, error) {
 	// We use the instance id if we're on an ECS cluster or we're on EC2
 	// and the hostname is one of the default ones
 	if getEC2Hostname, found := hostname.ProviderCatalog["ec2"]; found {
-		log.Debug("GetHostname trying EC2 metadata...")
+		logutil.BgLogger().Info("GetHostname trying EC2 metadata...")
 		if ecs.IsECSInstance() || ec2.IsDefaultHostname(hostName) {
 			instanceID, err := getEC2Hostname()
 			if err == nil {
@@ -239,17 +229,17 @@ func GetHostnameData() (HostnameData, error) {
 					expErr := new(expvar.String)
 					expErr.Set(err.Error())
 					hostnameErrors.Set("aws", expErr)
-					log.Debug("EC2 instance ID is not a valid hostname: ", err)
+					logutil.BgLogger().Info("EC2 instance ID is not a valid hostname: ", zap.Error(err))
 				}
 			} else {
 				expErr := new(expvar.String)
 				expErr.Set(err.Error())
 				hostnameErrors.Set("aws", expErr)
-				log.Debug("Unable to determine hostname from EC2: ", err)
+				logutil.BgLogger().Info("Unable to determine hostname from EC2", zap.Error(err))
 			}
 		} else {
 			err := fmt.Errorf("not retrieving hostname from AWS: the host is not an ECS instance, and other providers already retrieve non-default hostnames")
-			log.Debug(err.Error())
+			errors.Log(err)
 			expErr := new(expvar.String)
 			expErr.Set(err.Error())
 			hostnameErrors.Set("aws", expErr)
@@ -257,12 +247,12 @@ func GetHostnameData() (HostnameData, error) {
 	}
 
 	h, err := os.Hostname()
-	if err == nil && !config.Datadog.GetBool("hostname_fqdn") && fqdn != "" && hostName == h && h != fqdn {
+	if err == nil && !Cfg.HostNameFqdn && fqdn != "" && hostName == h && h != fqdn {
 		if runtime.GOOS != "windows" {
 			// REMOVEME: This should be removed when the default `hostname_fqdn` is set to true
-			log.Warnf("DEPRECATION NOTICE: The agent resolved your hostname as '%s'. However in a future version, it will be resolved as '%s' by default. To enable the future behavior, please enable the `hostname_fqdn` flag in the configuration. For more information: https://dtdg.co/flag-hostname-fqdn", h, fqdn)
+			logutil.BgLogger().Warn(fmt.Sprintf("DEPRECATION NOTICE: The agent resolved your hostname as '%s'. However in a future version, it will be resolved as '%s' by default. To enable the future behavior, please enable the `hostname_fqdn` flag in the configuration. For more information: https://dtdg.co/flag-hostname-fqdn", h, fqdn))
 		} else { // OS is Windows
-			log.Warnf("The agent resolved your hostname as '%s', and will be reported this way to maintain compatibility with version 5. To enable reporting as '%s', please enable the `hostname_fqdn` flag in the configuration. For more information: https://dtdg.co/flag-hostname-fqdn", h, fqdn)
+			logutil.BgLogger().Warn(fmt.Sprintf("The agent resolved your hostname as '%s', and will be reported this way to maintain compatibility with version 5. To enable reporting as '%s', please enable the `hostname_fqdn` flag in the configuration. For more information: https://dtdg.co/flag-hostname-fqdn", h, fqdn))
 		}
 	}
 
@@ -280,7 +270,7 @@ func GetHostnameData() (HostnameData, error) {
 		expErr.Set(fmt.Sprintf(err.Error()))
 		hostnameErrors.Set("all", expErr)
 	}
-	return hostnameData, err
+	return hostnameData, errors.Trace(err)
 }
 
 // isHostnameCanonicalForIntake returns true if the intake will use the hostname as canonical hostname.

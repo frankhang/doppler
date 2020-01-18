@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/common"
 	"github.com/frankhang/doppler/util/log"
 )
@@ -32,7 +32,7 @@ var (
 
 // GetInstanceID fetches the instance id for current host from the EC2 metadata API
 func GetInstanceID() (string, error) {
-	return getMetadataItemWithMaxLength("/instance-id", config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+	return getMetadataItemWithMaxLength("/instance-id", Cfg.MetadataEndpointsMaxHostnameSize)
 }
 
 // GetLocalIPv4 gets the local IPv4 for the currently running host using the EC2 metadata API.
@@ -55,7 +55,7 @@ func IsRunningOn() bool {
 
 // GetHostname fetches the hostname for current host from the EC2 metadata API
 func GetHostname() (string, error) {
-	return getMetadataItemWithMaxLength("/hostname", config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+	return getMetadataItemWithMaxLength("/hostname", Cfg.MetadataEndpointsMaxHostnameSize)
 }
 
 // GetNetworkID retrieves the network ID using the EC2 metadata endpoint. For
@@ -169,7 +169,8 @@ func getResponse(url string) (*http.Response, error) {
 
 // IsDefaultHostname returns whether the given hostname is a default one for EC2
 func IsDefaultHostname(hostname string) bool {
-	return isDefaultHostname(hostname, config.Datadog.GetBool("ec2_use_windows_prefix_detection"))
+	//return isDefaultHostname(hostname, config.Datadog.GetBool("ec2_use_windows_prefix_detection"))
+	return false
 }
 
 // IsDefaultHostnameForIntake returns whether the given hostname is a default one for EC2 for the intake

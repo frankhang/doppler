@@ -11,7 +11,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 )
 
 // declare these as vars not const to ease testing
@@ -34,7 +34,7 @@ func IsRunningOn() bool {
 // GetHostAlias returns the VM ID from the Alibaba Metadata api
 func GetHostAlias() (string, error) {
 	res, err := getResponseWithMaxLength(metadataURL+"/latest/meta-data/instance-id",
-		config.Datadog.GetInt("metadata_endpoints_max_hostname_size"))
+		Cfg.MetadataEndpointsMaxHostnameSize)
 	if err != nil {
 		return "", fmt.Errorf("Alibaba HostAliases: unable to query metadata endpoint: %s", err)
 	}

@@ -13,6 +13,7 @@ import (
 	"regexp"
 
 	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/forwarder"
 	"github.com/frankhang/doppler/serializer/jsonstream"
 	"github.com/frankhang/doppler/serializer/marshaler"
@@ -126,11 +127,11 @@ func NewSerializer(forwarder forwarder.Forwarder) *Serializer {
 	s := &Serializer{
 		Forwarder:                     forwarder,
 		seriesPayloadBuilder:          jsonstream.NewPayloadBuilder(),
-		enableEvents:                  config.Datadog.GetBool("enable_payloads.events"),
-		enableSeries:                  config.Datadog.GetBool("enable_payloads.series"),
-		enableServiceChecks:           config.Datadog.GetBool("enable_payloads.service_checks"),
-		enableSketches:                config.Datadog.GetBool("enable_payloads.sketches"),
-		enableJSONToV1Intake:          config.Datadog.GetBool("enable_payloads.json_to_v1_intake"),
+		enableEvents:                  Cfg.EnablePayloadsEvents,
+		enableSeries:                  Cfg.EnablePayloadsSeries,
+		enableServiceChecks:           Cfg.EnablePayloadsServiceChecks,
+		enableSketches:                Cfg.EnablePayloadsSketches,
+		enableJSONToV1Intake:          Cfg.EnablePayloadsJsonToV1Intake,
 		enableJSONStream:              jsonstream.Available && config.Datadog.GetBool("enable_stream_payload_serialization"),
 		enableServiceChecksJSONStream: jsonstream.Available && config.Datadog.GetBool("enable_service_checks_stream_payload_serialization"),
 		enableEventsJSONStream:        jsonstream.Available && config.Datadog.GetBool("enable_events_stream_payload_serialization"),

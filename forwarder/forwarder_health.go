@@ -8,6 +8,7 @@ package forwarder
 import (
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"net/http"
 	"time"
 
@@ -87,7 +88,7 @@ func (fh *forwarderHealth) healthCheckLoop() {
 	valid := fh.hasValidAPIKey()
 	// If no key is valid, no need to keep checking, they won't magically become valid
 	if !valid {
-		log.Errorf("No valid api key found, reporting the forwarder as unhealthy.")
+		logutil.BgLogger().Error("No valid api key found, reporting the forwarder as unhealthy.")
 		return
 	}
 
@@ -98,7 +99,7 @@ func (fh *forwarderHealth) healthCheckLoop() {
 		case <-validateTicker.C:
 			valid := fh.hasValidAPIKey()
 			if !valid {
-				log.Errorf("No valid api key found, reporting the forwarder as unhealthy.")
+				logutil.BgLogger().Error("No valid api key found, reporting the forwarder as unhealthy.")
 				return
 			}
 		case <-fh.health.C:

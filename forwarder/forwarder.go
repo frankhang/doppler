@@ -18,6 +18,7 @@ import (
 	"github.com/frankhang/doppler/util/log"
 
 	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/version"
 )
 
@@ -126,14 +127,14 @@ type DefaultForwarder struct {
 // NewDefaultForwarder returns a new DefaultForwarder.
 func NewDefaultForwarder(keysPerDomains map[string][]string) *DefaultForwarder {
 	f := &DefaultForwarder{
-		NumberOfWorkers:  config.Datadog.GetInt("forwarder_num_workers"),
+		NumberOfWorkers:  Cfg.ForwarderNumWorkers,
 		domainForwarders: map[string]*domainForwarder{},
 		keysPerDomains:   map[string][]string{},
 		internalState:    Stopped,
 		healthChecker:    &forwarderHealth{keysPerDomains: keysPerDomains},
 	}
-	numWorkers := config.Datadog.GetInt("forwarder_num_workers")
-	retryQueueMaxSize := config.Datadog.GetInt("forwarder_retry_queue_max_size")
+	numWorkers := Cfg.ForwarderNumWorkers
+	retryQueueMaxSize := Cfg.ForwarderRetryQueueMaxSize
 
 	for domain, keys := range keysPerDomains {
 		domain, _ := config.AddAgentVersionToDomain(domain, "app")
