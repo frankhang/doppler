@@ -113,7 +113,7 @@ func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) erro
 
 			intl := c.Interval * time.Second
 			if err := addCollector(c.Name, intl, sch); err != nil {
-				errors.Log(err)
+				logutil.BgLogger().Error("SetupMetadataCollection: addCollector error", zap.Error(err))
 			} else {
 				collectorAdded[c.Name] = nil
 			}

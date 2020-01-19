@@ -249,14 +249,14 @@ func setGlobalVars() {
 
 func setupLog() {
 	err := logutil.InitZapLogger(Cfg.Log.ToLogConfig())
-	errors.MustNil(err)
+	errors.MustNil(errors.Trace(err))
 
 	err = logutil.InitLogger(Cfg.Log.ToLogConfig())
-	errors.MustNil(err)
+	errors.MustNil(errors.Trace(err))
 	// Disable automaxprocs log
 	nopLog := func(string, ...interface{}) {}
 	_, err = maxprocs.Set(maxprocs.Logger(nopLog))
-	errors.MustNil(err)
+	errors.MustNil(errors.Trace(err))
 }
 
 func printInfo() {
@@ -271,7 +271,7 @@ func createServer() {
 	//tierDriver := NewTireDriver(cfg)
 	//var err error
 	//svr, err = tcp.NewServer(cfg, tierDriver)
-	//errors.MustNil(err)
+	//errors.MustNil(errors.Trace(err))
 
 }
 
@@ -357,7 +357,7 @@ func overrideConfig() {
 	if actualFlags[nmPort] {
 		var p int
 		p, err = strconv.Atoi(*port)
-		errors.MustNil(err)
+		errors.MustNil(errors.Trace(err))
 		Cfg.Port = uint(p)
 	}
 
@@ -383,7 +383,7 @@ func overrideConfig() {
 	if actualFlags[nmStatusPort] {
 		var p int
 		p, err = strconv.Atoi(*statusPort)
-		errors.MustNil(err)
+		errors.MustNil(errors.Trace(err))
 		Cfg.Status.StatusPort = uint(p)
 	}
 	if actualFlags[nmMetricsAddr] {
@@ -423,7 +423,7 @@ func loadConfig() string {
 			}
 		}
 
-		errors.MustNil(err)
+		errors.MustNil(errors.Trace(err))
 	} else {
 		// configCheck should have the config file specified.
 		if *configCheck {
@@ -452,7 +452,7 @@ func runServer() {
 
 	logutil.BgLogger().Info("runServer...")
 	mainCtx, mainCtxCancel, err := runAgent()
-	errors.MustNil(err)
+	errors.MustNil(errors.Trace(err))
 	// Setup a channel to catch OS signals
 	signalCh := make(chan os.Signal, 1)
 	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)

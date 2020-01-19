@@ -91,7 +91,7 @@ func isOSHostnameUsable() (osHostnameUsable bool) {
 	// https://github.com/kubernetes/kubernetes/blob/cf16e4988f58a5b816385898271e70c3346b9651/pkg/kubelet/dockershim/security_context.go#L203-L205
 	hostNetwork, err := isAgentKubeHostNetwork()
 	if err == nil && !hostNetwork {
-		log.Debug("Agent is running in a POD without hostNetwork: OS-provided hostnames cannot be used for hostname resolution.")
+		logutil.BgLogger().Info("Agent is running in a POD without hostNetwork: OS-provided hostnames cannot be used for hostname resolution.")
 		return false
 	}
 
@@ -239,7 +239,7 @@ func GetHostnameData() (HostnameData, error) {
 			}
 		} else {
 			err := fmt.Errorf("not retrieving hostname from AWS: the host is not an ECS instance, and other providers already retrieve non-default hostnames")
-			errors.Log(err)
+			logutil.BgLogger().Info(err.Error())
 			expErr := new(expvar.String)
 			expErr.Set(err.Error())
 			hostnameErrors.Set("aws", expErr)
