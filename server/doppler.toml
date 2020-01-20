@@ -4,7 +4,8 @@ token-limit = 1000
 read-timeout = 15
 write-timeout = 15
 Test = "t2"
-TT = "t3"
+
+#log_payloads = true
 
 [log]
 level = "debug"

@@ -6,10 +6,13 @@
 package aggregator
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/aggregator/ckey"
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 const defaultExpiry = 300.0 // number of seconds after which contexts are expired
@@ -77,7 +80,7 @@ func (s *TimeSampler) addSample(metricSample *metrics.MetricSample, timestamp fl
 
 		// Add sample to bucket
 		if err := bucketMetrics.AddSample(contextKey, metricSample, timestamp, s.interval); err != nil {
-			log.Debug("Ignoring sample '%s' on host '%s' and tags '%s': %s", metricSample.Name, metricSample.Host, metricSample.Tags, err)
+			logutil.BgLogger().Info(fmt.Sprintf("Ignoring sample '%s' on host '%s' and tags '%s': %s", metricSample.Name, metricSample.Host, metricSample.Tags, err))
 		}
 	}
 }
@@ -144,7 +147,7 @@ func (s *TimeSampler) flushSeries(cutoffTime int64) metrics.Series {
 			// Resolve context and populate new Serie
 			context, ok := s.contextResolver.contextsByKey[serie.ContextKey]
 			if !ok {
-				log.Errorf("Ignoring all metrics on context key '%v': inconsistent context resolver state: the context is not tracked", serie.ContextKey)
+				logutil.BgLogger().Error(fmt.Sprintf("Ignoring all metrics on context key '%v': inconsistent context resolver state: the context is not tracked", serie.ContextKey))
 				continue
 			}
 			serie.Name = context.Name + serie.NameSuffix
@@ -197,18 +200,19 @@ func (s *TimeSampler) flushContextMetrics(timestamp int64, contextMetrics metric
 	for ckey, err := range errors {
 		context, ok := s.contextResolver.contextsByKey[ckey]
 		if !ok {
-			log.Errorf("Can't resolve context of error '%s': inconsistent context resolver state: context with key '%v' is not tracked", err, ckey)
+			logutil.BgLogger().Error(fmt.Sprintf("Can't resolve context of error: inconsistent context resolver state: context with keyis not tracked", err, ckey))
 			continue
 		}
-		log.Infof("No value returned for dogstatsd metric '%s' on host '%s' and tags '%s': %s", context.Name, context.Host, context.Tags, err)
+		log.Infof("No value returned for agent metric on host and tags",
+			zap.String("name", context.Name), zap.String("host", context.Host), zap.Strings("tags", context.Tags), zap.Error(err))
 	}
 	return series
 }
 
 func (s *TimeSampler) countersSampleZeroValue(timestamp int64, contextMetrics metrics.ContextMetrics, counterContextsToDelete map[ckey.ContextKey]struct{}) {
-	expirySeconds := config.Datadog.GetFloat64("dogstatsd_expiry_seconds")
+	expirySeconds := Cfg.AgentExpirySeconds
 	for counterContext, lastSampled := range s.counterLastSampledByContext {
-		if expirySeconds+lastSampled > float64(timestamp) {
+		if float64(expirySeconds)+lastSampled > float64(timestamp) {
 			sample := &metrics.MetricSample{
 				Name:       "",
 				Value:      0.0,
@@ -227,7 +231,7 @@ func (s *TimeSampler) countersSampleZeroValue(timestamp int64, contextMetrics me
 			// i.e. while we are still sending zeros for them
 			err := s.contextResolver.updateTrackedContext(counterContext, float64(timestamp))
 			if err != nil {
-				log.Errorf("Error updating context: %s", err)
+				logutil.BgLogger().Error("Error updating context", zap.Error(err))
 			}
 		} else {
 			// Register the context to be deleted

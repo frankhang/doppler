@@ -32,6 +32,7 @@ type Config struct {
 	AgentSoRcvbuf                 int  `toml:"agent_so_rcvbuf" json:"agent_so_rcvbuf"`
 	AgentNonLocalTraffic          bool `toml:"agent_non_local_traffic" json:"agent_non_local_traffic"`
 	AgentOriginDetection          bool `toml:"agent_origin_detection" json:"agent_origin_detection"`
+	AgentExpirySeconds            int  `toml:"agent_expiry_seconds" json:"agent_expiry_seconds"`
 
 	AgentStatsEnable bool `toml:"agent_stats_enable" json:"agent_stats_enable"`
 	AgentStatsBuffer int  `toml:"agent_stats_buffer" json:"agent_stats_buffer"`
@@ -62,6 +63,8 @@ type Config struct {
 	EnableGohai              bool                `toml:"enable_gohai" json:"enable_gohai"`
 	EnableMetadataCollection bool                `toml:"enable_metadata_collection" json:"enable_metadata_collection"`
 	MetadataProviders        []MetadataProviders `toml:"metadata_providers" json:"metadata_providers"`
+	LogPayloads              bool                `toml:"log_payloads" json:"log_payloads"`
+	AggregatorStopTimeout    int                 `toml:"aggregator_stop_timeout" json:"aggregator_stop_timeout"`
 }
 
 // MetadataProviders helps unmarshalling `metadata_providers` config param
@@ -84,12 +87,15 @@ var (
 		AgentPacketBufferSize:         32,
 		AgentPacketBufferFlushTimeout: 100,
 		AgentQueueSize:                1024,
+		AgentExpirySeconds:            300,
+
 
 		ForwarderNumWorkers:        1,
 		ForwarderRetryQueueMaxSize: 30,
 
 		HostNameFqdn:                     true,
 		MetadataEndpointsMaxHostnameSize: 512,
+		AggregatorStopTimeout:            2,
 	}
 
 	HotReloadConfigItems = []string{"Performance.MaxProcs", "Performance.MaxMemory", "OOMAction", "MemQuotaQuery"}

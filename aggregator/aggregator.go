@@ -8,6 +8,8 @@ package aggregator
 import (
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -18,7 +20,7 @@ import (
 	"github.com/frankhang/doppler/version"
 
 	"github.com/frankhang/doppler/collector/check"
-	"github.com/frankhang/doppler/config"
+	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/serializer"
 	"github.com/frankhang/doppler/status/health"
@@ -376,7 +378,7 @@ func (agg *BufferedAggregator) GetSeriesAndSketches() (metrics.Series, metrics.S
 }
 
 func (agg *BufferedAggregator) pushSketches(start time.Time, sketches metrics.SketchSeriesList) {
-	log.Debugf("Flushing %d sketches to the forwarder", len(sketches))
+	logutil.BgLogger().Debug(fmt.Sprintf("Flushing %d sketches to the forwarder", len(sketches)))
 	err := agg.serializer.SendSketch(sketches)
 	state := stateOk
 	if err != nil {
@@ -390,7 +392,7 @@ func (agg *BufferedAggregator) pushSketches(start time.Time, sketches metrics.Sk
 }
 
 func (agg *BufferedAggregator) pushSeries(start time.Time, series metrics.Series) {
-	log.Debugf("Flushing %d series to the forwarder", len(series))
+	logutil.BgLogger().Debug(fmt.Sprintf("Flushing %d series to the forwarder", len(series)))
 	err := agg.serializer.SendSeries(series)
 	state := stateOk
 	if err != nil {
@@ -459,10 +461,10 @@ func (agg *BufferedAggregator) sendSeries(start time.Time, series metrics.Series
 	addFlushCount("Series", int64(len(series)))
 
 	// For debug purposes print out all metrics/tag combinations
-	if config.Datadog.GetBool("log_payloads") {
-		log.Debug("Flushing the following metrics:")
+	if Cfg.LogPayloads {
+		logutil.BgLogger().Info("Flushing the following metrics:")
 		for _, serie := range series {
-			log.Debugf("%s", serie)
+			logutil.BgLogger().Info(serie.String())
 		}
 	}
 
@@ -503,10 +505,10 @@ func (agg *BufferedAggregator) GetServiceChecks() metrics.ServiceChecks {
 }
 
 func (agg *BufferedAggregator) sendServiceChecks(start time.Time, serviceChecks metrics.ServiceChecks) {
-	log.Debugf("Flushing %d service checks to the forwarder", len(serviceChecks))
+	logutil.BgLogger().Debug(fmt.Sprintf("Flushing %d service checks to the forwarder", len(serviceChecks)))
 	state := stateOk
 	if err := agg.serializer.SendServiceChecks(serviceChecks); err != nil {
-		log.Warnf("Error flushing service checks: %v", err)
+		logutil.BgLogger().Warn("Error flushing service checks", zap.Error(err))
 		aggregatorServiceCheckFlushErrors.Add(1)
 		state = stateError
 	}
@@ -527,11 +529,12 @@ func (agg *BufferedAggregator) flushServiceChecks(start time.Time, waitForSerial
 	addFlushCount("ServiceChecks", int64(len(serviceChecks)))
 
 	// For debug purposes print out all serviceCheck/tag combinations
-	if config.Datadog.GetBool("log_payloads") {
-		log.Debug("Flushing the following Service Checks:")
+	if Cfg.LogPayloads {
+		logutil.BgLogger().Info("Flushing the following Service Checks:")
 		for _, sc := range serviceChecks {
-			log.Debugf("%s", sc)
+			logutil.BgLogger().Info(sc.String())
 		}
+
 	}
 
 	if waitForSerializer {
@@ -551,11 +554,11 @@ func (agg *BufferedAggregator) GetEvents() metrics.Events {
 }
 
 func (agg *BufferedAggregator) sendEvents(start time.Time, events metrics.Events) {
-	log.Debugf("Flushing %d events to the forwarder", len(events))
+	logutil.BgLogger().Debug(fmt.Sprintf("Flushing %d events to the forwarder", len(events)))
 	err := agg.serializer.SendEvents(events)
 	state := stateOk
 	if err != nil {
-		log.Warnf("Error flushing events: %v", err)
+		logutil.BgLogger().Warn("Error flushing events", zap.Error(err))
 		aggregatorEventsFlushErrors.Add(1)
 		state = stateError
 	}
@@ -574,10 +577,10 @@ func (agg *BufferedAggregator) flushEvents(start time.Time, waitForSerializer bo
 	addFlushCount("Events", int64(len(events)))
 
 	// For debug purposes print out all Event/tag combinations
-	if config.Datadog.GetBool("log_payloads") {
-		log.Debug("Flushing the following Events:")
+	if Cfg.LogPayloads {
+		logutil.BgLogger().Info("Flushing the following Events:")
 		for _, event := range events {
-			log.Debugf("%s", event)
+			logutil.BgLogger().Info(event.String())
 		}
 	}
 
@@ -599,7 +602,7 @@ func (agg *BufferedAggregator) flush(start time.Time, waitForSerializer bool) {
 func (agg *BufferedAggregator) Stop() {
 	agg.stopChan <- struct{}{}
 
-	timeout := config.Datadog.GetDuration("aggregator_stop_timeout") * time.Second
+	timeout := time.Duration(Cfg.AggregatorStopTimeout) * time.Second
 	if timeout > 0 {
 		done := make(chan struct{})
 		go func() {
@@ -610,7 +613,7 @@ func (agg *BufferedAggregator) Stop() {
 		select {
 		case <-done:
 		case <-time.After(timeout):
-			log.Errorf("flushing data after stop timed out")
+			logutil.BgLogger().Error("flushing data after stop timed out")
 		}
 	}
 
@@ -624,7 +627,7 @@ func (agg *BufferedAggregator) run() {
 	for {
 		select {
 		case <-agg.stopChan:
-			log.Info("Stopping aggregator")
+			logutil.BgLogger().Info("Stopping aggregator")
 			return
 		case <-agg.health.C:
 		case <-agg.TickerChan:
