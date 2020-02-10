@@ -8,6 +8,8 @@ package system
 
 import (
 	"errors"
+	"fmt"
+	"github.com/frankhang/util/logutil"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -15,7 +17,6 @@ import (
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/collector/check"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
 )
 
 const fileHandlesCheckName = "file_handle"
@@ -30,14 +31,14 @@ type fhCheck struct {
 func (c *fhCheck) getFileNrValues(fn string) ([]string, error) {
 	dat, err := ioutil.ReadFile(fn)
 	if err != nil {
-		log.Error(err.Error())
+		logutil.BgLogger().Error(err.Error())
 		return nil, err
 	}
 
 	s := strings.Split(strings.TrimRight(string(dat), "\n"), "\t")
 
 	if len(s) != 3 {
-		log.Errorf("Unexpected number of arguments in file-nr, expected %d, got %d", 3, len(s))
+		logutil.BgLogger().Error(fmt.Sprintf("Unexpected number of arguments in file-nr, expected %d, got %d", 3, len(s)))
 		err := errors.New("Unexpected number of args in file-nr")
 		return nil, err
 	}
@@ -59,19 +60,19 @@ func (c *fhCheck) Run() error {
 
 	allocatedFh, err := strconv.ParseFloat(fileNrValues[0], 64)
 	if err != nil {
-		log.Errorf("Could not gather \"allocated file handle\" value")
+		logutil.BgLogger().Error("Could not gather \"allocated file handle\" value")
 		return err
 	}
 
 	allocatedUnusedFh, err := strconv.ParseFloat(fileNrValues[1], 64)
 	if err != nil {
-		log.Errorf("Could not gather \"allocated unused file handle\" value")
+		logutil.BgLogger().Error("Could not gather \"allocated unused file handle\" value")
 		return err
 	}
 
 	maxFh, err := strconv.ParseFloat(fileNrValues[2], 64)
 	if err != nil {
-		log.Errorf("Could not parse \"maximum file handle\" value")
+		logutil.BgLogger().Error("Could not parse \"maximum file handle\" value")
 		return err
 	}
 

@@ -9,6 +9,7 @@ package containers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 
@@ -30,7 +31,7 @@ import (
 	cutil "github.com/frankhang/doppler/util/containerd"
 	ddContainers "github.com/frankhang/doppler/util/containers"
 	cmetrics "github.com/frankhang/doppler/util/containers/metrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -173,14 +174,14 @@ func computeEvents(events []containerdEvent, sender aggregator.Sender, fil *ddCo
 func computeMetrics(sender aggregator.Sender, cu cutil.ContainerdItf, fil *ddContainers.Filter) {
 	containers, err := cu.Containers()
 	if err != nil {
-		log.Errorf(err.Error())
+		logutil.BgLogger().Error(err.Error())
 		return
 	}
 
 	for _, ctn := range containers {
 		info, err := cu.Info(ctn)
 		if err != nil {
-			log.Errorf("Could not retrieve the metadata of the container: %s", ctn.ID()[:12])
+			logutil.BgLogger().Error(fmt.Sprintf("Could not retrieve the metadata of the container: %s", ctn.ID()[:12]), zap.Error(err))
 			continue
 		}
 		if isExcluded(info, fil) {
@@ -189,12 +190,12 @@ func computeMetrics(sender aggregator.Sender, cu cutil.ContainerdItf, fil *ddCon
 
 		tags, err := collectTags(info)
 		if err != nil {
-			log.Errorf("Could not collect tags for container %s: %s", ctn.ID()[:12], err)
+			logutil.BgLogger().Error(fmt.Sprintf("Could not collect tags for container %s", ctn.ID()[:12]), zap.Error(err))
 		}
 		// Tagger tags
 		taggerTags, err := tagger.Tag(ddContainers.ContainerEntityPrefix+ctn.ID(), collectors.HighCardinality)
 		if err != nil {
-			log.Errorf(err.Error())
+			logutil.BgLogger().Error(err.Error())
 			continue
 		}
 		tags = append(tags, taggerTags...)
@@ -207,7 +208,7 @@ func computeMetrics(sender aggregator.Sender, cu cutil.ContainerdItf, fil *ddCon
 
 		metrics, err := convertTasktoMetrics(metricTask)
 		if err != nil {
-			log.Errorf("Could not process the metrics from %s: %v", ctn.ID(), err.Error())
+			logutil.BgLogger().Error(fmt.Sprintf("Could not process the metrics from %s", ctn.ID()), zap.Error(err))
 			continue
 		}
 
@@ -227,7 +228,7 @@ func computeMetrics(sender aggregator.Sender, cu cutil.ContainerdItf, fil *ddCon
 
 		size, err := cu.ImageSize(ctn)
 		if err != nil {
-			log.Errorf("Could not retrieve the size of the image of %s: %v", ctn.ID(), err.Error())
+			logutil.BgLogger().Error(fmt.Sprintf("Could not retrieve the size of the image of %s", ctn.ID()), zap.Error(err))
 			continue
 		}
 		sender.Gauge("containerd.image.size", float64(size), "", tags)
@@ -235,7 +236,7 @@ func computeMetrics(sender aggregator.Sender, cu cutil.ContainerdItf, fil *ddCon
 		// Collect open file descriptor counts
 		processes, err := cu.TaskPids(ctn)
 		if err != nil {
-			log.Tracef("Could not retrieve pids from task %s: %s", ctn.ID()[:12], errTask.Error())
+			logutil.BgLogger().Debug(fmt.Sprintf("Could not retrieve pids from task %s", ctn.ID()[:12]), zap.Error(errTask))
 			continue
 		}
 		fileDescCount := 0
@@ -243,7 +244,7 @@ func computeMetrics(sender aggregator.Sender, cu cutil.ContainerdItf, fil *ddCon
 			pid := p.Pid
 			fdCount, err := cmetrics.GetFileDescriptorLen(int(pid))
 			if err != nil {
-				log.Warnf("Failed to get file desc length for pid %d, container %s: %s", pid, ctn.ID()[:12], err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Failed to get file desc length for pid %d, container %s", pid, ctn.ID()[:12]), zap.Error(err))
 				continue
 			}
 			fileDescCount += fdCount

@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/util/common"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // PayloadVersion defines the current payload version sent to a secret backend
@@ -60,7 +60,7 @@ func execCommand(inputPayload string) ([]byte, error) {
 
 	err := cmd.Run()
 	if err != nil {
-		log.Errorf("secret_backend_command stderr: %s", stderr.buf.String())
+		logutil.BgLogger().Error(fmt.Sprintf("secret_backend_command stderr: %s", stderr.buf.String()))
 
 		if ctx.Err() == context.DeadlineExceeded {
 			return nil, fmt.Errorf("error while running '%s': command timeout", secretBackendCommand)

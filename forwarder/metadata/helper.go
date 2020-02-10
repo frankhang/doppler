@@ -2,11 +2,13 @@ package metadata
 
 import (
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"runtime"
 	"time"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+
 )
 
 const (
@@ -64,7 +66,7 @@ func addCollector(name string, intl time.Duration, sch *Scheduler) error {
 	if err := sch.AddCollector(name, intl); err != nil {
 		return fmt.Errorf("Unable to add '%s' metadata provider: %v", name, err)
 	}
-	log.Infof("Scheduled metadata provider '%v' to run every %v", name, intl)
+	logutil.BgLogger().Info(fmt.Sprintf("Scheduled metadata provider '%v' to run every %v", name, intl))
 	return nil
 }
 
@@ -76,10 +78,10 @@ func addDefaultCollector(name string, sch *Scheduler) error {
 		}
 		err := sch.AddCollector(name, cInfo.interval)
 		if err != nil && cInfo.ignoreError == false {
-			log.Warnf("Could not add metadata provider for %s: %v", name, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Could not add metadata provider for %s", name), zap.Error(err))
 			return err
 		}
-		log.Debugf("Scheduled default metadata provider '%v' to run every %v", name, cInfo.interval)
+		logutil.BgLogger().Debug(fmt.Sprintf("Scheduled default metadata provider '%v' to run every %v", name, cInfo.interval))
 		return nil
 	}
 	return fmt.Errorf("Unknown default metadata provider '%s'", name)
@@ -91,7 +93,7 @@ func addDefaultCollector(name string, sch *Scheduler) error {
 // configuration.
 func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) error {
 	if !config.Datadog.GetBool("enable_metadata_collection") {
-		log.Warnf("Metadata collection disabled, only do that if another agent/dogstatsd is running on this host")
+		logutil.BgLogger().Warn("Metadata collection disabled, only do that if another agent/dogstatsd is running on this host")
 		return nil
 	}
 
@@ -99,22 +101,22 @@ func SetupMetadataCollection(sch *Scheduler, additionalCollectors []string) erro
 	var C []config.MetadataProviders
 	err := config.Datadog.UnmarshalKey("metadata_providers", &C)
 	if err == nil {
-		log.Debugf("Adding configured providers to the metadata collector")
+		logutil.BgLogger().Debug("Adding configured providers to the metadata collector")
 		for _, c := range C {
 			if c.Interval == 0 {
-				log.Infof("Interval of metadata provider '%v' set to 0, skipping provider", c.Name)
+				logutil.BgLogger().Info(fmt.Sprintf("Interval of metadata provider '%v' set to 0, skipping provider", c.Name))
 				continue
 			}
 
 			intl := c.Interval * time.Second
 			if err := addCollector(c.Name, intl, sch); err != nil {
-				log.Error(err.Error())
+				logutil.BgLogger().Error(err.Error())
 			} else {
 				collectorAdded[c.Name] = nil
 			}
 		}
 	} else {
-		log.Errorf("Unable to parse metadata_providers config: %v", err)
+		logutil.BgLogger().Error("Unable to parse metadata_providers config", zap.Error(err))
 	}
 
 	// Adding default collectors if they were not listed in the configuration

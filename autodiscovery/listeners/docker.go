@@ -9,6 +9,8 @@ package listeners
 
 import (
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"io"
 	"sort"
 	"strings"
@@ -92,7 +94,7 @@ func (l *DockerListener) Listen(newSvc chan<- Service, delSvc chan<- Service) {
 
 	messages, errs, err := l.dockerUtil.SubscribeToContainerEvents("DockerListener")
 	if err != nil {
-		log.Errorf("can't listen to docker events: %v", err)
+		logutil.BgLogger().Error("can't listen to docker events", zap.Error(err))
 		signals.ErrorStopper <- true
 		return
 	}
@@ -109,7 +111,7 @@ func (l *DockerListener) Listen(newSvc chan<- Service, delSvc chan<- Service) {
 				l.processEvent(msg)
 			case err := <-errs:
 				if err != nil && err != io.EOF {
-					log.Errorf("docker listener error: %v", err)
+					logutil.BgLogger().Error("docker listener error", zap.Error(err))
 					signals.ErrorStopper <- true
 				}
 				return
@@ -132,7 +134,7 @@ func (l *DockerListener) init() {
 
 	containers, err := l.dockerUtil.RawContainerList(types.ContainerListOptions{})
 	if err != nil {
-		log.Errorf("Couldn't retrieve container list - %s", err)
+		logutil.BgLogger().Error("Couldn't retrieve container list", zap.Error(err))
 	}
 
 	for _, co := range containers {
@@ -190,7 +192,7 @@ func (l *DockerListener) processEvent(e *docker.ContainerEvent) {
 			})
 		default:
 			// FIXME sometimes the agent's container's events are picked up twice at startup
-			log.Debugf("Expected die for container %s got %s: skipping event", cID[:12], e.Action)
+			logutil.BgLogger().Debug(fmt.Sprintf("Expected die for container %s got %s: skipping event", cID[:12], e.Action))
 			return
 		}
 	} else {
@@ -211,15 +213,15 @@ func (l *DockerListener) createService(cID string) {
 	var isKube bool
 	cInspect, err := l.dockerUtil.Inspect(cID, false)
 	if err != nil {
-		log.Errorf("Failed to inspect container %s - %s", cID[:12], err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to inspect container %s", cID[:12]), zap.Error(err))
 	} else {
 		image, err := l.dockerUtil.ResolveImageName(cInspect.Image)
 		if err != nil {
-			log.Warnf("error while resolving image name: %s", err)
+			logutil.BgLogger().Warn("error while resolving image name: %s", zap.Error(err))
 			image = ""
 		}
 		if l.filter.IsExcluded(cInspect.Name, image) {
-			log.Debugf("container %s filtered out: name %q image %q", cID[:12], cInspect.Name, image)
+			logutil.BgLogger().Debug(fmt.Sprintf("container %s filtered out: name %q image %q", cID[:12], cInspect.Name, image))
 			return
 		}
 		if findKubernetesInLabels(cInspect.Config.Labels) {
@@ -229,7 +231,7 @@ func (l *DockerListener) createService(cID string) {
 
 	checkNames, err := getCheckNamesFromLabels(cInspect.Config.Labels)
 	if err != nil {
-		log.Errorf("Error getting check names from docker labels on container %s: %v", cID, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Error getting check names from docker labels on container %s: %v", cID), zap.Error(err))
 	}
 
 	if isKube {
@@ -249,23 +251,23 @@ func (l *DockerListener) createService(cID string) {
 
 	_, err = svc.GetADIdentifiers()
 	if err != nil {
-		log.Errorf("Failed to inspect container %s - %s", cID[:12], err)
+		logutil.BgLogger().Errorf("Failed to inspect container", zap.String("id", cID[:12]), zap.Error(err))
 	}
 	_, err = svc.GetHosts()
 	if err != nil {
-		log.Errorf("Failed to inspect container %s - %s", cID[:12], err)
+		logutil.BgLogger().Error("Failed to inspect container", zap.String("id", cID[:12]), zap.Error(err))
 	}
 	_, err = svc.GetPorts()
 	if err != nil {
-		log.Errorf("Failed to inspect container %s - %s", cID[:12], err)
+		logutil.BgLogger().Errorf("Failed to inspect container", zap.String("id", cID[:12]), zap.Error(err))
 	}
 	_, err = svc.GetPid()
 	if err != nil {
-		log.Errorf("Failed to inspect container %s - %s", cID[:12], err)
+		logutil.BgLogger().Errorf("Failed to inspect container", zap.String("id", cID[:12]), zap.Error(err))
 	}
 	_, err = svc.GetTags()
 	if err != nil {
-		log.Errorf("Failed to inspect container %s - %s", cID[:12], err)
+		logutil.BgLogger().Errorf("Failed to inspect container", zap.String("id", cID[:12]), zap.Error(err))
 	}
 
 	l.m.Lock()
@@ -291,7 +293,7 @@ func (l *DockerListener) removeService(cID string) {
 			l.delService <- svc
 		})
 	} else {
-		log.Debugf("Container %s not found, not removing", cID[:12])
+		logutil.BgLogger().Debug("Container not found, not removing", zap.String("id", cID[:12]))
 	}
 }
 
@@ -309,7 +311,7 @@ func (l *DockerListener) removeService(cID string) {
 func (l *DockerListener) getConfigIDFromPs(co types.Container) []string {
 	image, err := l.dockerUtil.ResolveImageName(co.Image)
 	if err != nil {
-		log.Warnf("error while resolving image name: %s", err)
+		logutil.BgLogger().Warn("error while resolving image name", zap.Error(err))
 	}
 	entity := docker.ContainerIDToEntityName(co.ID)
 	return ComputeContainerServiceIDs(entity, image, co.Labels)
@@ -366,12 +368,12 @@ func (s *DockerService) GetTaggerEntity() string {
 func (l *DockerListener) isExcluded(co types.Container) bool {
 	image, err := l.dockerUtil.ResolveImageName(co.Image)
 	if err != nil {
-		log.Warnf("error while resolving image name: %s", err)
+		logutil.BgLogger().Warn("error while resolving image name", zap.Error(err))
 		image = ""
 	}
 	for _, name := range co.Names {
 		if l.filter.IsExcluded(name, image) {
-			log.Debugf("container %s filtered out: name %q image %q", co.ID[:12], name, image)
+			logutil.BgLogger().Debug(fmt.Sprintf("container %s filtered out: name %q image %q", co.ID[:12], name, image))
 			return true
 		}
 	}

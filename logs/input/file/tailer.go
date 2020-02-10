@@ -8,6 +8,8 @@ package file
 import (
 	"context"
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"io"
 	"os"
 	"path/filepath"
@@ -168,7 +170,7 @@ func (t *Tailer) readForever() {
 			if err != nil && err != io.EOF {
 				// an unexpected error occurred, stop the tailor
 				t.source.Status.Error(err)
-				log.Error("Unexpected error occurred while reading file: ", err)
+				logutil.BgLogger().Error("Unexpected error occurred while reading file", zap.Error(err))
 				return
 			}
 			if n == 0 {

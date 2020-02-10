@@ -21,7 +21,7 @@ import (
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -116,13 +116,13 @@ func (l *KubeServiceListener) updated(old, obj interface{}) {
 	// Cast the updated object or return on failure
 	castedObj, ok := obj.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %v", obj))
 		return
 	}
 	// Cast the old object, consider it an add on cast failure
 	castedOld, ok := old.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %v", old)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %v", old))
 		l.createService(castedObj, false)
 		return
 	}

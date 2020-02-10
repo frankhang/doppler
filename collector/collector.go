@@ -7,6 +7,7 @@ package collector
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"sync/atomic"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/collector/runner"
 	"github.com/frankhang/doppler/collector/scheduler"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -54,17 +55,17 @@ func NewCollector(paths ...string) *Collector {
 
 	// print the Python info if the interpreter was embedded
 	if pyVer != "" {
-		log.Infof("Embedding Python %s", pyVer)
-		log.Debugf("Python Home: %s", pyHome)
-		log.Debugf("Python path: %s", pyPath)
+		logutil.BgLogger().Info(fmt.Sprintf("Embedding Python %s", pyVer))
+		logutil.BgLogger().Debug(fmt.Sprintf("Python Home: %s", pyHome))
+		logutil.BgLogger().Debug(fmt.Sprintf("Python path: %s", pyPath))
 	}
 
 	// Prepare python environment if necessary
 	if err := pyPrepareEnv(); err != nil {
-		log.Errorf("Unable to perform additional configuration of the python environment: %v", err)
+		logutil.BgLogger().Error("Unable to perform additional configuration of the python environment", zap.Error(err))
 	}
 
-	log.Debug("Collector up and running!")
+	logutil.BgLogger().Debug("Collector up and running!")
 	return c
 }
 
@@ -112,7 +113,7 @@ func (c *Collector) RunCheck(ch check.Check) (check.ID, error) {
 		// Adding a temporary runner for long running check in case the
 		// number of runners is lower than the number of long running
 		// checks.
-		log.Infof("Adding an extra runner for the '%s' long running check", ch)
+		logutil.BgLogger().Info(fmt.Sprintf("Adding an extra runner for the '%s' long running check", ch))
 		c.runner.AddWorker()
 	} else {
 		c.runner.UpdateNumWorkers(c.checkInstances)

@@ -9,6 +9,7 @@ package apiserver
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"reflect"
 	"time"
 
@@ -65,7 +66,7 @@ func NewAutoscalersController(client kubernetes.Interface, eventRecorder record.
 	datadogHPAConfigMap := custommetrics.GetConfigmapName()
 	h.store, err = custommetrics.NewConfigMapStore(client, common.GetResourcesNamespace(), datadogHPAConfigMap)
 	if err != nil {
-		log.Errorf("Could not instantiate the local store for the External Metrics %v", err)
+		logutil.BgLogger().Error(fmt.Sprintf("Could not instantiate the local store for the External Metrics %v", err))
 		return nil, err
 	}
 	return h, nil
@@ -74,7 +75,7 @@ func NewAutoscalersController(client kubernetes.Interface, eventRecorder record.
 func (h *AutoscalersController) enqueueWPA(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		log.Debugf("Couldn't get key for object %v: %v", obj, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Couldn't get key for object %v: %v", obj, err))
 		return
 	}
 	h.WPAqueue.AddRateLimited(key)
@@ -83,7 +84,7 @@ func (h *AutoscalersController) enqueueWPA(obj interface{}) {
 func (h *AutoscalersController) enqueue(obj interface{}) {
 	key, err := cache.MetaNamespaceKeyFunc(obj)
 	if err != nil {
-		log.Debugf("Couldn't get key for object %v: %v", obj, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Couldn't get key for object %v: %v", obj, err))
 		return
 	}
 	h.HPAqueue.AddRateLimited(key)
@@ -99,37 +100,37 @@ func (h *AutoscalersController) RunControllerLoop(stopCh <-chan struct{}) {
 func (h *AutoscalersController) gc() {
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	log.Infof("Starting garbage collection process on the Autoscalers")
+	logutil.BgLogger().Info("Starting garbage collection process on the Autoscalers")
 	wpaList := []*v1alpha1.WatermarkPodAutoscaler{}
 	var err error
 
 	if h.wpaEnabled {
 		wpaList, err = h.wpaLister.WatermarkPodAutoscalers(metav1.NamespaceAll).List(labels.Everything())
 		if err != nil {
-			log.Errorf("Error listing the WatermarkPodAutoscalers %v", err)
+			logutil.BgLogger().Error("Error listing the WatermarkPodAutoscalers", zap.Error(err))
 			return
 		}
 	}
 
 	hpaList, err := h.autoscalersLister.HorizontalPodAutoscalers(metav1.NamespaceAll).List(labels.Everything())
 	if err != nil {
-		log.Errorf("Could not list hpas: %v", err)
+		logutil.BgLogger().Error("Could not list hpas", zap.Error(err))
 		return
 	}
 
 	emList, err := h.store.ListAllExternalMetricValues()
 	if err != nil {
-		log.Errorf("Could not list external metrics from store: %v", err)
+		logutil.BgLogger().Error("Could not list external metrics from store", zap.Error(err))
 		return
 	}
 	toDelete := &custommetrics.MetricsBundle{}
 	toDelete.External = autoscalers.DiffExternalMetrics(hpaList, wpaList, emList.External)
 	if err = h.store.DeleteExternalMetricValues(toDelete); err != nil {
-		log.Errorf("Could not delete the external metrics in the store: %v", err)
+		logutil.BgLogger().Error("Could not delete the external metrics in the store", zap.Error(err))
 		return
 	}
 	h.deleteFromLocalStore(toDelete.External)
-	log.Debugf("Done GC run. Deleted %d metrics", len(toDelete.External))
+	logutil.BgLogger().Debug(fmt.Sprintf("Done GC run. Deleted %d metrics", len(toDelete.External)))
 }
 
 // removeIgnoredAutoscaler is used in the gc to avoid considering the ignored Autoscalers
@@ -164,11 +165,11 @@ func (h *AutoscalersController) handleErr(err error, key interface{}) {
 	}
 
 	if h.HPAqueue.NumRequeues(key) < maxRetries {
-		log.Debugf("Error syncing the autoscaler %v, will rety for another %d times: %v", key, maxRetries-h.HPAqueue.NumRequeues(key), err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Error syncing the autoscaler %v, will rety for another %d times: %v", key, maxRetries-h.HPAqueue.NumRequeues(key), err))
 		h.HPAqueue.AddRateLimited(key)
 		return
 	}
-	log.Errorf("Too many errors trying to sync the autoscaler %v, dropping out of the HPAqueue: %v", key, err)
+	logutil.BgLogger().Error(fmt.Sprintf("Too many errors trying to sync the autoscaler %v, dropping out of the HPAqueue: %v", key, err))
 	h.HPAqueue.Forget(key)
 }
 

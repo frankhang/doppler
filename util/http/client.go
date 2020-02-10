@@ -8,6 +8,7 @@ package http
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"net"
 	"net/http"
 	"net/url"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
 )
 
 const (
@@ -75,7 +75,7 @@ func GetProxyTransportFunc(p *config.Proxy) func(*http.Request) (*url.URL, error
 		// check no_proxy list first
 		for _, host := range p.NoProxy {
 			if r.URL.Host == host {
-				log.Debugf("URL match no_proxy list item '%s': not using any proxy", host)
+				logutil.BgLogger().Debug(fmt.Sprintf("URL match no_proxy list item '%s': not using any proxy", host))
 				return nil, nil
 			}
 		}
@@ -87,14 +87,14 @@ func GetProxyTransportFunc(p *config.Proxy) func(*http.Request) (*url.URL, error
 		} else if r.URL.Scheme == "https" {
 			confProxy = p.HTTPS
 		} else {
-			log.Warnf("Proxy configuration do not support scheme '%s'", r.URL.Scheme)
+			logutil.BgLogger().Warn(fmt.Sprintf("Proxy configuration do not support scheme '%s'", r.URL.Scheme))
 		}
 
 		if confProxy != "" {
 			proxyURL, err := url.Parse(confProxy)
 			if err != nil {
 				err := fmt.Errorf("Could not parse the proxy URL for scheme %s from configuration: %s", r.URL.Scheme, err)
-				log.Error(err.Error())
+				logutil.BgLogger().Error(err.Error())
 				return nil, err
 			}
 			userInfo := ""
@@ -106,7 +106,7 @@ func GetProxyTransportFunc(p *config.Proxy) func(*http.Request) (*url.URL, error
 				}
 			}
 
-			log.Debugf("Using proxy %s://%s%s for URL '%s'", proxyURL.Scheme, userInfo, proxyURL.Host, SanitizeURL(r.URL.String()))
+			logutil.BgLogger().Debug(fmt.Sprintf("Using proxy %s://%s%s for URL '%s'", proxyURL.Scheme, userInfo, proxyURL.Host, SanitizeURL(r.URL.String())))
 			return proxyURL, nil
 		}
 

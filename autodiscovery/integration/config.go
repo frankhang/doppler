@@ -7,6 +7,7 @@ package integration
 
 import (
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"hash/fnv"
 	"sort"
 	"strconv"
@@ -96,7 +97,7 @@ func (c *Config) String() string {
 
 	buffer, err := yaml.Marshal(&rawConfig)
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 	}
 
 	return string(buffer)

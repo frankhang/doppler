@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"regexp"
 	"strings"
@@ -21,7 +22,7 @@ import (
 
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/containers/metrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var healthRe = regexp.MustCompile(`\(health: (\w+)\)`)
@@ -51,13 +52,13 @@ func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Con
 		}
 		cgroup, ok := cgByContainer[container.ID]
 		if !ok {
-			log.Debugf("No matching cgroups for container %s, skipping", container.ID[:12])
+			logutil.BgLogger().Debug(fmt.Sprintf("No matching cgroups for container %s, skipping", container.ID[:12]))
 			continue
 		}
 		container.SetCgroups(cgroup)
 		err = container.FillCgroupLimits()
 		if err != nil {
-			log.Debugf("Cannot get limits for container %s: %s, skipping", container.ID[:12], err)
+			logutil.BgLogger().Debug("Cannot get limits for container, skipping", zap.String("id", container.ID[:12]), zap.Error(err))
 			continue
 		}
 
@@ -70,13 +71,13 @@ func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Con
 			// the inspect should be in the cache already so this is not a problem
 			inspect, err := d.Inspect(container.ID, false)
 			if err != nil {
-				log.Debugf("Error inspecting container %s: %s", container.ID, err)
+				logutil.BgLogger().Debug("Error inspecting container", zap.String("id", container.ID), zap.Error(err))
 				continue
 			}
 			networkMode, err := GetContainerNetworkMode(container.ID)
-			log.Tracef("container %s network mode: %s", container.Name, networkMode)
+			logutil.BgLogger().Debug(fmt.Sprintf("container %s network mode: %s", container.Name, networkMode))
 			if err != nil {
-				log.Debugf("Failed to get network mode for container %s. Network info will be missing. Error: %s", container.ID, err)
+				logutil.BgLogger().Debug("Failed to get network mode for container. Network info will be missing", zap.String("id", container.ID), zap.Error(err))
 				continue
 			}
 			// in awsvpc, and host mode, we assume that those ports are listening to all ip addresses
@@ -92,13 +93,13 @@ func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Con
 			if networkMode == containers.AwsvpcNetworkMode {
 				ecsContainerMetadataUrl, err := d.getECSMetadataURL(container.ID)
 				if err != nil {
-					log.Debugf("Failed to get the ECS container metadata URI for container %s. Network info will be missing. Error: %s", container.ID, err)
+					logutil.BgLogger().Debug(fmt.Sprintf("Failed to get the ECS container metadata URI for container %s. Network info will be missing", container.ID), zap.Error(err))
 					continue
 				}
 
 				addresses, err := GetContainerNetworkAddresses(ecsContainerMetadataUrl)
 				if err != nil {
-					log.Errorf("Failed to get network addresses for container: %s. Network info will be missing. Error: %s", container.ID, err)
+					logutil.BgLogger().Error(fmt.Sprintf("Failed to get network addresses for container: %s. Network info will be missing", container.ID), zap.Error(err))
 					continue
 				}
 				container.AddressList = crossIPsWithPorts(addresses, exposedPorts)
@@ -106,7 +107,7 @@ func (d *DockerUtil) ListContainers(cfg *ContainerListConfig) ([]*containers.Con
 			} else if networkMode == containers.HostNetworkMode {
 				ips := GetDockerHostIPs()
 				if len(ips) == 0 {
-					log.Errorf("Failed to get host IPs. Container %s will be missing network info: %s", container.Name, err)
+					logutil.BgLogger().Error(fmt.Sprintf("Failed to get host IPs. Container %s will be missing network info", container.Name, zap.Error(err))
 					continue
 				}
 				ipAddr := []containers.NetworkAddress{}
@@ -134,7 +135,7 @@ func (d *DockerUtil) UpdateContainerMetrics(cList []*containers.Container) error
 
 		err := container.FillCgroupMetrics()
 		if err != nil {
-			log.Debugf("Cannot get metrics for container %s: %s", container.ID[:12], err)
+			logutil.BgLogger().Debug("Cannot get metrics for container", zap.String("id", container.ID[:12]), zap.Error(err))
 			continue
 		}
 
@@ -150,7 +151,7 @@ func (d *DockerUtil) UpdateContainerMetrics(cList []*containers.Container) error
 
 			err = container.FillNetworkMetrics(nwByIface)
 			if err != nil {
-				log.Debugf("Cannot get network stats for container %s: %s", container.ID, err)
+				logutil.BgLogger().Debug("Cannot get network stats for container", zap.String("id", container.ID), zap.Error(err))
 				continue
 			}
 		}
@@ -178,7 +179,7 @@ func (d *DockerUtil) dockerContainers(cfg *ContainerListConfig) ([]*containers.C
 				i, err := d.Inspect(c.ID, false)
 				if err != nil {
 					d.Unlock()
-					log.Debugf("Error inspecting container %s: %s", c.ID, err)
+					logutil.BgLogger().Debug("Error inspecting container", zap.String("id", c.ID), zap.Error(err))
 					continue
 				}
 				d.networkMappings[c.ID] = findDockerNetworks(c.ID, i.State.Pid, c)
@@ -188,7 +189,7 @@ func (d *DockerUtil) dockerContainers(cfg *ContainerListConfig) ([]*containers.C
 
 		image, err := d.ResolveImageName(c.Image)
 		if err != nil {
-			log.Warnf("Can't resolve image name %s: %s", c.Image, err)
+			logutil.BgLogger().Warn("Can't resolve image", zap.String("name", c.Image), zap.Error(err))
 		}
 
 		excluded := d.cfg.filter.IsExcluded(c.Names[0], image)
@@ -254,14 +255,14 @@ func (d *DockerUtil) parseContainerNetworkAddresses(cID string, ports []types.Po
 	addrList := []containers.NetworkAddress{}
 	tempAddrList := []containers.NetworkAddress{}
 	if netSettings == nil || len(netSettings.Networks) == 0 {
-		log.Debugf("No network settings available from docker")
+		logutil.BgLogger().Debug("No network settings available from docker")
 		return addrList
 	}
 	for _, port := range ports {
 		if isExposed(port) {
 			IP := net.ParseIP(port.IP)
 			if IP == nil {
-				log.Warnf("Unable to parse IP: %v for container: %s", port.IP, container)
+				logutil.BgLogger().Warn(fmt.Sprintf("Unable to parse IP: %v for container: %s", port.IP, container))
 				continue
 			}
 			addrList = append(addrList, containers.NetworkAddress{
@@ -279,12 +280,12 @@ func (d *DockerUtil) parseContainerNetworkAddresses(cID string, ports []types.Po
 	// Retieve IPs from network settings for the cached ports
 	for _, network := range netSettings.Networks {
 		if network.IPAddress == "" {
-			log.Debugf("No IP found for container %s in network %s", container, network.NetworkID)
+			logutil.BgLogger().Debug(fmt.Sprintf("No IP found for container %s in network %s", container, network.NetworkID))
 			continue
 		}
 		IP := net.ParseIP(network.IPAddress)
 		if IP == nil {
-			log.Warnf("Unable to parse IP: %v for container: %s", network.IPAddress, container)
+			logutil.BgLogger().Warn(fmt.Sprintf("Unable to parse IP: %v for container: %s", network.IPAddress, container))
 			continue
 		}
 		for _, addr := range tempAddrList {

@@ -7,11 +7,12 @@ package listener
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"sync"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/pipeline"
@@ -45,10 +46,10 @@ func NewTCPListener(pipelineProvider pipeline.Provider, source *config.LogSource
 
 // Start starts the listener to accepts new incoming connections.
 func (l *TCPListener) Start() {
-	log.Infof("Starting TCP forwarder on port %d, with read buffer size: %d", l.source.Config.Port, l.frameSize)
+	logutil.BgLogger().Info(fmt.Sprintf("Starting TCP forwarder on port %d, with read buffer size: %d", l.source.Config.Port, l.frameSize))
 	err := l.startListener()
 	if err != nil {
-		log.Errorf("Can't start TCP forwarder on port %d: %v", l.source.Config.Port, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Can't start TCP forwarder on port %d", l.source.Config.Port), zap.Error(err))
 		l.source.Status.Error(err)
 		return
 	}
@@ -58,7 +59,7 @@ func (l *TCPListener) Start() {
 
 // Stop stops the listener from accepting new connections and all the activer tailers.
 func (l *TCPListener) Stop() {
-	log.Infof("Stopping TCP forwarder on port %d", l.source.Config.Port)
+	logutil.BgLogger().Info(fmt.Sprintf("Stopping TCP forwarder on port %d", l.source.Config.Port))
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.stop <- struct{}{}
@@ -85,11 +86,11 @@ func (l *TCPListener) run() {
 				return
 			case err != nil:
 				// an error occurred, restart the listener.
-				log.Warnf("Can't listen on port %d, restarting a listener: %v", l.source.Config.Port, err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Can't listen on port %d, restarting a listener", l.source.Config.Port), zap.Error(err))
 				l.listener.Close()
 				err := l.startListener()
 				if err != nil {
-					log.Errorf("Can't restart listener on port %d: %v", l.source.Config.Port, err)
+					logutil.BgLogger().Error(fmt.Sprintf("Can't restart listener on port %d", l.source.Config.Port), zap.Error(err))
 					l.source.Status.Error(err)
 					return
 				}

@@ -21,7 +21,7 @@ import (
 	"github.com/frankhang/doppler/autodiscovery/providers/names"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -93,13 +93,13 @@ func (k *KubeServiceConfigProvider) invalidateIfChanged(old, obj interface{}) {
 	// nil pointers are safely handled by the casting logic.
 	castedObj, ok := obj.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %v", obj))
 		return
 	}
 	// Cast the old object, invalidate on casting error
 	castedOld, ok := old.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %v", old)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %v", old))
 		k.upToDate = false
 		return
 	}

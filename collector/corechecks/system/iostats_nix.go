@@ -10,6 +10,7 @@ package system
 import (
 	"bytes"
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"regexp"
 	"time"
@@ -17,7 +18,7 @@ import (
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/shirou/gopsutil/disk"
 )
 
@@ -76,7 +77,7 @@ func (c *IOCheck) nixIO() error {
 	//      https://www.kernel.org/doc/Documentation/iostats.txt
 	iomap, err := ioCounters()
 	if err != nil {
-		log.Errorf("system.IOCheck: could not retrieve io stats: %s", err)
+		logutil.BgLogger().Error("system.IOCheck: could not retrieve io stats", zap.Error(err))
 		return err
 	}
 
@@ -109,12 +110,12 @@ func (c *IOCheck) nixIO() error {
 		}
 		lastIOStats, ok := c.stats[device]
 		if !ok {
-			log.Debug("New device stats (possible hotplug) - full stats unavailable this iteration.")
+			logutil.BgLogger().Debug("New device stats (possible hotplug) - full stats unavailable this iteration.")
 			continue
 		}
 
 		if delta == 0 {
-			log.Debug("No delta to compute - skipping.")
+			logutil.BgLogger().Debug("No delta to compute - skipping.")
 			continue
 		}
 

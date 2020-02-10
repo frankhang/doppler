@@ -8,6 +8,8 @@
 package python
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"unsafe"
 
 	yaml "gopkg.in/yaml.v2"
@@ -18,8 +20,8 @@ import (
 	"github.com/frankhang/doppler/persistentcache"
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/doppler/util/kubernetes/clustername"
-	"github.com/frankhang/doppler/util/log"
 	"github.com/frankhang/doppler/version"
+	"github.com/frankhang/util/logutil"
 )
 
 /*
@@ -74,7 +76,7 @@ func Headers(yamlPayload **C.char) {
 
 	data, err := yaml.Marshal(h)
 	if err != nil {
-		log.Errorf("datadog_agent: could not Marshal headers: %s", err)
+		logutil.BgLogger().Error("datadog_agent: could not Marshal headers", zap.Error(err))
 		*yamlPayload = nil
 		return
 	}
@@ -95,7 +97,7 @@ func GetConfig(key *C.char, yamlPayload **C.char) {
 	value := config.Datadog.Get(goKey)
 	data, err := yaml.Marshal(value)
 	if err != nil {
-		log.Errorf("could not convert configuration value '%v' to YAML: %s", value, err)
+		logutil.BgLogger().Error(fmt.Sprintf("could not convert configuration value '%v' to YAML", value), zap.Error(err))
 		*yamlPayload = nil
 		return
 	}
@@ -111,21 +113,21 @@ func LogMessage(message *C.char, logLevel C.int) {
 
 	switch logLevel {
 	case 50: // CRITICAL
-		log.Critical(goMsg)
+		logutil.BgLogger().Error(goMsg)
 	case 40: // ERROR
-		log.Error(goMsg)
+		logutil.BgLogger().Error(goMsg)
 	case 30: // WARNING
-		log.Warn(goMsg)
+		logutil.BgLogger().Warn(goMsg)
 	case 20: // INFO
-		log.Info(goMsg)
+		logutil.BgLogger().Info(goMsg)
 	case 10: // DEBUG
-		log.Debug(goMsg)
+		logutil.BgLogger().Debug(goMsg)
 	// Custom log level defined in:
 	// https://github.com/DataDog/integrations-core/blob/master/datadog_checks_base/datadog_checks/base/log.py
 	case 7: // TRACE
-		log.Trace(goMsg)
+		logutil.BgLogger().Debug(goMsg)
 	default: // unknown log level
-		log.Info(goMsg)
+		logutil.BgLogger().Info(goMsg)
 	}
 
 	return
@@ -180,7 +182,7 @@ func ReadPersistentCache(key *C.char) *C.char {
 	keyName := C.GoString(key)
 	data, err := persistentcache.Read(keyName)
 	if err != nil {
-		log.Errorf("Failed to read cache %s: %s", keyName, err)
+		logutil.BgLogger().Errorf(fmt.Sprintf("Failed to read cache %s: %s", keyName), zap.Error(err))
 		return nil
 	}
 	return TrackedCString(data)

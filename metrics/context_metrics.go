@@ -7,10 +7,10 @@ package metrics
 
 import (
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"math"
 
 	"github.com/frankhang/doppler/aggregator/ckey"
-	"github.com/frankhang/doppler/util/log"
 )
 
 // ContextMetrics stores all the metrics by context key
@@ -46,7 +46,7 @@ func (m ContextMetrics) AddSample(contextKey ckey.ContextKey, sample *MetricSamp
 			m[contextKey] = NewCounter(interval)
 		default:
 			err := fmt.Errorf("unknown sample metric type: %v", sample.Mtype)
-			log.Error(err)
+			logutil.BgLogger().Error(err.Error())
 			return err
 		}
 	}

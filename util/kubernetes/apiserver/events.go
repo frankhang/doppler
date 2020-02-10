@@ -11,6 +11,7 @@ package apiserver
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 	"time"
 
@@ -18,7 +19,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/watch"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // RunEventCollection will return the most recent events emitted by the apiserver.
@@ -76,7 +77,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 					}
 					i, err := strconv.Atoi(resVer)
 					if err != nil {
-						log.Errorf("Error converting the stored Resource Version: %s", err.Error())
+						logutil.BgLogger().Error("Error converting the stored Resource Version", zap.Error(err))
 						continue
 					}
 					return diffEvents(i, evList), resVer, lastListTime, nil
@@ -89,7 +90,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 			ev, ok := rcv.Object.(*v1.Event)
 			if !ok {
 				// Could not cast the ev, might as well drop this event, and continue.
-				log.Errorf("The event object for %v cannot be safely converted, skipping it.", rcv.Object)
+				logutil.BgLogger().Error(fmt.Sprintf("The event object for %v cannot be safely converted, skipping it.", rcv.Object))
 				continue
 			}
 			evResVer, err := strconv.Atoi(ev.ResourceVersion)
@@ -101,7 +102,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 			added = append(added, ev)
 			i, err := strconv.Atoi(resVer)
 			if err != nil {
-				log.Errorf("Could not cast %s into an integer: %s", resVer, err.Error())
+				logutil.BgLogger().Error(fmt.Sprintf("Could not cast %s into an integer", resVer), zap.Error(err))
 				continue
 			}
 			if evResVer > i {
@@ -110,7 +111,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 			}
 
 		case <-timeoutParse.C:
-			log.Debugf("Collected %d events, will resume watching from resource version %s", len(added), resVer)
+			logutil.BgLogger().Debug(fmt.Sprintf("Collected %d events, will resume watching from resource version %s", len(added), resVer))
 			// No more events to read or the watch lasted more than `eventReadTimeout`.
 			// so return what was processed.
 			return added, resVer, lastListTime, nil
@@ -123,14 +124,14 @@ func diffEvents(latestStoredRV int, fullList []*v1.Event) []*v1.Event {
 	for _, ev := range fullList {
 		erv, err := strconv.Atoi(ev.ResourceVersion)
 		if err != nil {
-			log.Errorf("Could not parse resource version of an event, will skip: %s", err)
+			logutil.BgLogger().Error("Could not parse resource version of an event, will skip", zap.Error(err))
 			continue
 		}
 		if erv > latestStoredRV {
 			diffEvents = append(diffEvents, ev)
 		}
 	}
-	log.Debugf("Returning %d events that we have not collected", len(diffEvents))
+	logutil.BgLogger().Debug(fmt.Sprintf("Returning %d events that we have not collected", len(diffEvents)))
 	return diffEvents
 }
 
@@ -141,7 +142,7 @@ func (c *APIClient) listForEventResync(eventReadTimeout int64, eventCardinalityL
 		FieldSelector:  filter,
 	})
 	if err != nil {
-		log.Errorf("Error Listing events: %s", err.Error())
+		logutil.BgLogger().Error("Error Listing events", zap.Error(err))
 		return nil, resVer, lastListTime, err
 	}
 	for id := range evList.Items {

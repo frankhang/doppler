@@ -8,6 +8,8 @@
 package apiserver
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -25,7 +27,8 @@ import (
 	"github.com/frankhang/doppler/clusteragent/custommetrics"
 	"github.com/frankhang/doppler/errors"
 	"github.com/frankhang/doppler/util/kubernetes/autoscalers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+
 )
 
 const (
@@ -109,10 +112,10 @@ func (h *AutoscalersController) worker() {
 func (h *AutoscalersController) processNextHPA() bool {
 	key, quit := h.HPAqueue.Get()
 	if quit {
-		log.Infof("HPA controller HPAqueue is shutting down, stopping processing")
+		logutil.BgLogger().Info("HPA controller HPAqueue is shutting down, stopping processing")
 		return false
 	}
-	log.Tracef("Processing %s", key)
+	logutil.BgLogger().Debug(fmt.Sprintf("Processing %s", key))
 	defer h.HPAqueue.Done(key)
 
 	err := h.syncHPA(key)
@@ -131,7 +134,7 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key.(string))
 	if err != nil {
-		log.Errorf("Could not split the key: %v", err)
+		logutil.BgLogger().Error("Could not split the key", zap.Error(err))
 		return err
 	}
 
@@ -139,12 +142,12 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 	switch {
 	case errors.IsNotFound(err):
 		// The object was deleted before we processed the add/update handle. Local store does not have the Ref data anymore. The GC will clean up the Global Store.
-		log.Infof("HorizontalPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key)
+		logutil.BgLogger().Info(fmt.Sprintf("HorizontalPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key))
 	case err != nil:
-		log.Errorf("Unable to retrieve Horizontal Pod Autoscaler %v from store: %v", key, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Unable to retrieve Horizontal Pod Autoscaler %v from store: %v", key, err))
 	default:
 		if hpaCached == nil {
-			log.Errorf("Could not parse empty hpa %s/%s from local store", ns, name)
+			logutil.BgLogger().Error(fmt.Sprintf("Could not parse empty hpa %s/%s from local store", ns, name))
 			return ErrIsEmpty
 		}
 		emList := autoscalers.InspectHPA(hpaCached)
@@ -158,7 +161,7 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 			h.toStore.data[metric] = value
 		}
 		h.toStore.m.Unlock()
-		log.Tracef("Local batch cache of Ref is %v", h.toStore.data)
+		logutil.BgLogger().Trace(fmt.Sprintf("Local batch cache of Ref is %v", h.toStore.data))
 	}
 	return err
 }
@@ -166,10 +169,10 @@ func (h *AutoscalersController) syncHPA(key interface{}) error {
 func (h *AutoscalersController) addAutoscaler(obj interface{}) {
 	newAutoscaler, ok := obj.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		log.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an HorizontalPodAutoscaler type, got: %v", obj))
 		return
 	}
-	log.Debugf("Adding autoscaler %s/%s", newAutoscaler.Namespace, newAutoscaler.Name)
+	logutil.BgLogger().Debug(fmt.Sprintf("Adding autoscaler %s/%s", newAutoscaler.Namespace, newAutoscaler.Name))
 	h.EventRecorder.Event(newAutoscaler, corev1.EventTypeNormal, autoscalerNowHandleMsgEvent, "")
 	h.enqueue(newAutoscaler)
 }
@@ -181,24 +184,24 @@ func (h *AutoscalersController) addAutoscaler(obj interface{}) {
 func (h *AutoscalersController) updateAutoscaler(old, obj interface{}) {
 	newAutoscaler, ok := obj.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		log.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an HorizontalPodAutoscaler type, got: %v", obj))
 		return
 	}
 	oldAutoscaler, ok := old.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		log.Errorf("Expected an HorizontalPodAutoscaler type, got: %v", old)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an HorizontalPodAutoscaler type, got: %v", old))
 		h.enqueue(newAutoscaler) // We still want to enqueue the newAutoscaler to get the new change
 		return
 	}
 
 	if !autoscalers.AutoscalerMetricsUpdate(newAutoscaler, oldAutoscaler) {
-		log.Tracef("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name)
+		logutil.BgLogger().Trace(fmt.Sprintf("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name))
 		return
 	}
 	// Need to delete the old object from the local cache. If the labels have changed, the syncAutoscaler would not override the old key.
 	toDelete := autoscalers.InspectHPA(oldAutoscaler)
 	h.deleteFromLocalStore(toDelete)
-	log.Tracef("Processing update event for autoscaler %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations)
+	logutil.BgLogger().Trace(fmt.Sprintf("Processing update event for autoscaler %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations))
 	h.enqueue(newAutoscaler)
 }
 
@@ -214,7 +217,7 @@ func (h *AutoscalersController) deleteAutoscaler(obj interface{}) {
 	if ok {
 		toDelete.External = autoscalers.InspectHPA(deletedHPA)
 		h.deleteFromLocalStore(toDelete.External)
-		log.Debugf("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name))
 		if !h.le.IsLeader() {
 			return
 		}
@@ -227,19 +230,19 @@ func (h *AutoscalersController) deleteAutoscaler(obj interface{}) {
 
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if !ok {
-		log.Errorf("Could not get object from tombstone %#v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Could not get object from tombstone %#v", obj))
 		return
 	}
 
 	deletedHPA, ok = tombstone.Obj.(*autoscalingv2.HorizontalPodAutoscaler)
 	if !ok {
-		log.Errorf("Tombstone contained object that is not an Autoscaler: %#v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Tombstone contained object that is not an Autoscaler: %#v", obj))
 		return
 	}
 
-	log.Debugf("Deleting Metrics from Ref %s/%s", deletedHPA.Namespace, deletedHPA.Name)
+	logutil.BgLogger().Debug(fmt.Sprintf("Deleting Metrics from Ref %s/%s", deletedHPA.Namespace, deletedHPA.Name))
 	toDelete.External = autoscalers.InspectHPA(deletedHPA)
-	log.Debugf("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name)
+	logutil.BgLogger().Debug(fmt.Sprintf("Deleting %s/%s from the local cache", deletedHPA.Namespace, deletedHPA.Name))
 	h.deleteFromLocalStore(toDelete.External)
 	if err := h.store.DeleteExternalMetricValues(toDelete); err != nil {
 		h.enqueue(deletedHPA)

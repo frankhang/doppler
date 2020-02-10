@@ -7,9 +7,10 @@ package listeners
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // ID is the representation of the unique ID of a Service
@@ -56,11 +57,11 @@ var ServiceListenerFactories = make(map[string]ServiceListenerFactory)
 // Register registers a service listener factory
 func Register(name string, factory ServiceListenerFactory) {
 	if factory == nil {
-		log.Warnf("Service listener factory %s does not exist.", name)
+		logutil.BgLogger().Warn(fmt.Sprintf("Service listener factory %s does not exist.", name))
 	}
 	_, registered := ServiceListenerFactories[name]
 	if registered {
-		log.Errorf("Service listener factory %s already registered. Ignoring.", name)
+		logutil.BgLogger().Error(fmt.Sprintf("Service listener factory %s already registered. Ignoring.", name))
 	}
 	ServiceListenerFactories[name] = factory
 }

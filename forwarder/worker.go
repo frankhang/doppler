@@ -8,11 +8,10 @@ package forwarder
 import (
 	"context"
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"net/http"
 	"net/http/httptrace"
 	"time"
-
-	"github.com/frankhang/doppler/util/log"
 
 	"github.com/frankhang/doppler/config"
 	httputils "github.com/frankhang/doppler/util/http"
@@ -68,7 +67,7 @@ func (w *Worker) Stop(purgeHighPrio bool) {
 		for {
 			select {
 			case t := <-w.HighPrio:
-				log.Debugf("Flushing one new transaction before stopping Worker")
+				logutil.BgLogger().Debug("Flushing one new transaction before stopping Worker")
 				w.callProcess(t)
 			default:
 				break L
@@ -142,7 +141,7 @@ func (w *Worker) process(ctx context.Context, t Transaction) {
 		select {
 		case w.RequeueChan <- t:
 		default:
-			log.Errorf("dropping transaction because the retry goroutine is too busy to handle another one")
+			logutil.BgLogger().Error("dropping transaction because the retry goroutine is too busy to handle another one")
 		}
 	}
 
@@ -150,11 +149,11 @@ func (w *Worker) process(ctx context.Context, t Transaction) {
 	target := t.GetTarget()
 	if w.blockedList.isBlock(target) {
 		requeue()
-		log.Errorf("Too many errors for endpoint '%s': retrying later", target)
+		logutil.BgLogger().Error(fmt.Sprintf("Too many errors for endpoint '%s': retrying later", target))
 	} else if err := t.Process(ctx, w.Client); err != nil {
 		w.blockedList.close(target)
 		requeue()
-		log.Errorf("Error while processing transaction: %v", err)
+		logutil.BgLogger().Error(fmt.Sprintf("Error while processing transaction: %v", err))
 	} else {
 		w.blockedList.recover(target)
 	}

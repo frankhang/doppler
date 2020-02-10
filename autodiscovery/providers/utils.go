@@ -9,12 +9,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"path"
 	"time"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
 )
 
 const (
@@ -106,12 +106,12 @@ func buildTemplates(key string, checkNames []string, initConfigs, instances [][]
 
 	// sanity checks
 	if len(checkNames) != len(initConfigs) || len(checkNames) != len(instances) {
-		log.Error("Template entries don't all have the same length, not using them.")
+		logutil.BgLogger().Error("Template entries don't all have the same length, not using them.")
 		return templates
 	}
 	for idx := range initConfigs {
 		if len(initConfigs[idx]) != 1 {
-			log.Error("Templates init Configs list is not valid, not using Templates entries")
+			logutil.BgLogger().Error("Templates init Configs list is not valid, not using Templates entries")
 			return templates
 		}
 	}

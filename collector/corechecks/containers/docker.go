@@ -9,6 +9,7 @@ package containers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"sort"
 	"strings"
@@ -27,7 +28,7 @@ import (
 	"github.com/frankhang/doppler/util/containers"
 	cmetrics "github.com/frankhang/doppler/util/containers/metrics"
 	"github.com/frankhang/doppler/util/docker"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -86,7 +87,7 @@ func updateContainerRunningCount(images map[string]*containerPerImage, c *contai
 		// We should resolve the image tags in the tagger as a real entity.
 		long, short, tag, err := containers.SplitImageName(c.Image)
 		if err != nil {
-			log.Errorf("Cannot split the image name %s: %v", c.Image, err)
+			logutil.BgLogger().Error("Cannot split the image", zap.String("name", c.Image), zap.Error(err))
 			return
 		}
 		containerTags = []string{
@@ -98,7 +99,7 @@ func updateContainerRunningCount(images map[string]*containerPerImage, c *contai
 	} else {
 		containerTags, err = tagger.Tag(c.EntityID, collectors.LowCardinality)
 		if err != nil {
-			log.Errorf("Could not collect tags for container %s: %s", c.ID[:12], err)
+			logutil.BgLogger().Error(fmt.Sprintf("Could not collect tags for container %s", c.ID[:12]), zap.Error(err))
 			return
 		}
 		sort.Strings(containerTags)
@@ -133,12 +134,12 @@ func (d *DockerCheck) countAndWeightImages(sender aggregator.Sender, du *docker.
 	if d.instance.CollectImageSize {
 		for _, i := range availableImages {
 			if len(i.RepoTags) == 0 {
-				log.Tracef("Skipping image %s, no repo tags", i.ID)
+				logutil.BgLogger().Debug(fmt.Sprintf("Skipping image %s, no repo tags", i.ID))
 				continue
 			}
 			name, _, tag, err := containers.SplitImageName(i.RepoTags[0])
 			if err != nil {
-				log.Errorf("Could not parse image name and tag, RepoTag is: %s", i.RepoTags[0])
+				logutil.BgLogger().Error("Could not parse image name and tag", zap.String("RepoTags", i.RepoTags[0]))
 				continue
 			}
 			tags := []string{fmt.Sprintf("image_name:%s", name), fmt.Sprintf("image_tag:%s", tag)}
@@ -162,13 +163,15 @@ func (d *DockerCheck) Run() error {
 	du, err := docker.GetDockerUtil()
 	if err != nil {
 		sender.ServiceCheck(DockerServiceUp, metrics.ServiceCheckCritical, "", nil, err.Error())
-		d.Warnf("Error initialising check: %s", err)
+		//d.Warnf("Error initialising check: %s", err)
+		logutil.BgLogger().Warn("Error initialising check", zap.Error(err))
 		return err
 	}
 	cList, err := du.ListContainers(&docker.ContainerListConfig{IncludeExited: true, FlagExcluded: true})
 	if err != nil {
 		sender.ServiceCheck(DockerServiceUp, metrics.ServiceCheckCritical, "", nil, err.Error())
-		d.Warnf("Error collecting containers: %s", err)
+		//d.Warnf("Error collecting containers: %s", err)
+		logutil.BgLogger().Warn("Error collecting containers", zap.Error(err))
 		return err
 	}
 
@@ -182,7 +185,7 @@ func (d *DockerCheck) Run() error {
 		}
 		tags, err := tagger.Tag(c.EntityID, collectors.HighCardinality)
 		if err != nil {
-			log.Errorf("Could not collect tags for container %s: %s", c.ID[:12], err)
+			logutil.BgLogger().Error("Could not collect tags for container", zap.String("id", c.ID[:12]), zap.Error(err))
 		}
 
 		if c.CPU != nil {
@@ -192,7 +195,7 @@ func (d *DockerCheck) Run() error {
 			sender.Gauge("docker.cpu.shares", float64(c.CPU.Shares), "", tags)
 			sender.Rate("docker.cpu.throttled", float64(c.CPUNrThrottled), "", tags)
 		} else {
-			log.Debugf("Empty CPU metrics for container %s", c.ID[:12])
+			logutil.BgLogger().Debug("Empty CPU metrics for container", zap.String("id", c.ID[:12]))
 		}
 		if c.Memory != nil {
 			sender.Gauge("docker.mem.cache", float64(c.Memory.Cache), "", tags)
@@ -222,13 +225,13 @@ func (d *DockerCheck) Run() error {
 				sender.Gauge("docker.mem.soft_limit", float64(c.SoftMemLimit), "", tags)
 			}
 		} else {
-			log.Debugf("Empty memory metrics for container %s", c.ID[:12])
+			logutil.BgLogger().Debug("Empty memory metrics for container", zap.String("id", c.ID[:12]))
 		}
 
 		if c.IO != nil {
 			d.reportIOMetrics(c.IO, tags, sender)
 		} else {
-			log.Debugf("Empty IO metrics for container %s", c.ID[:12])
+			logutil.BgLogger().Debug("Empty IO metrics for container", zap.String("id", c.ID[:12]))
 		}
 
 		if c.ThreadCount != 0 {
@@ -241,7 +244,7 @@ func (d *DockerCheck) Run() error {
 		if c.Network != nil {
 			for _, netStat := range c.Network {
 				if netStat.NetworkName == "" {
-					log.Debugf("Ignore network stat with empty name for container %s", c.ID[:12])
+					logutil.BgLogger().Debug("Ignore network stat with empty name for container", zap.String("id", c.ID[:12]))
 					continue
 				}
 				ifaceTags := append(tags, fmt.Sprintf("docker_network:%s", netStat.NetworkName))
@@ -249,15 +252,15 @@ func (d *DockerCheck) Run() error {
 				sender.Rate("docker.net.bytes_rcvd", float64(netStat.BytesRcvd), "", ifaceTags)
 			}
 		} else {
-			log.Debugf("Empty network metrics for container %s", c.ID[:12])
+			logutil.BgLogger().Debug("Empty network metrics for container", zap.Strings("id", c.ID[:12]))
 		}
 
 		if collectingContainerSizeDuringThisRun {
 			info, err := du.Inspect(c.ID, true)
 			if err != nil {
-				log.Errorf("Failed to inspect container %s - %s", c.ID[:12], err)
+				logutil.BgLogger().Error("Failed to inspect container", zap.String("id", c.ID[:12]), zap.Error(err))
 			} else if info.SizeRw == nil || info.SizeRootFs == nil {
-				log.Warnf("Docker inspect did not return the container size: %s", c.ID[:12])
+				logutil.BgLogger().Warn("Docker inspect did not return the container size", zap.String("id", c.ID[:12]))
 			} else {
 				sender.Gauge("docker.container.size_rw", float64(*info.SizeRw), "", tags)
 				sender.Gauge("docker.container.size_rootfs", float64(*info.SizeRootFs), "", tags)
@@ -269,7 +272,7 @@ func (d *DockerCheck) Run() error {
 		for _, pid := range c.Pids {
 			fdCount, err := cmetrics.GetFileDescriptorLen(int(pid))
 			if err != nil {
-				log.Warnf("Failed to get file desc length for pid %d, container %s: %s", pid, c.ID[:12], err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Failed to get file desc length for pid %d, container %s", pid, c.ID[:12]), zap.Error(err))
 				continue
 			}
 			fileDescCount += fdCount
@@ -294,7 +297,7 @@ func (d *DockerCheck) Run() error {
 	sender.Gauge("docker.containers.stopped.total", float64(totalStopped), "", nil)
 
 	if err := d.countAndWeightImages(sender, du); err != nil {
-		log.Error(err.Error())
+		logutil.BgLogger().Error(err.Error())
 		sender.ServiceCheck(DockerServiceUp, metrics.ServiceCheckCritical, "", nil, err.Error())
 		d.Warnf("Error collecting images: %s", err)
 		return err
@@ -309,13 +312,13 @@ func (d *DockerCheck) Run() error {
 			if d.instance.CollectEvent {
 				err = d.reportEvents(events, sender)
 				if err != nil {
-					log.Warn(err.Error())
+					logutil.BgLogger().Warn(err.Error())
 				}
 			}
 			if d.instance.CollectExitCodes {
 				err = d.reportExitCodes(events, sender)
 				if err != nil {
-					log.Warn(err.Error())
+					logutil.BgLogger().Warn(err.Error())
 				}
 			}
 		}
@@ -328,7 +331,7 @@ func (d *DockerCheck) Run() error {
 		} else {
 			for _, stat := range stats {
 				if stat.Name != docker.DataStorageName && stat.Name != docker.MetadataStorageName {
-					log.Debugf("Ignoring unknown disk stats: %s", stat.Name)
+					logutil.BgLogger().Debug(fmt.Sprintf("Ignoring unknown disk stats: %s", stat.Name))
 					continue
 				}
 				if stat.Free != nil {
@@ -404,7 +407,7 @@ func (d *DockerCheck) Configure(config, initConfig integration.Data, source stri
 	// different than the agent hostname depending on the environment (like EC2 or GCE).
 	d.dockerHostname, err = util.GetHostname()
 	if err != nil {
-		log.Warnf("Can't get hostname from docker, events will not have it: %s", err)
+		logutil.BgLogger().Warn("Can't get hostname from docker, events will not have it", zap.Error(err))
 	}
 	return nil
 }

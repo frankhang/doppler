@@ -8,10 +8,11 @@
 package apiserver
 
 import (
+	"fmt"
 	"sync"
 
 	agentcache "github.com/frankhang/doppler/util/cache"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/patrickmn/go-cache"
 )
@@ -67,7 +68,7 @@ func (m *metaBundleStore) getCopyOrNew(nodeName string) *metadataMapperBundle {
 	if ok {
 		oldMetaBundle, ok := v.(*metadataMapperBundle)
 		if !ok {
-			log.Errorf("invalid cache format for the cacheKey: %s", cacheKey)
+			logutil.BgLogger().Error(fmt.Sprintf("invalid cache format for the cacheKey: %s", cacheKey))
 		} else {
 			metaBundle.DeepCopy(oldMetaBundle)
 		}

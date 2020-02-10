@@ -8,6 +8,8 @@
 package apiserver
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	apis_v1alpha1 "github.com/DataDog/watermarkpodautoscaler/pkg/apis/datadoghq/v1alpha1"
@@ -21,15 +23,15 @@ import (
 	"github.com/frankhang/doppler/clusteragent/custommetrics"
 	"github.com/frankhang/doppler/errors"
 	"github.com/frankhang/doppler/util/kubernetes/autoscalers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // RunWPA starts the controller to process events about Watermark Pod Autoscalers
 func (h *AutoscalersController) RunWPA(stopCh <-chan struct{}) {
 	defer h.WPAqueue.ShutDown()
 
-	log.Infof("Starting WPA Controller ... ")
-	defer log.Infof("Stopping WPA Controller")
+	logutil.BgLogger().Info("Starting WPA Controller ... ")
+	defer logutil.BgLogger().Info("Stopping WPA Controller")
 	if !cache.WaitForCacheSync(stopCh, h.wpaListerSynced) {
 		return
 	}
@@ -60,10 +62,10 @@ func (h *AutoscalersController) workerWPA() {
 func (h *AutoscalersController) processNextWPA() bool {
 	key, quit := h.WPAqueue.Get()
 	if quit {
-		log.Error("WPA controller HPAqueue is shutting down, stopping processing")
+		logutil.BgLogger().Error("WPA controller HPAqueue is shutting down, stopping processing")
 		return false
 	}
-	log.Tracef("Processing %s", key)
+	logutil.BgLogger().Trace(fmt.Sprintf("Processing %s", key))
 	defer h.WPAqueue.Done(key)
 
 	err := h.syncWPA(key)
@@ -82,19 +84,19 @@ func (h *AutoscalersController) syncWPA(key interface{}) error {
 
 	ns, name, err := cache.SplitMetaNamespaceKey(key.(string))
 	if err != nil {
-		log.Errorf("Could not split the key: %v", err)
+		logutil.BgLogger().Error("Could not split the key", zap.Error(err))
 		return err
 	}
 
 	wpaCached, err := h.wpaLister.WatermarkPodAutoscalers(ns).Get(name)
 	switch {
 	case errors.IsNotFound(err):
-		log.Infof("WatermarkPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key)
+		logutil.BgLogger().Info(fmt.Sprintf("WatermarkPodAutoscaler %v has been deleted but was not caught in the EventHandler. GC will cleanup.", key))
 	case err != nil:
-		log.Errorf("Unable to retrieve Watermark Pod Autoscaler %v from store: %v", key, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Unable to retrieve Watermark Pod Autoscaler %v from store: %v", key, err))
 	default:
 		if wpaCached == nil {
-			log.Errorf("Could not parse empty wpa %s/%s from local store", ns, name)
+			logutil.BgLogger().Error(fmt.Sprintf("Could not parse empty wpa %s/%s from local store", ns, name))
 			return ErrIsEmpty
 		}
 		emList := autoscalers.InspectWPA(wpaCached)
@@ -109,7 +111,7 @@ func (h *AutoscalersController) syncWPA(key interface{}) error {
 		}
 		h.toStore.m.Unlock()
 
-		log.Tracef("Local batch cache of WPA is %v", h.toStore.data)
+		logutil.BgLogger().Trace(fmt.Sprintf("Local batch cache of WPA is %v", h.toStore.data))
 	}
 
 	return err
@@ -118,10 +120,10 @@ func (h *AutoscalersController) syncWPA(key interface{}) error {
 func (h *AutoscalersController) addWPAutoscaler(obj interface{}) {
 	newAutoscaler, ok := obj.(*apis_v1alpha1.WatermarkPodAutoscaler)
 	if !ok {
-		log.Errorf("Expected an WatermarkPodAutoscaler type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an WatermarkPodAutoscaler type, got: %v", obj))
 		return
 	}
-	log.Debugf("Adding WPA %s/%s", newAutoscaler.Namespace, newAutoscaler.Name)
+	logutil.BgLogger().Debug(fmt.Sprintf("Adding WPA %s/%s", newAutoscaler.Namespace, newAutoscaler.Name))
 	h.EventRecorder.Event(newAutoscaler, corev1.EventTypeNormal, autoscalerNowHandleMsgEvent, "")
 	h.enqueueWPA(newAutoscaler)
 }
@@ -129,18 +131,18 @@ func (h *AutoscalersController) addWPAutoscaler(obj interface{}) {
 func (h *AutoscalersController) updateWPAutoscaler(old, obj interface{}) {
 	newAutoscaler, ok := obj.(*apis_v1alpha1.WatermarkPodAutoscaler)
 	if !ok {
-		log.Errorf("Expected an WatermarkPodAutoscaler type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an WatermarkPodAutoscaler type, got: %v", obj))
 		return
 	}
 	oldAutoscaler, ok := old.(*apis_v1alpha1.WatermarkPodAutoscaler)
 	if !ok {
-		log.Errorf("Expected an WatermarkPodAutoscaler type, got: %v", old)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an WatermarkPodAutoscaler type, got: %v", old))
 		h.enqueueWPA(newAutoscaler) // We still want to enqueue the newAutoscaler to get the new change
 		return
 	}
 
 	if !autoscalers.WPAutoscalerMetricsUpdate(newAutoscaler, oldAutoscaler) {
-		log.Tracef("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name)
+		logutil.BgLogger().Trace(fmt.Sprintf("Update received for the %s/%s, without a relevant change to the configuration", newAutoscaler.Namespace, newAutoscaler.Name))
 		return
 	}
 	// Need to delete the old object from the local cache. If the labels have changed, the syncAutoscaler would not override the old key.
@@ -175,17 +177,17 @@ func (h *AutoscalersController) deleteWPAutoscaler(obj interface{}) {
 
 	tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
 	if !ok {
-		log.Errorf("Could not get object from tombstone %#v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Could not get object from tombstone %#v", obj))
 		return
 	}
 
 	deletedWPA, ok = tombstone.Obj.(*apis_v1alpha1.WatermarkPodAutoscaler)
 	if !ok {
-		log.Errorf("Tombstone contained object that is not an Autoscaler: %#v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Tombstone contained object that is not an Autoscaler: %#v", obj))
 		return
 	}
 
-	log.Debugf("Deleting Metrics from WPA %s/%s", deletedWPA.Namespace, deletedWPA.Name)
+	logutil.BgLogger().Debug(fmt.Sprintf("Deleting Metrics from WPA %s/%s", deletedWPA.Namespace, deletedWPA.Name))
 	toDelete.External = autoscalers.InspectWPA(deletedWPA)
 	log.Debugf("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name)
 	h.deleteFromLocalStore(toDelete.External)

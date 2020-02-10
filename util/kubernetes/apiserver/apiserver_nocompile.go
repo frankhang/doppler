@@ -9,9 +9,10 @@ package apiserver
 
 import (
 	"errors"
+	"fmt"
+	"github.com/frankhang/util/logutil"
 
 	apiv1 "github.com/frankhang/doppler/clusteragent/api/v1"
-	"github.com/frankhang/doppler/util/log"
 )
 
 var (
@@ -30,30 +31,30 @@ type metadataMapperBundle struct{}
 
 // GetAPIClient returns the shared ApiClient instance.
 func GetAPIClient() (*APIClient, error) {
-	log.Errorf("GetAPIClient not implemented %s", ErrNotCompiled.Error())
+	logutil.BgLogger().Error(fmt.Sprintf("GetAPIClient not implemented %s", ErrNotCompiled.Error()))
 	return &APIClient{}, nil
 }
 
 // GetPodMetadataNames is used when the API endpoint of the DCA to get the services of a pod is hit.
 func GetPodMetadataNames(nodeName, ns, podName string) ([]string, error) {
-	log.Errorf("GetPodMetadataNames not implemented %s", ErrNotCompiled.Error())
+	logutil.BgLogger().Error(fmt.Sprintf("GetPodMetadataNames not implemented %s", ErrNotCompiled.Error()))
 	return nil, nil
 }
 
 // GetMetadataMapBundleOnNode is used for the CLI svcmap command to output given a nodeName
 func GetMetadataMapBundleOnNode(nodeName string) (*apiv1.MetadataResponse, error) {
-	log.Errorf("GetMetadataMapBundleOnNode not implemented %s", ErrNotCompiled.Error())
+	logutil.BgLogger().Error(fmt.Sprintf("GetMetadataMapBundleOnNode not implemented %s", ErrNotCompiled.Error()))
 	return nil, nil
 }
 
 // GetMetadataMapBundleOnAllNodes is used for the CLI svcmap command to run fetch the service map of all nodes.
 func GetMetadataMapBundleOnAllNodes(_ *APIClient) (*apiv1.MetadataResponse, error) {
-	log.Errorf("GetMetadataMapBundleOnAllNodes not implemented %s", ErrNotCompiled.Error())
+	logutil.BgLogger().Error(fmt.Sprintf("GetMetadataMapBundleOnAllNodes not implemented %s", ErrNotCompiled.Error()))
 	return nil, nil
 }
 
 // GetNodeLabels retrieves the labels of the queried node from the cache of the shared informer.
 func GetNodeLabels(nodeName string) (map[string]string, error) {
-	log.Errorf("GetNodeLabels not implemented %s", ErrNotCompiled.Error())
+	logutil.BgLogger().Error(fmt.Sprintf("GetNodeLabels not implemented %s", ErrNotCompiled.Error()))
 	return nil, nil
 }

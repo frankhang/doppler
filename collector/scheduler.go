@@ -8,13 +8,14 @@ package collector
 import (
 	"expvar"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"sync"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/collector/loaders"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var (
@@ -51,7 +52,7 @@ func InitCheckScheduler(collector *Collector) *CheckScheduler {
 	// add the check loaders
 	for _, loader := range loaders.LoaderCatalog() {
 		checkScheduler.AddLoader(loader)
-		log.Debugf("Added %s to Check Scheduler", loader)
+		logutil.BgLogger().Debug(fmt.Sprintf("Added %s to Check Scheduler", loader))
 	}
 	return checkScheduler
 }
@@ -62,7 +63,7 @@ func (s *CheckScheduler) Schedule(configs []integration.Config) {
 	for _, c := range checks {
 		_, err := s.collector.RunCheck(c)
 		if err != nil {
-			log.Errorf("Unable to run Check %s: %v", c, err)
+			logutil.BgLogger().Error(fmt.Sprintf("Unable to run Check %s", c), zap.Error(err))
 			errorStats.setRunError(c.ID(), err.Error())
 			continue
 		}
@@ -85,7 +86,7 @@ func (s *CheckScheduler) Unschedule(configs []integration.Config) {
 			// the polling loop forever
 			err := s.collector.StopCheck(id)
 			if err != nil {
-				log.Errorf("Error stopping check %s: %s", id, err)
+				logutil.BgLogger().Error(fmt.Sprintf("Error stopping check %s", id), zap.Error(err)
 				errorStats.setRunError(id, err.Error())
 			} else {
 				stopped[id] = struct{}{}
@@ -120,7 +121,7 @@ func (s *CheckScheduler) Stop() {
 func (s *CheckScheduler) AddLoader(loader check.Loader) {
 	for _, l := range s.loaders {
 		if l == loader {
-			log.Warnf("Loader %s was already added, skipping...", loader)
+			logutil.BgLogger().Warn(fmt.Sprintf("Loader %s was already added, skipping...", loader))
 			return
 		}
 	}
@@ -133,7 +134,7 @@ func (s *CheckScheduler) getChecks(config integration.Config) ([]check.Check, er
 	for _, loader := range s.loaders {
 		res, err := loader.Load(config)
 		if err == nil {
-			log.Debugf("%v: successfully loaded check '%s'", loader, config.Name)
+			logutil.BgLogger().Debug(fmt.Sprintf("%v: successfully loaded check '%s'", loader, config.Name))
 			errorStats.removeLoaderErrors(config.Name)
 			return res, nil
 		}
@@ -142,7 +143,7 @@ func (s *CheckScheduler) getChecks(config integration.Config) ([]check.Check, er
 			return res, nil
 		}
 		errorStats.setLoaderError(config.Name, fmt.Sprintf("%v", loader), err.Error())
-		log.Debugf("%v: unable to load the check '%s': %s", loader, config.Name, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("%v: unable to load the check '%s'", loader, config.Name), zap.Error(err))
 	}
 
 	return []check.Check{}, fmt.Errorf("unable to load any check from config '%s'", config.Name)
@@ -180,7 +181,7 @@ func (s *CheckScheduler) GetChecksFromConfigs(configs []integration.Config, popu
 		configDigest := config.Digest()
 		checks, err := s.getChecks(config)
 		if err != nil {
-			log.Errorf("Unable to load the check: %v", err)
+			logutil.BgLogger().Error("Unable to load the check", zap.Error(err))
 			continue
 		}
 		for _, c := range checks {

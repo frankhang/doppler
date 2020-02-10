@@ -8,6 +8,8 @@ package forwarder
 import (
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"sync"
@@ -169,8 +171,9 @@ func (f *DefaultForwarder) Start() error {
 		endpointLogs = append(endpointLogs, fmt.Sprintf("\"%s\" (%v api key(s))",
 			domain, len(apiKeys)))
 	}
-	log.Infof("Forwarder started, sending to %v endpoint(s) with %v worker(s) each: %s",
-		len(endpointLogs), f.NumberOfWorkers, strings.Join(endpointLogs, " ; "))
+
+	logutil.BgLogger().Info(fmt.Sprintf("Forwarder started, sending to %v endpoint(s) with %v worker(s) each: %s",
+		len(endpointLogs), f.NumberOfWorkers, strings.Join(endpointLogs, " ; ")))
 
 	f.healthChecker.Start()
 	f.internalState = Started
@@ -185,7 +188,7 @@ func (f *DefaultForwarder) Stop() {
 	defer f.m.Unlock()
 
 	if f.internalState == Stopped {
-		log.Warnf("the forwarder is already stopped")
+		logutil.BgLogger().Warn("the forwarder is already stopped")
 		return
 	}
 
@@ -212,7 +215,7 @@ func (f *DefaultForwarder) Stop() {
 		select {
 		case <-donePurging:
 		case <-time.After(purgeTimeout):
-			log.Warnf("Timeout emptying new transactions before stopping the forwarder %v", purgeTimeout)
+			logutil.BgLogger().Warn("Timeout emptying new transactions before stopping the forwarder %v", zap.Int("timeout", int(purgeTimeout)))
 		}
 	} else {
 		for _, df := range f.domainForwarders {
@@ -271,7 +274,8 @@ func (f *DefaultForwarder) sendHTTPTransactions(transactions []*HTTPTransaction)
 
 	for _, t := range transactions {
 		if err := f.domainForwarders[t.Domain].sendHTTPTransactions(t); err != nil {
-			log.Errorf(err.Error())
+			logutil.BgLogger().Error(err.Error())
+
 		}
 	}
 	return nil

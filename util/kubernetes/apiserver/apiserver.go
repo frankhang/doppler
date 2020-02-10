@@ -10,6 +10,7 @@ package apiserver
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver/common"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/retry"
 
 	wpa_client "github.com/DataDog/watermarkpodautoscaler/pkg/client/clientset/versioned"
@@ -78,7 +79,7 @@ func GetAPIClient() (*APIClient, error) {
 	}
 	err := globalAPIClient.initRetry.TriggerRetry()
 	if err != nil {
-		log.Debugf("API Server init error: %s", err)
+		logutil.BgLogger().Debug("API Server init error", zap.Error(err))
 		return nil, err
 	}
 	return globalAPIClient, nil
@@ -90,14 +91,14 @@ func getClientConfig() (*rest.Config, error) {
 	if cfgPath == "" {
 		clientConfig, err = rest.InClusterConfig()
 		if err != nil {
-			log.Debugf("Can't create a config for the official client from the service account's token: %v", err)
+			logutil.BgLogger().Debug("Can't create a config for the official client from the service account's token", zap.Error(err))
 			return nil, err
 		}
 	} else {
 		// use the current context in kubeconfig
 		clientConfig, err = clientcmd.BuildConfigFromFlags("", cfgPath)
 		if err != nil {
-			log.Debugf("Can't create a config for the official client from the configured path to the kubeconfig: %s, %v", cfgPath, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Can't create a config for the official client from the configured path to the kubeconfig: %s", cfgPath), zap.Error(err))
 			return nil, err
 		}
 	}
@@ -131,7 +132,7 @@ func getWPAInformerFactory() (wpa_informers.SharedInformerFactory, error) {
 	resyncPeriodSeconds := time.Duration(config.Datadog.GetInt64("kubernetes_informers_resync_period"))
 	client, err := getWPAClient(0) // No timeout for the Informers, to allow long watch.
 	if err != nil {
-		log.Infof("Could not get apiserver client: %v", err)
+		logutil.BgLogger().Info("Could not get apiserver client", zap.Error(err))
 		return nil, err
 	}
 	return wpa_informers.NewSharedInformerFactory(client, resyncPeriodSeconds*time.Second), nil
@@ -141,7 +142,7 @@ func getInformerFactory() (informers.SharedInformerFactory, error) {
 	resyncPeriodSeconds := time.Duration(config.Datadog.GetInt64("kubernetes_informers_resync_period"))
 	client, err := getKubeClient(0) // No timeout for the Informers, to allow long watch.
 	if err != nil {
-		log.Infof("Could not get apiserver client: %v", err)
+		logutil.BgLogger().Info("Could not get apiserver client", zap.Error(err))
 		return nil, err
 	}
 	return informers.NewSharedInformerFactory(client, resyncPeriodSeconds*time.Second), nil
@@ -151,7 +152,7 @@ func (c *APIClient) connect() error {
 	var err error
 	c.Cl, err = getKubeClient(time.Duration(c.timeoutSeconds) * time.Second)
 	if err != nil {
-		log.Infof("Could not get apiserver client: %v", err)
+		logutil.BgLogger().Info("Could not get apiserver client", zap.Error(err))
 		return err
 	}
 	// informer factory uses its own clientset with a larger timeout
@@ -162,7 +163,7 @@ func (c *APIClient) connect() error {
 	if config.Datadog.GetBool("external_metrics_provider.wpa_controller") {
 		c.WPAInformerFactory, err = getWPAInformerFactory()
 		if err != nil {
-			log.Errorf("Error getting WPA Informer Factory: %s", err.Error())
+			logutil.BgLogger().Error("Error getting WPA Informer Factory", zap.Error(err))
 			return err
 		}
 	}
@@ -171,13 +172,13 @@ func (c *APIClient) connect() error {
 	if APIversion.Empty() {
 		return fmt.Errorf("cannot retrieve the version of the API server at the moment")
 	}
-	log.Debugf("Connected to kubernetes apiserver, version %s", APIversion.Version)
+	logutil.BgLogger().Debug(fmt.Sprintf("Connected to kubernetes apiserver, version %s", APIversion.Version))
 
 	err = c.checkResourcesAuth()
 	if err != nil {
 		return err
 	}
-	log.Debug("Could successfully collect Pods, Nodes, Services and Events")
+	logutil.BgLogger().Debug("Could successfully collect Pods, Nodes, Services and Events")
 	return nil
 }
 
@@ -250,7 +251,7 @@ func (c *APIClient) ComponentStatuses() (*v1.ComponentStatusList, error) {
 func (c *APIClient) getOrCreateConfigMap(name, namespace string) (cmEvent *v1.ConfigMap, err error) {
 	cmEvent, err = c.Cl.CoreV1().ConfigMaps(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		log.Errorf("Could not get the ConfigMap %s: %s, trying to create it.", name, err.Error())
+		logutil.BgLogger().Errorf(fmt.Sprintf("Could not get the ConfigMap %s, trying to create it.", name), zap.Error(err))
 		cmEvent, err = c.Cl.CoreV1().ConfigMaps(namespace).Create(&v1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      name,
@@ -260,7 +261,7 @@ func (c *APIClient) getOrCreateConfigMap(name, namespace string) (cmEvent *v1.Co
 		if err != nil {
 			return nil, fmt.Errorf("could not create the ConfigMap: %s", err.Error())
 		}
-		log.Infof("Created the ConfigMap %s", name)
+		logutil.BgLogger().Info(fmt.Sprintf("Created the ConfigMap %s", name))
 	}
 	return cmEvent, nil
 }
@@ -281,24 +282,24 @@ func (c *APIClient) GetTokenFromConfigmap(token string) (string, time.Time, erro
 	}
 	tokenValue, found := cmEvent.Data[eventTokenKey]
 	if !found {
-		log.Debugf("%s was not found in the ConfigMap %s, updating it to resync.", eventTokenKey, configMapDCAToken)
+		logutil.BgLogger().Debug(fmt.Sprintf("%s was not found in the ConfigMap %s, updating it to resync.", eventTokenKey, configMapDCAToken))
 		// we should try to set it to "" .
 		err = c.UpdateTokenInConfigmap(token, "", time.Now())
 		return "", time.Now(), err
 	}
-	log.Tracef("%s is %q", token, tokenValue)
+	logutil.BgLogger().Trace(fmt.Sprintf("%s is %q", token, tokenValue))
 
 	eventTokenTS := fmt.Sprintf("%s.%s", token, tokenTime)
 	tokenTimeStr, set := cmEvent.Data[eventTokenTS]
 	if !set {
-		log.Debugf("Could not find timestamp associated with %s in the ConfigMap %s. Refreshing.", eventTokenTS, configMapDCAToken)
+		logutil.BgLogger().Debug(fmt.Sprintf("Could not find timestamp associated with %s in the ConfigMap %s. Refreshing.", eventTokenTS, configMapDCAToken))
 		// The timestamp of the last List is not present, it will be set during the next Collection.
 		return tokenValue, nowTs, nil
 	}
 
 	tokenTime, err := time.Parse(time.RFC3339, tokenTimeStr)
 	if err != nil {
-		log.Errorf("Could not convert the timestamp associated with %s from the ConfigMap %s, resync might not work correctly.", token, configMapDCAToken)
+		logutil.BgLogger().Error(fmt.Sprintf("Could not convert the timestamp associated with %s from the ConfigMap %s, resync might not work correctly.", token, configMapDCAToken), zap.Error(err))
 		return tokenValue, nowTs, nil
 	}
 	return tokenValue, tokenTime, err
@@ -325,7 +326,7 @@ func (c *APIClient) UpdateTokenInConfigmap(token, tokenValue string, timestamp t
 	if err != nil {
 		return err
 	}
-	log.Debugf("Updated %s to %s in the ConfigMap %s", eventTokenKey, tokenValue, configMapDCAToken)
+	logutil.BgLogger().Debug(fmt.Sprintf("Updated %s to %s in the ConfigMap %s", eventTokenKey, tokenValue, configMapDCAToken))
 	return nil
 }
 
@@ -360,7 +361,7 @@ func GetMetadataMapBundleOnAllNodes(cl *APIClient) (*apiv1.MetadataResponse, err
 
 	for _, node := range nodes {
 		if node.GetObjectMeta() == nil {
-			log.Error("Incorrect payload when evaluating a node for the service mapper") // This will be removed as we move to the client-go
+			logutil.BgLogger().Error("Incorrect payload when evaluating a node for the service mapper") // This will be removed as we move to the client-go
 			continue
 		}
 		var bundle *metadataMapperBundle
@@ -399,7 +400,7 @@ func getMetadataMapBundle(nodeName string) (*metadataMapperBundle, error) {
 func getNodeList(cl *APIClient) ([]v1.Node, error) {
 	nodes, err := cl.Cl.CoreV1().Nodes().List(metav1.ListOptions{TimeoutSeconds: &cl.timeoutSeconds})
 	if err != nil {
-		log.Errorf("Can't list nodes from the API server: %s", err.Error())
+		logutil.BgLogger().Error("Can't list nodes from the API server", zap.Error(err))
 		return nil, err
 	}
 	return nodes.Items, nil

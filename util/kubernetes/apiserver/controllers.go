@@ -8,9 +8,11 @@
 package apiserver
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/kubernetes/autoscalers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 
 	"github.com/DataDog/watermarkpodautoscaler/pkg/client/informers/externalversions"
 	"k8s.io/client-go/informers"
@@ -52,12 +54,12 @@ type ControllerContext struct {
 func StartControllers(ctx ControllerContext) error {
 	for name, cntrlFuncs := range controllerCatalog {
 		if !cntrlFuncs.enabled() {
-			log.Infof("%q is disabled", name)
+			logutil.BgLogger().Info(fmt.Sprintf("%q is disabled", name))
 			continue
 		}
 		err := cntrlFuncs.start(ctx)
 		if err != nil {
-			log.Errorf("Error starting %q: %s", name, err.Error())
+			logutil.Errorf(fmt.Sprintf("Error starting %q", name), zap.Error(err))
 		}
 	}
 

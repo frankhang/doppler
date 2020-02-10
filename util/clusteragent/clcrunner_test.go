@@ -7,6 +7,7 @@ package clusteragent
 
 import (
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -24,7 +25,6 @@ import (
 
 	"github.com/frankhang/doppler/clusteragent/clusterchecks/types"
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
 	"github.com/frankhang/doppler/version"
 )
 
@@ -55,17 +55,17 @@ func newDummyCLCRunner() (*dummyCLCRunner, error) {
 }
 
 func (d *dummyCLCRunner) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Debugf("dummyCLCRunner received %s on %s", r.Method, r.URL.Path)
+	logutil.BgLogger().Debug(fmt.Sprintf("dummyCLCRunner received %s on %s", r.Method, r.URL.Path))
 	d.requests <- r
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		log.Errorf("no token provided")
+		logutil.BgLogger().Error("no token provided")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	if token != fmt.Sprintf("Bearer %s", d.token) {
-		log.Errorf("wrong token %s", token)
+		logutil.BgLogger().Error(fmt.Sprintf("wrong token %s", token))
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}

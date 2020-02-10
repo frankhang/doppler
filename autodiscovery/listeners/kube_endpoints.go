@@ -10,11 +10,12 @@ package listeners
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/labels"
@@ -88,7 +89,7 @@ func (l *KubeEndpointsListener) Listen(newSvc chan<- Service, delSvc chan<- Serv
 	// Initial fill
 	endpoints, err := l.endpointsInformer.Lister().List(labels.Everything())
 	if err != nil {
-		log.Errorf("Cannot list Kubernetes endpoints: %s", err)
+		logutil.BgLogger().Error("Cannot list Kubernetes endpoints", zap.Error(err))
 	}
 	for _, e := range endpoints {
 		l.createService(e, true)
@@ -112,7 +113,7 @@ func (l *KubeEndpointsListener) added(obj interface{}) {
 func (l *KubeEndpointsListener) deleted(obj interface{}) {
 	castedObj, ok := obj.(*v1.Endpoints)
 	if !ok {
-		log.Errorf("Expected an Endpoints type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an Endpoints type, got: %v", obj))
 		return
 	}
 	l.removeService(castedObj)

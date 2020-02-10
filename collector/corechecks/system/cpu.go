@@ -8,6 +8,7 @@ package system
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 
 	"github.com/shirou/gopsutil/cpu"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const cpuCheckName = "cpu"
@@ -41,11 +42,11 @@ func (c *CPUCheck) Run() error {
 
 	cpuTimes, err := times(false)
 	if err != nil {
-		log.Errorf("system.CPUCheck: could not retrieve cpu stats: %s", err)
+		logutil.BgLogger().Error("system.CPUCheck: could not retrieve cpu stats", zap.Error(err))
 		return err
 	} else if len(cpuTimes) < 1 {
 		errEmpty := fmt.Errorf("no cpu stats retrieve (empty results)")
-		log.Errorf("system.CPUCheck: %s", errEmpty)
+		logutil.BgLogger().Error(fmt.Sprintf("system.CPUCheck: %s", errEmpty))
 		return errEmpty
 	}
 	t := cpuTimes[0]

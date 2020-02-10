@@ -8,12 +8,13 @@
 package ecs
 
 import (
+	"fmt"
 	"os"
 	"time"
 
 	"github.com/frankhang/doppler/util/cache"
 	ecsmeta "github.com/frankhang/doppler/util/ecs/metadata"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -87,7 +88,7 @@ func queryCacheBool(cacheKey string, cacheMissEvalFunc func() (bool, time.Durati
 		if v, ok := cachedValue.(bool); ok {
 			return v
 		}
-		log.Errorf("Invalid cache format for key %q: forcing a cache miss", cacheKey)
+		logutil.BgLogger().Error(fmt.Sprintf("Invalid cache format for key %q: forcing a cache miss", cacheKey))
 	}
 
 	newValue, ttl := cacheMissEvalFunc()

@@ -8,6 +8,7 @@ package auditor
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -156,12 +157,12 @@ func (a *Auditor) run() {
 func (a *Auditor) recoverRegistry() map[string]*RegistryEntry {
 	mr, err := ioutil.ReadFile(a.registryPath)
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return make(map[string]*RegistryEntry)
 	}
 	r, err := a.unmarshalRegistry(mr)
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return make(map[string]*RegistryEntry)
 	}
 	return r

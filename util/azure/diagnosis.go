@@ -8,6 +8,7 @@ package azure
 import (
 	"github.com/frankhang/doppler/diagnose/diagnosis"
 	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/errors"
 )
 
 func init() {
@@ -18,7 +19,8 @@ func init() {
 func diagnose() error {
 	_, err := GetHostAlias()
 	if err != nil {
-		log.Error(err)
+		errors.Log(errors.Trace(err))
+		//log.Error(err)
 	}
 	return err
 }

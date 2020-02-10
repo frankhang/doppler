@@ -8,13 +8,14 @@
 package python
 
 import (
+	"fmt"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 /*
@@ -68,7 +69,7 @@ func GetKubeletConnectionInfo(payload **C.char) {
 
 		data, err := yaml.Marshal(connections)
 		if err != nil {
-			log.Errorf("could not serialized kubelet connections (%s): %s", connections, err)
+			logutil.BgLogger().Error(fmt.Sprintf("could not serialized kubelet connections (%s): %s", connections, err))
 			return
 		}
 

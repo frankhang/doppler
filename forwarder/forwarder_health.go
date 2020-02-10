@@ -164,10 +164,10 @@ func (fh *forwarderHealth) hasValidAPIKey() bool {
 				log.Debug(err)
 				apiError = true
 			} else if v {
-				log.Debugf("api_key '%s' for domain %s is valid", apiKey, domain)
+				logutil.BgLogger().Debug(fmt.Sprintf("api_key '%s' for domain %s is valid", apiKey, domain))
 				validKey = true
 			} else {
-				log.Debugf("api_key '%s' for domain %s is invalid", apiKey, domain)
+				logutil.BgLogger().Debug(fmt.Sprintf("api_key '%s' for domain %s is invalid", apiKey, domain))
 			}
 		}
 	}

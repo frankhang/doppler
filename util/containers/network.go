@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"encoding/binary"
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"os"
 	"path/filepath"
@@ -18,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // DefaultGateway returns the default Docker gateway.
@@ -82,7 +83,7 @@ func defaultGatewayFields() ([]string, error) {
 	f, err := os.Open(netRouteFile)
 	if err != nil {
 		if os.IsNotExist(err) || os.IsPermission(err) {
-			log.Errorf("Unable to open %s: %s", netRouteFile, err)
+			logutil.BgLogger().Error(fmt.Sprintf("Unable to open %s", netRouteFile), zap.Error(err))
 			return nil, nil
 		}
 		// Unknown error types will bubble up for handling.

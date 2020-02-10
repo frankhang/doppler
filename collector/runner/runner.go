@@ -8,6 +8,7 @@ package runner
 import (
 	"expvar"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	"strconv"
@@ -21,7 +22,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/util"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -89,7 +90,7 @@ func NewRunner() *Runner {
 		r.AddWorker()
 	}
 
-	log.Infof("Runner started with %d workers.", numWorkers)
+	logutil.BgLogger().Info(fmt.Sprintf("Runner started with %d workers.", numWorkers))
 	return r
 }
 
@@ -134,7 +135,7 @@ func (r *Runner) UpdateNumWorkers(numChecks int64) {
 		added++
 	}
 	if added > 0 {
-		log.Infof("Added %d workers to runner: now at "+runnerStats.Get("Workers").String()+" workers.", added)
+		logutil.BgLogger().Info(fmt.Sprintf("Added %d workers to runner: now at "+runnerStats.Get("Workers").String()+" workers.", added))
 	}
 }
 
@@ -142,11 +143,11 @@ func (r *Runner) UpdateNumWorkers(numChecks int64) {
 // All publishers to the pending channel need to have stopped before Stop is called
 func (r *Runner) Stop() {
 	if atomic.LoadUint32(&r.running) == 0 {
-		log.Debug("Runner already stopped, nothing to do here...")
+		logutil.BgLogger().Debug("Runner already stopped, nothing to do here...")
 		return
 	}
 
-	log.Info("Runner is shutting down...")
+	logutil.BgLogger().Info("Runner is shutting down...")
 
 	close(r.pending)
 	atomic.StoreUint32(&r.running, 0)
@@ -163,7 +164,7 @@ func (r *Runner) Stop() {
 	for _, c := range r.runningChecks {
 		wg.Add(1)
 		go func(c check.Check) {
-			log.Infof("Stopping Check %v that is still running...", c)
+			logutil.BgLogger().Info(fmt.Sprintf("Stopping Check %v that is still running...", c))
 			done := make(chan struct{})
 			go func() {
 				c.Stop()
@@ -176,7 +177,7 @@ func (r *Runner) Stop() {
 				// all good
 			case <-time.After(stopCheckTimeout):
 				// check is not responding
-				log.Warnf("Check %v not responding after %v", c, stopCheckTimeout)
+				logutil.BgLogger().Warn(fmt.Sprintf("Check %v not responding after %v", c, stopCheckTimeout))
 			}
 		}(c)
 	}
@@ -191,7 +192,7 @@ func (r *Runner) Stop() {
 		// all good
 	case <-time.After(stopAllChecksTimeout):
 		// some checks are not responding
-		log.Errorf("Some checks not responding after %v, timing out...", stopAllChecksTimeout)
+		logutil.BgLogger().Error(fmt.Sprintf("Some checks not responding after %v, timing out...", stopAllChecksTimeout))
 	}
 }
 
@@ -217,14 +218,14 @@ func (r *Runner) StopCheck(id check.ID) error {
 	defer r.m.Unlock()
 
 	if c, isRunning := r.runningChecks[id]; isRunning {
-		log.Debugf("Stopping check %s", c.ID())
+		logutil.BgLogger().Debug(fmt.Sprintf("Stopping check %s", c.ID()))
 		go func() {
 			// Remember that the check was stopped so that even if it runs we can discard its stats
 			c.Stop()
 			close(done)
 		}()
 	} else {
-		log.Debugf("Check %s is not running, not stopping it", id)
+		logutil.BgLogger().Debug(fmt.Sprintf("Check %s is not running, not stopping it", id))
 		return nil
 	}
 
@@ -238,7 +239,7 @@ func (r *Runner) StopCheck(id check.ID) error {
 
 // work waits for checks and run them as long as they arrive on the channel
 func (r *Runner) work() {
-	log.Debug("Ready to process checks...")
+	logutil.BgLogger().Debug("Ready to process checks...")
 	defer TestWg.Done()
 	defer runnerStats.Add("Workers", -1)
 
@@ -246,7 +247,7 @@ func (r *Runner) work() {
 		// see if the check is already running
 		r.m.Lock()
 		if _, isRunning := r.runningChecks[check.ID()]; isRunning {
-			log.Debugf("Check %s is already running, skip execution...", check)
+			logutil.BgLogger().Debug(fmt.Sprintf("Check %s is already running, skip execution...", check))
 			r.m.Unlock()
 			continue
 		} else {
@@ -258,9 +259,9 @@ func (r *Runner) work() {
 		doLog, lastLog := shouldLog(check.ID())
 
 		if doLog {
-			log.Infof("Running check %s", check)
+			logutil.BgLogger().Info(fmt.Sprintf("Running check %s", check))
 		} else {
-			log.Debugf("Running check %s", check)
+			logutil.BgLogger().Debug(fmt.Sprintf("Running check %s", check))
 		}
 
 		// run the check
@@ -275,7 +276,7 @@ func (r *Runner) work() {
 		// use the default sender for the service checks
 		sender, e := aggregator.GetDefaultSender()
 		if e != nil {
-			log.Errorf("Error getting default sender: %v. Not sending status check for %s", e, check)
+			logutil.BgLogger().Error(fmt.Sprintf("Error getting default sender: %v. Not sending status check for %s", e, check))
 		}
 		serviceCheckTags := []string{fmt.Sprintf("check:%s", check.String())}
 		serviceCheckStatus := metrics.ServiceCheckOK
@@ -289,7 +290,7 @@ func (r *Runner) work() {
 		}
 
 		if err != nil {
-			log.Errorf("Error running check %s: %s", check, err)
+			logutil.BgLogger().Error(fmt.Sprintf("Error running check %s", check, zap.Error(err)))
 			runnerStats.Add("Errors", 1)
 			serviceCheckStatus = metrics.ServiceCheckCritical
 		}
@@ -324,18 +325,18 @@ func (r *Runner) work() {
 			if lastLog {
 				l = l + fmt.Sprintf(", next runs will be logged every %v runs", config.Datadog.GetInt64("logging_frequency"))
 			}
-			log.Infof(l, check)
+			logutil.BgLogger().Info(fmt.Sprintf(l, check))
 		} else {
-			log.Debugf(l, check)
+			logutil.BgLogger().Debug(fmt.Sprintf(l, check))
 		}
 
 		if check.Interval() == 0 {
-			log.Infof("Check %v one-time's execution has finished", check)
+			logutil.BgLogger().Info(fmt.Sprintf("Check %v one-time's execution has finished", check))
 			return
 		}
 	}
 
-	log.Debug("Finished processing checks.")
+	logutil.BgLogger().Debug("Finished processing checks.")
 }
 
 func shouldLog(id check.ID) (doLog bool, lastLog bool) {
@@ -371,7 +372,7 @@ func addWorkStats(c check.Check, execTime time.Duration, err error, warnings []e
 	var found bool
 
 	checkStats.M.Lock()
-	log.Tracef("Add stats for %s", string(c.ID()))
+	logutil.BgLogger().Debug(fmt.Sprintf("Add stats for %s", string(c.ID())))
 	stats, found := checkStats.Stats[c.String()]
 	if !found {
 		stats = make(map[check.ID]*check.Stats)
@@ -406,7 +407,7 @@ func GetCheckStats() map[string]map[check.ID]*check.Stats {
 func RemoveCheckStats(checkID check.ID) {
 	checkStats.M.Lock()
 	defer checkStats.M.Unlock()
-	log.Debugf("Remove stats for %s", string(checkID))
+	logutil.BgLogger().Debug(fmt.Sprintf("Remove stats for %s", string(checkID)))
 
 	checkName := strings.Split(string(checkID), ":")[0]
 	stats, found := checkStats.Stats[checkName]

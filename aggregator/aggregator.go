@@ -333,7 +333,7 @@ func (agg *BufferedAggregator) handleSenderBucket(checkBucket senderHistogramBuc
 		checkBucket.bucket.Tags = util.SortUniqInPlace(checkBucket.bucket.Tags)
 		checkSampler.addBucket(checkBucket.bucket)
 	} else {
-		log.Debugf("CheckSampler with ID '%s' doesn't exist, can't handle histogram bucket", checkBucket.id)
+		logutil.BgLogger().Debug(fmt.Sprintf("CheckSampler with ID '%s' doesn't exist, can't handle histogram bucket", checkBucket.id))
 	}
 }
 
@@ -382,7 +382,7 @@ func (agg *BufferedAggregator) pushSketches(start time.Time, sketches metrics.Sk
 	err := agg.serializer.SendSketch(sketches)
 	state := stateOk
 	if err != nil {
-		log.Warnf("Error flushing sketch: %v", err)
+		logutil.BgLogger().Warn("Error flushing sketch", zap.Error(err))
 		aggregatorSketchesFlushErrors.Add(1)
 		state = stateError
 	}
@@ -396,7 +396,7 @@ func (agg *BufferedAggregator) pushSeries(start time.Time, series metrics.Series
 	err := agg.serializer.SendSeries(series)
 	state := stateOk
 	if err != nil {
-		log.Warnf("Error flushing series: %v", err)
+		logutil.BgLogger().Warn("Error flushing series", zap.Error(err))
 		aggregatorSeriesFlushErrors.Add(1)
 		state = stateError
 	}

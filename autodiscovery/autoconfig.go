@@ -8,6 +8,8 @@ package autodiscovery
 import (
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -542,7 +544,7 @@ func (ac *AutoConfig) resolveTemplateForService(tpl integration.Config, svc list
 // GetLoadedConfigs returns configs loaded
 func (ac *AutoConfig) GetLoadedConfigs() map[string]integration.Config {
 	if ac == nil || ac.store == nil {
-		log.Error("Autoconfig store not initialized")
+		logutil.BgLogger().Error("Autoconfig store not initialized")
 		return map[string]integration.Config{}
 	}
 	return ac.store.getLoadedConfigs()
@@ -577,7 +579,7 @@ func (ac *AutoConfig) processNewService(svc listeners.Service) {
 	var templates []integration.Config
 	ADIdentifiers, err := svc.GetADIdentifiers()
 	if err != nil {
-		log.Errorf("Failed to get AD identifiers for service %s, it will not be monitored - %s", svc.GetEntity(), err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to get AD identifiers for service %s, it will not be monitored - %s", svc.GetEntity(), err))
 		return
 	}
 	for _, adID := range ADIdentifiers {
@@ -585,7 +587,7 @@ func (ac *AutoConfig) processNewService(svc listeners.Service) {
 		ac.store.setADIDForServices(adID, svc.GetEntity())
 		tpls, err := ac.store.templateCache.Get(adID)
 		if err != nil {
-			log.Debugf("Unable to fetch templates from the cache: %v", err)
+			logutil.BgLogger().Debug("Unable to fetch templates from the cache", zap.Error(err))
 		}
 		templates = append(templates, tpls...)
 	}

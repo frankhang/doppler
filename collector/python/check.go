@@ -10,6 +10,7 @@ package python
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"runtime"
 	"time"
 	"unsafe"
@@ -22,7 +23,7 @@ import (
 	"github.com/frankhang/doppler/collector/check/defaults"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 /*
@@ -175,7 +176,7 @@ func (c *PythonCheck) Configure(data integration.Data, initConfig integration.Da
 
 	commonOptions := integration.CommonInstanceConfig{}
 	if err := yaml.Unmarshal(data, &commonOptions); err != nil {
-		log.Errorf("invalid instance section for check %s: %s", string(c.id), err)
+		logutil.BgLogger().Error(fmt.Sprintf("invalid instance section for check %s", string(c.id)), zap.Error(err))
 		return err
 	}
 
@@ -188,7 +189,7 @@ func (c *PythonCheck) Configure(data integration.Data, initConfig integration.Da
 	if commonOptions.EmptyDefaultHostname {
 		s, err := aggregator.GetSender(c.id)
 		if err != nil {
-			log.Errorf("failed to retrieve a sender for check %s: %s", string(c.id), err)
+			logutil.BgLogger().Error(fmt.Sprintf("failed to retrieve a sender for check %s", string(c.id)), zap.Error(err))
 		} else {
 			s.DisableDefaultHostname(true)
 		}
@@ -214,7 +215,7 @@ func (c *PythonCheck) Configure(data integration.Data, initConfig integration.Da
 		allSettings := config.Datadog.AllSettings()
 		agentConfig, err := yaml.Marshal(allSettings)
 		if err != nil {
-			log.Errorf("error serializing agent config: %s", err)
+			logutil.BgLogger().Error("error serializing agent config", zap.Error(err))
 			return err
 		}
 		cAgentConfig := TrackedCString(string(agentConfig))

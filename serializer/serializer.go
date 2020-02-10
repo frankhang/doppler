@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/logutil"
 	"net/http"
 	"regexp"
 
@@ -334,7 +335,7 @@ func (s *Serializer) SendMetadata(m marshaler.Marshaler) error {
 		return fmt.Errorf("could not determine size of metadata payload: %s", err)
 	}
 
-	log.Debugf("Sending metadata payload, content: %v", apiKeyRegExp.ReplaceAllString(string(payload), apiKeyReplacement))
+	logutil.BgLogger().Debug(fmt.Sprintf("Sending metadata payload, content: %v", apiKeyRegExp.ReplaceAllString(string(payload), apiKeyReplacement)))
 
 	if !smallEnough {
 		return fmt.Errorf("metadata payload was too big to send (%d bytes compressed), metadata payloads cannot be split", len(compressedPayload))
@@ -344,7 +345,7 @@ func (s *Serializer) SendMetadata(m marshaler.Marshaler) error {
 		return err
 	}
 
-	log.Infof("Sent metadata payload, size (raw/compressed): %d/%d bytes.", len(payload), len(compressedPayload))
+	logutil.BgLogger().Info(fmt.Sprintf("Sent metadata payload, size (raw/compressed): %d/%d bytes.", len(payload), len(compressedPayload)))
 	return nil
 }
 
@@ -352,7 +353,7 @@ func (s *Serializer) SendMetadata(m marshaler.Marshaler) error {
 // arbitrary payload the v1 API.
 func (s *Serializer) SendJSONToV1Intake(data interface{}) error {
 	if !s.enableJSONToV1Intake {
-		log.Debug("JSON to V1 intake endpoint payloads are disabled: dropping it")
+		logutil.BgLogger().Debug("JSON to V1 intake endpoint payloads are disabled: dropping it")
 		return nil
 	}
 
@@ -364,7 +365,7 @@ func (s *Serializer) SendJSONToV1Intake(data interface{}) error {
 		return err
 	}
 
-	log.Infof("Sent processes metadata payload, size: %d bytes.", len(payload))
-	log.Debugf("Sent processes metadata payload, content: %v", apiKeyRegExp.ReplaceAllString(string(payload), apiKeyReplacement))
+	logutil.BgLogger().Info(fmt.Sprintf("Sent processes metadata payload, size: %d bytes.", len(payload)))
+	logutil.BgLogger().Debug(fmt.Sprintf("Sent processes metadata payload, content: %v", apiKeyRegExp.ReplaceAllString(string(payload), apiKeyReplacement)))
 	return nil
 }

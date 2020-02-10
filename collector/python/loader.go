@@ -11,6 +11,7 @@ import (
 	"errors"
 	"expvar"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"sync"
 	"unsafe"
@@ -24,7 +25,7 @@ import (
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/version"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 /*
@@ -110,14 +111,14 @@ func (cl *PythonCheckLoader) Load(config integration.Config) ([]check.Check, err
 	// Platform-specific preparation
 	var err error
 	if !agentConfig.Datadog.GetBool("win_skip_com_init") {
-		log.Debugf("Performing platform loading prep")
+		logutil.BgLogger().Debug("Performing platform loading prep")
 		err = platformLoaderPrep()
 		if err != nil {
 			return nil, err
 		}
 		defer platformLoaderDone()
 	} else {
-		log.Infof("Skipping platform loading prep")
+		logutil.BgLogger().Info("Skipping platform loading prep")
 	}
 
 	// Looking for wheels first
@@ -139,15 +140,15 @@ func (cl *PythonCheckLoader) Load(config integration.Config) ([]check.Check, err
 		}
 
 		if err = getRtLoaderError(); err != nil {
-			log.Debugf("Unable to load python module - %s: %v", name, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Unable to load python module - %s", name), zap.Error(err))
 		} else {
-			log.Debugf("Unable to load python module - %s", name)
+			logutil.BgLogger().Debug(fmt.Sprintf("Unable to load python module - %s", name))
 		}
 	}
 
 	// all failed, return error for last failure
 	if checkModule == nil || checkClass == nil {
-		log.Debugf("PyLoader returning %s for %s", err, moduleName)
+		logutil.BgLogger().Debug(fmt.Sprintf("PyLoader returning error for %s", moduleName), zap.Error(err))
 		return nil, err
 	}
 
@@ -163,7 +164,7 @@ func (cl *PythonCheckLoader) Load(config integration.Config) ([]check.Check, err
 		wheelVersion = C.GoString(version)
 		C.rtloader_free(rtloader, unsafe.Pointer(version))
 	} else {
-		log.Debugf("python check '%s' doesn't have a '__version__' attribute: %s", config.Name, getRtLoaderError())
+		logutil.BgLogger().Debug(fmt.Sprintf("python check '%s' doesn't have a '__version__' attribute: %s", config.Name, getRtLoaderError()))
 	}
 
 	if !agentConfig.Datadog.GetBool("disable_py3_validation") && !loadedAsWheel {
@@ -180,7 +181,7 @@ func (cl *PythonCheckLoader) Load(config integration.Config) ([]check.Check, err
 			goCheckFilePath = C.GoString(checkFilePath)
 			C.rtloader_free(rtloader, unsafe.Pointer(checkFilePath))
 		} else {
-			log.Debugf("Could not query the __file__ attribute for check %s: %s", name, getRtLoaderError())
+			logutil.BgLogger().Debug(fmt.Sprintf("Could not query the __file__ attribute for check %s: %s", name), zap.Error(getRtLoaderError()))
 		}
 
 		go reportPy3Warnings(name, goCheckFilePath)
@@ -205,7 +206,7 @@ func (cl *PythonCheckLoader) Load(config integration.Config) ([]check.Check, err
 	if len(checks) == 0 {
 		return nil, fmt.Errorf("Could not configure any python check %s", moduleName)
 	}
-	log.Debugf("python loader: done loading check %s (version %s)", moduleName, wheelVersion)
+	logutil.BgLogger().Debug(fmt.Sprintf("python loader: done loading check %s (version %s)", moduleName, wheelVersion))
 	return checks, nil
 }
 
@@ -221,7 +222,7 @@ func expvarConfigureErrors() interface{} {
 }
 
 func addExpvarConfigureError(check string, errMsg string) {
-	log.Errorf("py.loader: could not configure check '%s': %s", check, errMsg)
+	logutil.BgLogger().Error(fmt.Sprintf("py.loader: could not configure check '%s': %s", check, errMsg))
 
 	statsLock.Lock()
 	defer statsLock.Unlock()
@@ -265,13 +266,13 @@ func reportPy3Warnings(checkName string, checkFilePath string) {
 			metricValue = 1.0
 		} else if warnings, err := validatePython3(checkName, checkFilePath); err != nil {
 			status = a7TagUnknown
-			log.Errorf("Failed to validate Python 3 linting for check '%s': '%s'", checkName, err)
+			logutil.BgLogger().Error(fmt.Sprintf("Failed to validate Python 3 linting for check '%s'", checkName), zap.Error(err))
 		} else if len(warnings) == 0 {
 			status = a7TagReady
 			metricValue = 1.0
 		} else {
 			status = a7TagNotReady
-			log.Warnf("The Python 3 linter returned warnings for check '%s'. For more details, check the output of the 'status' command or the status page of the Agent GUI).", checkName)
+			logutil.BgLogger().Warn(fmt.Sprintf("The Python 3 linter returned warnings for check '%s'. For more details, check the output of the 'status' command or the status page of the Agent GUI).", checkName))
 			for _, warning := range warnings {
 				log.Debug(warning)
 				py3Warnings[checkName] = append(py3Warnings[checkName], warning)
