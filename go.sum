@@ -17,6 +17,8 @@ github.com/DataDog/datadog-agent v0.0.0-20200210130454-f9c67f29c09a h1:OxoLmR/vM
 github.com/DataDog/datadog-agent v0.0.0-20200210130454-f9c67f29c09a/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-agent v0.0.0-20200210150723-62f9cde5dc3d h1:uUAxDwDO2r1ucL8/rUMCsNlhjLKQfzWHdZ+KwlXJiLE=
 github.com/DataDog/datadog-agent v0.0.0-20200210150723-62f9cde5dc3d/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200211105759-c37f3341f3cc h1:NXn8OYq0dIN0M5wR7f2i0XispcctrWcpGUo/c0kUml0=
+github.com/DataDog/datadog-agent v0.0.0-20200211105759-c37f3341f3cc/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-go v3.3.1+incompatible h1:NT/ghvYzqIzTJGiqvc3n4t9cZy8waO+I2O3I8Cok6/k=
 github.com/DataDog/datadog-go v3.3.1+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/gohai v0.0.0-20190423095225-107ebc5d16ad h1:vIwXJo4heD9Nv5LcehO9FxTw3n9Us5xPBcAk0tgUvYI=

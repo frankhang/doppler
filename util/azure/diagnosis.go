@@ -7,7 +7,7 @@ package azure
 
 import (
 	"github.com/frankhang/doppler/diagnose/diagnosis"
-	"github.com/frankhang/doppler/util/log"
+
 	"github.com/frankhang/util/errors"
 )
 
