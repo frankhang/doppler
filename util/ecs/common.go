@@ -8,13 +8,15 @@
 package ecs
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"time"
 
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/containers/metrics"
 	"github.com/frankhang/doppler/util/ecs/metadata"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	v2 "github.com/frankhang/doppler/util/ecs/metadata/v2"
 )
@@ -27,7 +29,7 @@ func ListContainersInCurrentTask() ([]*containers.Container, error) {
 
 	task, err := metadata.V2().GetTask()
 	if err != nil || len(task.Containers) == 0 {
-		log.Error("Unable to get the container list from ecs")
+		logutil.BgLogger().Error("Unable to get the container list from ecs")
 		return cList, err
 	}
 	for _, c := range task.Containers {
@@ -44,7 +46,7 @@ func UpdateContainerMetrics(cList []*containers.Container) error {
 	for _, ctr := range cList {
 		stats, err := metadata.V2().GetContainerStats(ctr.ID)
 		if err != nil {
-			log.Debugf("Unable to get stats from ECS for container %s: %s", ctr.ID, err)
+			logutil.BgLogger().Debug("Unable to get stats from ECS for container", zap.String("id", ctr.ID), zap.Error(err))
 			continue
 		}
 
@@ -81,13 +83,13 @@ func convertMetaV2Container(c v2.Container) *containers.Container {
 
 	createdAt, err := time.Parse(time.RFC3339, c.CreatedAt)
 	if err != nil {
-		log.Errorf("Unable to determine creation time for container %s - %s", c.DockerID, err)
+		logutil.BgLogger().Error("Unable to determine creation time for container", zap.Strings("id", c.DockerID), zap.Error(err))
 	} else {
 		container.Created = createdAt.Unix()
 	}
 	startedAt, err := time.Parse(time.RFC3339, c.StartedAt)
 	if err != nil {
-		log.Errorf("Unable to determine creation time for container %s - %s", c.DockerID, err)
+		logutil.BgLogger().Error("Unable to determine creation time for container", zap.String("id", c.DockerID), zap.Error(err))
 	} else {
 		container.StartedAt = startedAt.Unix()
 	}
@@ -131,14 +133,14 @@ func convertMetaV2ContainerStats(s *v2.ContainerStats) (cpu metrics.CgroupTimesS
 func parseContainerNetworkAddresses(ports []v2.Port, networks []v2.Network, container string) []containers.NetworkAddress {
 	addrList := []containers.NetworkAddress{}
 	if networks == nil {
-		log.Debugf("No network settings available in ECS metadata")
+		logutil.BgLogger().Debug("No network settings available in ECS metadata")
 		return addrList
 	}
 	for _, network := range networks {
 		for _, addr := range network.IPv4Addresses { // one-element list
 			IP := net.ParseIP(addr)
 			if IP == nil {
-				log.Warnf("Unable to parse IP: %v for container: %s", addr, container)
+				logutil.BgLogger().Warn(fmt.Sprintf("Unable to parse IP: %v for container: %s", addr, container))
 				continue
 			}
 			if len(ports) > 0 {

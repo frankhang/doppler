@@ -8,6 +8,7 @@
 package containers
 
 import (
+	"go.uber.org/zap"
 	yaml "gopkg.in/yaml.v2"
 	pb "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
 
@@ -19,7 +20,7 @@ import (
 	"github.com/frankhang/doppler/tagger/collectors"
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/containers/cri"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -100,7 +101,7 @@ func (c *CRICheck) processContainerStats(sender aggregator.Sender, runtime strin
 		entityID := containers.BuildTaggerEntityName(cid)
 		tags, err := tagger.Tag(entityID, collectors.HighCardinality)
 		if err != nil {
-			log.Errorf("Could not collect tags for container %s: %s", cid[:12], err)
+			logutil.BgLogger().Error("Could not collect tags for container", zap.String("id", cid[:12]), zap.Error(err))
 		}
 		tags = append(tags, "runtime:"+runtime)
 		sender.Gauge("cri.mem.rss", float64(stats.GetMemory().GetWorkingSetBytes().GetValue()), "", tags)

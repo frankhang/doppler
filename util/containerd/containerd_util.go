@@ -9,11 +9,14 @@ package containerd
 
 import (
 	"context"
+	"fmt"
+	"github.com/frankhang/util/errors"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/retry"
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/types"
@@ -65,7 +68,7 @@ func GetContainerdUtil() (ContainerdItf, error) {
 			namespace:         config.Datadog.GetString("containerd_namespace"),
 		}
 		if globalContainerdUtil.socketPath == "" {
-			log.Info("No socket path was specified, defaulting to /var/run/containerd/containerd.sock")
+			logutil.BgLogger().Info("No socket path was specified, defaulting to /var/run/containerd/containerd.sock")
 			globalContainerdUtil.socketPath = containerdDefaultSocketPath
 		}
 		// Initialize the client in the connect method
@@ -78,7 +81,7 @@ func GetContainerdUtil() (ContainerdItf, error) {
 		})
 	})
 	if err := globalContainerdUtil.initRetry.TriggerRetry(); err != nil {
-		log.Errorf("Containerd init error: %s", err.Error())
+		logutil.BgLogger().Error("Containerd init error", zap.Error(err))
 		return nil, err
 	}
 	return globalContainerdUtil, nil
@@ -99,7 +102,9 @@ func (c *ContainerdUtil) Metadata() (containerd.Version, error) {
 // Close is used when done with a ContainerdUtil
 func (c *ContainerdUtil) Close() error {
 	if c.cl == nil {
-		return log.Errorf("Containerd Client not initialized")
+		err := errors.New("Containerd Client not initialized")
+		logutil.BgLogger().Error(err.Error())
+		return err
 	}
 	return c.cl.Close()
 }
@@ -110,7 +115,7 @@ func (c *ContainerdUtil) connect() error {
 	if c.cl != nil {
 		err = c.cl.Reconnect()
 		if err != nil {
-			log.Errorf("Could not reconnect to the containerd daemon: %v", err)
+			logutil.BgLogger().Error("Could not reconnect to the containerd daemon", zap.Error(err))
 			return c.cl.Close() // Attempt to close connections to avoid overloading the GRPC
 		}
 		return nil
@@ -122,7 +127,7 @@ func (c *ContainerdUtil) connect() error {
 	}
 	ver, err := c.Metadata()
 	if err == nil {
-		log.Infof("Connected to containerd - Version %s/%s", ver.Version, ver.Revision)
+		logutil.BgLogger().Info(fmt.Sprintf("Connected to containerd - Version %s/%s", ver.Version, ver.Revision))
 	}
 	return err
 }

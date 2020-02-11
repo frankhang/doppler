@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"unsafe"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/winutil"
 	"golang.org/x/sys/windows"
 )
@@ -51,8 +51,8 @@ func pdhLookupPerfNameByIndex(ndx int) (string, error) {
 		uintptr(unsafe.Pointer(&len)))
 
 	if r != PDH_MORE_DATA {
-		log.Errorf("Failed to look up Windows performance counter (looking for index %d)", ndx)
-		log.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to look up Windows performance counter (looking for index %d)", ndx))
+		logutil.BgLogger().Error("This error indicates that the Windows performance counter database may need to be rebuilt")
 		return name, fmt.Errorf("Failed to get buffer size %v", r)
 	}
 	buf := make([]uint16, len)
@@ -73,7 +73,7 @@ func pdhEnumObjectItems(className string) (counters []string, instances []string
 	var instancelen uint32
 
 	if counterlen != 0 || instancelen != 0 {
-		log.Errorf("invalid parameter %v %v", counterlen, instancelen)
+		logutil.BgLogger().Error(fmt.Sprintf("invalid parameter %v %v", counterlen, instancelen))
 		counterlen = 0
 		instancelen = 0
 	}
@@ -88,8 +88,8 @@ func pdhEnumObjectItems(className string) (counters []string, instances []string
 		uintptr(PERF_DETAIL_WIZARD),
 		uintptr(0))
 	if r != PDH_MORE_DATA {
-		log.Errorf("Failed to enumerate windows performance counters (%v) (class %s)", r, className)
-		log.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to enumerate windows performance counters (%v) (class %s)", r, className))
+		logutil.BgLogger().Error("This error indicates that the Windows performance counter database may need to be rebuilt")
 		return nil, nil, fmt.Errorf("Failed to get buffer size %v", r)
 	}
 	counterbuf := make([]uint16, counterlen)
@@ -165,8 +165,8 @@ func pdhMakeCounterPath(machine string, object string, instance string, counter 
 		uintptr(unsafe.Pointer(&len)),
 		uintptr(0))
 	if r != PDH_MORE_DATA {
-		log.Errorf("Failed to make Windows performance counter (%s %s %s %s)", machine, object, instance, counter)
-		log.Errorf("This error indicates that the Windows performance counter database may need to be rebuilt")
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to make Windows performance counter (%s %s %s %s)", machine, object, instance, counter))
+		logutil.BgLogger().Error("This error indicates that the Windows performance counter database may need to be rebuilt")
 		err = fmt.Errorf("Failed to get buffer size %v", r)
 		return
 	}
