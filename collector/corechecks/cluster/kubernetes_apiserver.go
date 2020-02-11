@@ -26,7 +26,7 @@ import (
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver/leaderelection"
 	"github.com/frankhang/doppler/util/kubernetes/clustername"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // Covers the Control Plane service check and the in memory pod metadata.
@@ -86,7 +86,7 @@ func (k *KubeASCheck) Configure(config, initConfig integration.Data, source stri
 	// Check connectivity to the APIServer
 	err = k.instance.parse(config)
 	if err != nil {
-		log.Error("could not parse the config for the API server")
+		logutil.BgLogger().Error("could not parse the config for the API server")
 		return err
 	}
 	if k.instance.EventCollectionTimeoutMs == 0 {
@@ -122,7 +122,7 @@ func (k *KubeASCheck) Run() error {
 	defer sender.Commit()
 
 	if config.Datadog.GetBool("cluster_agent.enabled") {
-		log.Debug("Cluster agent is enabled. Not running Kubernetes API Server check or collecting Kubernetes Events.")
+		logutil.BgLogger().Debug("Cluster agent is enabled. Not running Kubernetes API Server check or collecting Kubernetes Events.")
 		return nil
 	}
 	// If the check is configured as a cluster check, the cluster check worker needs to skip the leader election section.
@@ -130,7 +130,9 @@ func (k *KubeASCheck) Run() error {
 	if !k.instance.LeaderSkip {
 		// Only run if Leader Election is enabled.
 		if !config.Datadog.GetBool("leader_election") {
-			return log.Error("Leader Election not enabled. Not running Kubernetes API Server check or collecting Kubernetes Events.")
+			err := errors.New("Leader Election not enabled. Not running Kubernetes API Server check or collecting Kubernetes Events.")
+			logutil.BgLogger().Error(err.Error())
+			return err
 		}
 		errLeader := k.runLeaderElection()
 		if errLeader != nil {
@@ -219,10 +221,10 @@ func (k *KubeASCheck) runLeaderElection() error {
 	}
 
 	if !leaderEngine.IsLeader() {
-		log.Debugf("Leader is %q. %s will not run Kubernetes cluster related checks and collecting events", leaderEngine.GetLeader(), leaderEngine.HolderIdentity)
+		logutil.BgLogger().Debugf(fmt.Sprintf("Leader is %q. %s will not run Kubernetes cluster related checks and collecting events", leaderEngine.GetLeader(), leaderEngine.HolderIdentity))
 		return apiserver.ErrNotLeader
 	}
-	log.Tracef("Current leader: %q, running Kubernetes cluster related checks and collecting events", leaderEngine.GetLeader())
+	logutil.BgLogger().Debug(fmt.Sprintf("Current leader: %q, running Kubernetes cluster related checks and collecting events", leaderEngine.GetLeader()))
 	return nil
 }
 
@@ -234,7 +236,7 @@ func (k *KubeASCheck) eventCollectionCheck() (newEvents []*v1.Event, err error) 
 
 	// This is to avoid getting in a situation where we list all the events for multiple runs in a row.
 	if resVer == "" && k.eventCollection.LastResVer != "" {
-		log.Errorf("Resource Version stored in the ConfigMap is incorrect. Will resume collecting from %s", k.eventCollection.LastResVer)
+		logutil.BgLogger().Error(fmt.Sprintf("Resource Version stored in the ConfigMap is incorrect. Will resume collecting from %s", k.eventCollection.LastResVer))
 		resVer = k.eventCollection.LastResVer
 	}
 
@@ -262,7 +264,7 @@ func (k *KubeASCheck) parseComponentStatus(sender aggregator.Sender, componentsS
 			return errors.New("metadata structure has changed. Not collecting API Server's Components status")
 		}
 		if component.Conditions == nil || component.Name == "" {
-			log.Debug("API Server component's structure is not expected")
+			logutil.BgLogger().Debug("API Server component's structure is not expected")
 			continue
 		}
 		tagComp := []string{fmt.Sprintf("component:%s", component.Name)}
@@ -271,7 +273,7 @@ func (k *KubeASCheck) parseComponentStatus(sender aggregator.Sender, componentsS
 
 			// We only expect the Healthy condition. May change in the future. https://github.com/kubernetes/community/blob/master/contributors/devel/api-conventions.md#typical-status-properties
 			if condition.Type != "Healthy" {
-				log.Debugf("Condition %q not supported", condition.Type)
+				logutil.BgLogger().Debug(fmt.Sprintf("Condition %q not supported", condition.Type))
 				continue
 			}
 			// We only expect True, False and Unknown (default).

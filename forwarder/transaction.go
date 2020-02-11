@@ -11,6 +11,7 @@ import (
 	"crypto/tls"
 	"expvar"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptrace"
@@ -20,7 +21,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
 	httputils "github.com/frankhang/doppler/util/http"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var (
@@ -54,28 +55,28 @@ var trace = &httptrace.ClientTrace{
 		if dnsInfo.Err != nil {
 			transactionsDNSErrors.Add(1)
 			tlmTxErrors.Inc("unknown", "dns_lookup_failure")
-			log.Debugf("DNS Lookup failure: %s", dnsInfo.Err)
+			logutil.BgLogger().Debug("DNS Lookup failure", zap.Error(dnsInfo.Err))
 		}
 	},
 	WroteRequest: func(wroteInfo httptrace.WroteRequestInfo) {
 		if wroteInfo.Err != nil {
 			transactionsWroteRequestErrors.Add(1)
 			tlmTxErrors.Inc("unknown", "writing_failure")
-			log.Debugf("Request writing failure: %s", wroteInfo.Err)
+			logutil.BgLogger().Debug("Request writing failure", zap.Error(wroteInfo.Err))
 		}
 	},
 	ConnectDone: func(network, addr string, err error) {
 		if err != nil {
 			transactionsConnectionErrors.Add(1)
 			tlmTxErrors.Inc("unknown", "connection_failure")
-			log.Debugf("Connection failure: %s", err)
+			logutil.BgLogger().Debug("Connection failure", zap.Error(err))
 		}
 	},
 	TLSHandshakeDone: func(tlsState tls.ConnectionState, err error) {
 		if err != nil {
 			transactionsTLSErrors.Add(1)
 			tlmTxErrors.Inc("unknown", "tls_handshake_failure")
-			log.Errorf("TLS Handshake failure: %s", err)
+			logutil.BgLogger().Error("TLS Handshake failure", zap.Error(err))
 		}
 	},
 }
@@ -148,7 +149,7 @@ func (t *HTTPTransaction) Process(ctx context.Context, client *http.Client) erro
 
 	req, err := http.NewRequest("POST", url, reader)
 	if err != nil {
-		log.Errorf("Could not create request for transaction to invalid URL %q (dropping transaction): %s", logURL, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Could not create request for transaction to invalid URL %q (dropping transaction)", logURL), zap.Error(err))
 		transactionsErrors.Add(1)
 		tlmTxErrors.Inc(t.Domain, "invalid_request")
 		transactionsSentRequestErrors.Add(1)
@@ -172,7 +173,7 @@ func (t *HTTPTransaction) Process(ctx context.Context, client *http.Client) erro
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Errorf("Fail to read the response Body: %s", err)
+		logutil.BgLogger().Error("Fail to read the response Body", zap.Error(err))
 		return err
 	}
 
@@ -191,12 +192,12 @@ func (t *HTTPTransaction) Process(ctx context.Context, client *http.Client) erro
 	}
 
 	if resp.StatusCode == 400 || resp.StatusCode == 404 || resp.StatusCode == 413 {
-		log.Errorf("Error code %q received while sending transaction to %q: %s, dropping it", resp.Status, logURL, string(body))
+		logutil.BgLogger().Error(fmt.Sprintf("Error code %q received while sending transaction to %q: %s, dropping it", resp.Status, logURL, string(body)))
 		transactionsDropped.Add(1)
 		tlmTxDropped.Inc(t.Domain)
 		return nil
 	} else if resp.StatusCode == 403 {
-		log.Errorf("API Key invalid, dropping transaction for %s", logURL)
+		logutil.BgLogger().Error(fmt.Sprintf("API Key invalid, dropping transaction for %s", logURL))
 		transactionsDropped.Add(1)
 		tlmTxDropped.Inc(t.Domain)
 		return nil
@@ -213,15 +214,15 @@ func (t *HTTPTransaction) Process(ctx context.Context, client *http.Client) erro
 	loggingFrequency := config.Datadog.GetInt64("logging_frequency")
 
 	if transactionsSuccessful.Value() == 1 {
-		log.Infof("Successfully posted payload to %q, the agent will only log transaction success every %d transactions", logURL, loggingFrequency)
-		log.Tracef("Url: %q payload: %s", logURL, string(body))
+		logutil.BgLogger().Info(fmt.Sprintf("Successfully posted payload to %q, the agent will only log transaction success every %d transactions", logURL, loggingFrequency))
+		logutil.BgLogger().Debug(fmt.Sprintf("Url: %q payload: %s", logURL, string(body)))
 		return nil
 	}
 	if transactionsSuccessful.Value()%loggingFrequency == 0 {
-		log.Infof("Successfully posted payload to %q", logURL)
-		log.Tracef("Url: %q payload: %s", logURL, string(body))
+		logutil.BgLogger().Info(fmt.Sprintf("Successfully posted payload to %q", logURL))
+		logutil.BgLogger().Debug(fmt.Sprintf("Url: %q payload: %s", logURL, string(body)))
 		return nil
 	}
-	log.Tracef("Successfully posted payload to %q: %s", logURL, string(body))
+	logutil.BgLogger().Debug(fmt.Sprintf("Successfully posted payload to %q: %s", logURL, string(body)))
 	return nil
 }

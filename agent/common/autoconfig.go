@@ -6,6 +6,8 @@
 package common
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"path/filepath"
 
 	"github.com/frankhang/doppler/autodiscovery"
@@ -15,7 +17,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/logs"
 	"github.com/frankhang/doppler/tagger"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // SetupAutoConfig configures the global AutoConfig:
@@ -68,20 +70,20 @@ func SetupAutoConfig(confdPath string) {
 				if err == nil {
 					pollInterval := providers.GetPollInterval(cp)
 					if cp.Polling {
-						log.Infof("Registering %s config provider polled every %s", cp.Name, pollInterval.String())
+						logutil.BgLogger().Info(fmt.Sprintf("Registering %s config provider polled every %s", cp.Name, pollInterval.String()))
 					} else {
-						log.Infof("Registering %s config provider", cp.Name)
+						logutil.BgLogger().Info(fmt.Sprintf("Registering %s config provider", cp.Name))
 					}
 					AC.AddConfigProvider(configProvider, cp.Polling, pollInterval)
 				} else {
-					log.Errorf("Error while adding config provider %v: %v", cp.Name, err)
+					logutil.BgLogger().Error(fmt.Sprintf("Error while adding config provider %v", cp.Name), zap.Error(err))
 				}
 			} else {
-				log.Errorf("Unable to find this provider in the catalog: %v", cp.Name)
+				logutil.BgLogger().Error(fmt.Sprintf("Unable to find this provider in the catalog: %v", cp.Name))
 			}
 		}
 	} else {
-		log.Errorf("Error while reading 'config_providers' settings: %v", err)
+		logutil.BgLogger().Error("Error while reading 'config_providers' settings", zap.Error(err))
 	}
 
 	// Autodiscovery listeners
@@ -97,7 +99,7 @@ func SetupAutoConfig(confdPath string) {
 		listeners = AutoAddListeners(listeners)
 		AC.AddListeners(listeners)
 	} else {
-		log.Errorf("Error while reading 'listeners' settings: %v", err)
+		logutil.BgLogger().Error("Error while reading 'listeners' settings", zap.Error(err))
 	}
 }
 

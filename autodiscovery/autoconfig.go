@@ -8,7 +8,6 @@ package autodiscovery
 import (
 	"expvar"
 	"fmt"
-	"github.com/frankhang/util/logutil"
 	"go.uber.org/zap"
 	"sync"
 	"time"
@@ -23,7 +22,7 @@ import (
 	"github.com/frankhang/doppler/secrets"
 	"github.com/frankhang/doppler/status/health"
 	"github.com/frankhang/doppler/tagger"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/retry"
 )
 
@@ -125,7 +124,7 @@ func (ac *AutoConfig) checkTagFreshness() {
 		}
 	}
 	for _, service := range servicesToRefresh {
-		log.Debugf("Tags changed for service %s, rescheduling associated checks if any", service.GetTaggerEntity())
+		logutil.BgLogger().Debug(fmt.Sprintf("Tags changed for service %s, rescheduling associated checks if any", service.GetTaggerEntity()))
 		ac.processDelService(service)
 		ac.processNewService(service)
 	}
@@ -176,7 +175,7 @@ func (ac *AutoConfig) AddConfigProvider(provider providers.ConfigProvider, shoul
 			// this is formatted inline since logging is done on a background thread,
 			// so you can only pass it things to act on if they're thread safe
 			// this is not inherently thread safe
-			log.Warnf("Provider %s was already added, skipping...", provider)
+			logutil.BgLogger().Warn(fmt.Sprintf("Provider %s was already added, skipping...", provider))
 			return
 		}
 	}
@@ -202,7 +201,7 @@ func (ac *AutoConfig) GetAllConfigs() []integration.Config {
 	for _, pd := range ac.providers {
 		cfgs, err := pd.provider.Collect()
 		if err != nil {
-			log.Debugf("Unexpected error returned when collecting configurations from provider %v: %v", pd.provider, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Unexpected error returned when collecting configurations from provider %v", pd.provider), zap.Error(err))
 		}
 
 		if fileConfPd, ok := pd.provider.(*providers.FileConfigProvider); ok {
@@ -262,16 +261,16 @@ func (ac *AutoConfig) processNewConfig(config integration.Config) []integration.
 	if check.CollectDefaultMetrics(config) {
 		metrics := ac.store.getJMXMetricsForConfigName(config.Name)
 		if len(metrics) == 0 {
-			log.Infof("%s doesn't have an additional metric configuration file: not collecting default metrics", config.Name)
+			logutil.BgLogger().Info(fmt.Sprintf("%s doesn't have an additional metric configuration file: not collecting default metrics", config.Name))
 		} else if err := config.AddMetrics(metrics); err != nil {
-			log.Infof("Unable to add default metrics to collect to %s check: %s", config.Name, err)
+			logutil.BgLogger().Info(fmt.Sprintf("Unable to add default metrics to collect to %s check", config.Name), zap.Error(err))
 		}
 	}
 
 	if config.IsTemplate() {
 		// store the template in the cache in any case
 		if err := ac.store.templateCache.Set(config); err != nil {
-			log.Errorf("Unable to store Check configuration in the cache: %s", err)
+			logutil.BgLogger().Error("Unable to store Check configuration in the cache", zap.Error(err))
 		}
 
 		// try to resolve the template
@@ -279,7 +278,7 @@ func (ac *AutoConfig) processNewConfig(config integration.Config) []integration.
 		if len(resolvedConfigs) == 0 {
 			e := fmt.Sprintf("Can't resolve the template for %s at this moment.", config.Name)
 			errorStats.setResolveWarning(config.Name, e)
-			log.Debug(e)
+			logutil.BgLogger().Debug(string(e))
 			return configs
 		}
 
@@ -287,7 +286,7 @@ func (ac *AutoConfig) processNewConfig(config integration.Config) []integration.
 		for _, config := range resolvedConfigs {
 			config, err := decryptConfig(config)
 			if err != nil {
-				log.Errorf("Dropping conf for %q: %s", config.Name, err.Error())
+				logutil.BgLogger().Error(fmt.Sprintf("Dropping conf for %q", config.Name), zap.Error(err))
 				continue
 			}
 			configs = append(configs, config)
@@ -296,7 +295,7 @@ func (ac *AutoConfig) processNewConfig(config integration.Config) []integration.
 	}
 	config, err := decryptConfig(config)
 	if err != nil {
-		log.Errorf("Dropping conf for '%s': %s", config.Name, err.Error())
+		logutil.BgLogger().Error(fmt.Sprintf("Dropping conf for '%s'", config.Name), zap.Error(err))
 		return configs
 	}
 	configs = append(configs, config)
@@ -333,10 +332,10 @@ func (ac *AutoConfig) addListenerCandidates(listenerConfigs []config.Listeners) 
 		factory, ok := listeners.ServiceListenerFactories[c.Name]
 		if !ok {
 			// Factory has not been registered.
-			log.Warnf("Listener %s was not registered", c.Name)
+			logutil.BgLogger().Warn(fmt.Sprintf("Listener %s was not registered", c.Name))
 			continue
 		}
-		log.Debugf("Listener %s was registered", c.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Listener %s was registered", c.Name))
 		ac.listenerCandidates[c.Name] = factory
 	}
 }
@@ -350,16 +349,16 @@ func (ac *AutoConfig) initListenerCandidates() bool {
 		switch {
 		case err == nil:
 			// Init successful, let's start listening
-			log.Infof("%s listener successfully started", name)
+			logutil.BgLogger().Info(fmt.Sprintf("%s listener successfully started", name))
 			ac.listeners = append(ac.listeners, listener)
 			listener.Listen(ac.newService, ac.delService)
 			delete(ac.listenerCandidates, name)
 		case retry.IsErrWillRetry(err):
 			// Log an info and keep in candidates
-			log.Infof("%s listener cannot start, will retry: %s", name, err)
+			logutil.BgLogger().Info(fmt.Sprintf("%s listener cannot start, will retry", name), zap.Error(err))
 		default:
 			// Log an error and remove from candidates
-			log.Errorf("%s listener cannot start: %s", name, err)
+			logutil.BgLogger().Error(fmt.Sprintf("%s listener cannot start", name), zap.Error(err))
 			delete(ac.listenerCandidates, name)
 		}
 	}
@@ -466,7 +465,7 @@ func (ac *AutoConfig) removeConfigTemplates(configs []integration.Config) {
 			// Remove template from the cache
 			err := ac.store.templateCache.Del(c)
 			if err != nil {
-				log.Debugf("Could not delete template: %v", err)
+				logutil.BgLogger().Debug("Could not delete template", zap.Error(err))
 			}
 		}
 	}
@@ -494,14 +493,14 @@ func (ac *AutoConfig) resolveTemplate(tpl integration.Config) []integration.Conf
 		if !found {
 			s := fmt.Sprintf("No service found with this AD identifier: %s", id)
 			errorStats.setResolveWarning(tpl.Name, s)
-			log.Debugf(s)
+			logutil.BgLogger().Debug(s)
 			continue
 		}
 
 		for serviceID := range serviceIds {
 			svc := ac.store.getServiceForEntity(serviceID)
 			if svc == nil {
-				log.Warnf("Service %s was removed before we could resolve its config", serviceID)
+				logutil.BgLogger().Warn(fmt.Sprintf("Service %s was removed before we could resolve its config", serviceID))
 				continue
 			}
 			resolvedConfig, err := ac.resolveTemplateForService(tpl, svc)
@@ -528,7 +527,8 @@ func (ac *AutoConfig) resolveTemplateForService(tpl integration.Config, svc list
 	if err != nil {
 		newErr := fmt.Errorf("error resolving template %s for service %s: %v", tpl.Name, svc.GetEntity(), err)
 		errorStats.setResolveWarning(tpl.Name, newErr.Error())
-		return tpl, log.Warn(newErr)
+		logutil.BgLogger().Warn(newErr.Error())
+		return tpl, newErr
 	}
 	ac.store.setLoadedConfig(resolvedConfig)
 	ac.store.addConfigForService(svc.GetEntity(), resolvedConfig)

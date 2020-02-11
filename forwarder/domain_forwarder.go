@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var (
@@ -79,7 +79,7 @@ func (f *domainForwarder) retryTransactions(retryBefore time.Time) {
 	// In case it takes more that flushInterval to sort and retry
 	// transactions we skip a retry.
 	if !atomic.CompareAndSwapInt32(&f.isRetrying, 0, 1) {
-		log.Errorf("The forwarder is still retrying Transaction: this should never happens and you might lower the 'forwarder_retry_queue_max_size'")
+		logutil.BgLogger().Error("The forwarder is still retrying Transaction: this should never happens and you might lower the 'forwarder_retry_queue_max_size'")
 		return
 	}
 	defer atomic.StoreInt32(&f.isRetrying, 0)
@@ -117,8 +117,8 @@ func (f *domainForwarder) retryTransactions(retryBefore time.Time) {
 	tlmTxRetryQueueSize.Set(float64(len(f.retryQueue)), f.domain)
 
 	if droppedRetryQueueFull+droppedWorkerBusy > 0 {
-		log.Errorf("Dropped %d transactions in this retry attempt: %d for exceeding the retry queue size limit of %d, %d because the workers are too busy",
-			droppedRetryQueueFull+droppedWorkerBusy, droppedRetryQueueFull, f.retryQueueLimit, droppedWorkerBusy)
+		logutil.BgLogger().Error(fmt.Sprintf("Dropped %d transactions in this retry attempt: %d for exceeding the retry queue size limit of %d, %d because the workers are too busy",
+			droppedRetryQueueFull+droppedWorkerBusy, droppedRetryQueueFull, f.retryQueueLimit, droppedWorkerBusy))
 	}
 }
 
@@ -184,7 +184,7 @@ func (f *domainForwarder) Stop(purgeHighPrio bool) {
 	defer f.m.Unlock()
 
 	if f.internalState == Stopped {
-		log.Warnf("the forwarder is already stopped")
+		logutil.BgLogger().Warn("the forwarder is already stopped")
 		return
 	}
 
@@ -197,7 +197,7 @@ func (f *domainForwarder) Stop(purgeHighPrio bool) {
 	close(f.highPrio)
 	close(f.lowPrio)
 	close(f.requeuedTransaction)
-	log.Info("domainForwarder stopped")
+	logutil.BgLogger().Info("domainForwarder stopped")
 	f.internalState = Stopped
 }
 

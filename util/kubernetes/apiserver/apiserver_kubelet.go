@@ -8,12 +8,14 @@
 package apiserver
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // NodeMetadataMapping only fetch the endpoints from Kubernetes apiserver and add the metadataMapper of the
@@ -22,14 +24,14 @@ import (
 func (c *APIClient) NodeMetadataMapping(nodeName string, pods []*kubelet.Pod) error {
 	endpointList, err := c.Cl.CoreV1().Endpoints("").List(metav1.ListOptions{TimeoutSeconds: &c.timeoutSeconds})
 	if err != nil {
-		log.Errorf("Could not collect endpoints from the API Server: %q", err.Error())
+		logutil.BgLogger().Error("Could not collect endpoints from the API Server", zap.Error(err))
 		return err
 	}
 	if endpointList.Items == nil {
-		log.Debug("No endpoints collected from the API server")
+		logutil.BgLogger().Debug("No endpoints collected from the API server")
 		return nil
 	}
-	log.Debugf("Successfully collected endpoints")
+	logutil.BgLogger().Debug("Successfully collected endpoints")
 
 	var node v1.Node
 	var nodeList v1.NodeList
@@ -46,7 +48,7 @@ func processKubeServices(nodeList *v1.NodeList, pods []*kubelet.Pod, endpointLis
 	if nodeList.Items == nil || len(pods) == 0 || endpointList.Items == nil {
 		return
 	}
-	log.Debugf("Identified: %d node, %d pod, %d endpoints", len(nodeList.Items), len(pods), len(endpointList.Items))
+	logutil.BgLogger().Debug(fmt.Sprintf("Identified: %d node, %d pod, %d endpoints", len(nodeList.Items), len(pods), len(endpointList.Items)))
 	for _, node := range nodeList.Items {
 		nodeName := node.Name
 		nodeNameCacheKey := cache.BuildAgentKey(metadataMapperCachePrefix, nodeName)
@@ -64,7 +66,7 @@ func processKubeServices(nodeList *v1.NodeList, pods []*kubelet.Pod, endpointLis
 		// If a pod is killed and rescheduled during a run, we will only keep the old entry for another run, which is acceptable.
 		if found && freshnessCache != len(pods) || !freshnessFound {
 			cache.Cache.Set(freshness, len(pods), metadataMapExpire)
-			log.Debugf("Refreshing cache for %s", nodeNameCacheKey)
+			logutil.BgLogger().Debug(fmt.Sprintf("Refreshing cache for %s", nodeNameCacheKey))
 		} else {
 			oldMetadataBundle, ok := cacheData.(*metadataMapperBundle)
 			if ok {
@@ -73,7 +75,7 @@ func processKubeServices(nodeList *v1.NodeList, pods []*kubelet.Pod, endpointLis
 		}
 
 		if err := newMetaBundle.mapServices(nodeName, pods, *endpointList); err != nil {
-			log.Errorf("Could not map the services on node %s: %s", node.Name, err.Error())
+			logutil.BgLogger().Error(fmt.Sprintf("Could not map the services on node %s", node.Name), zap.Error(err))
 			continue
 		}
 		cache.Cache.Set(nodeNameCacheKey, newMetaBundle, metadataMapExpire)

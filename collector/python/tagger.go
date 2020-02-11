@@ -12,7 +12,7 @@ import (
 
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/tagger/collectors"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 /*
@@ -44,7 +44,7 @@ func Tags(id *C.char, cardinality C.int) **C.char {
 
 	cTags := C._malloc(C.size_t(length+1) * C.size_t(unsafe.Sizeof(uintptr(0))))
 	if cTags == nil {
-		log.Errorf("could not allocate memory for tags")
+		logutil.BgLogger().Error("could not allocate memory for tags")
 		return nil
 	}
 

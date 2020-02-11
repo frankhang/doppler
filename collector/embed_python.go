@@ -10,12 +10,13 @@ package collector
 import (
 	"github.com/frankhang/doppler/collector/python"
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 func pySetup(paths ...string) (pythonVersion, pythonHome, pythonPath string) {
 	if err := python.Initialize(paths...); err != nil {
-		log.Errorf("Could not initialize Python: %s", err)
+		logutil.BgLogger().Error("Could not initialize Python", zap.Error(err))
 	}
 	return python.PythonVersion, python.PythonHome, python.PythonPath
 }

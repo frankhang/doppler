@@ -7,12 +7,13 @@ package autodiscovery
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/autodiscovery/providers"
 	"github.com/frankhang/doppler/status/health"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // configPoller keeps track of the configurations loaded by a certain
@@ -77,14 +78,14 @@ func (pd *configPoller) poll(ac *AutoConfig) {
 			ticker.Stop()
 			return
 		case <-ticker.C:
-			log.Tracef("Polling %s config provider", pd.provider.String())
+			logutil.BgLogger().Debug(fmt.Sprintf("Polling %s config provider", pd.provider.String()))
 			// Check if the CPupdate cache is up to date. Fill it and trigger a Collect() if outdated.
 			upToDate, err := pd.provider.IsUpToDate()
 			if err != nil {
-				log.Errorf("Cache processing of %v configuration provider failed: %v", pd.provider, err)
+				logutil.BgLogger().Error(fmt.Sprintf("Cache processing of %v configuration provider failed", pd.provider), zap.Error(err))
 			}
 			if upToDate == true {
-				log.Debugf("No modifications in the templates stored in %v configuration provider", pd.provider)
+				logutil.BgLogger().Debug(fmt.Sprintf("No modifications in the templates stored in %v configuration provider", pd.provider))
 				break
 			}
 
@@ -92,9 +93,9 @@ func (pd *configPoller) poll(ac *AutoConfig) {
 			// as removed configurations
 			newConfigs, removedConfigs := pd.collect()
 			if len(newConfigs) > 0 || len(removedConfigs) > 0 {
-				log.Infof("%v provider: collected %d new configurations, removed %d", pd.provider, len(newConfigs), len(removedConfigs))
+				logutil.BgLogger().Info(fmt.Sprintf("%v provider: collected %d new configurations, removed %d", pd.provider, len(newConfigs), len(removedConfigs)))
 			} else {
-				log.Debugf("%v provider: no configuration change", pd.provider)
+				logutil.BgLogger().Debug(fmt.Sprintf("%v provider: no configuration change", pd.provider))
 			}
 			// Process removed configs first to handle the case where a
 			// container churn would result in the same configuration hash.
@@ -120,7 +121,7 @@ func (pd *configPoller) collect() ([]integration.Config, []integration.Config) {
 
 	fetched, err := pd.provider.Collect()
 	if err != nil {
-		log.Errorf("Unable to collect configurations from provider %s: %s", pd.provider, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Unable to collect configurations from provider %s", pd.provider), zap.Error(err))
 		return nil, nil
 	}
 

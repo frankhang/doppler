@@ -7,11 +7,12 @@ package metrics
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sort"
 	"strconv"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // weightSample represent a sample with its weight in the histogram (deduce from SampleRate)
@@ -59,11 +60,11 @@ func (h *histogramPercentilesConfig) percentiles() []int {
 	for _, p := range h.Percentiles {
 		i, err := strconv.ParseFloat(p, 64)
 		if err != nil {
-			log.Errorf("Could not parse '%s' from 'histogram_percentiles' (skipping): %s", p, err)
+			logutil.BgLogger().Error(fmt.Sprintf("Could not parse '%s' from 'histogram_percentiles' (skipping)", p), zap.Error(err))
 			continue
 		}
 		if i < 0 || i > 1 {
-			log.Errorf("histogram_percentiles must be between 0 and 1: skipping %f", i)
+			logutil.BgLogger().Error(fmt.Sprintf("histogram_percentiles must be between 0 and 1: skipping %f", i))
 			continue
 		}
 		// in some cases the '*100' will lower the number resulting in
@@ -84,7 +85,7 @@ func NewHistogram(interval int64) *Histogram {
 		c := histogramPercentilesConfig{}
 		err := config.Datadog.Unmarshal(&c)
 		if err != nil {
-			log.Errorf("Could not Unmarshal histogram configuration: %s", err)
+			logutil.BgLogger().Error("Could not Unmarshal histogram configuration", zap.Error(err))
 		} else {
 			defaultPercentiles = c.percentiles()
 			sort.Ints(defaultPercentiles)
@@ -151,7 +152,7 @@ func (h *Histogram) flush(timestamp float64) ([]*Serie, error) {
 			value = float64(h.count) / float64(h.interval)
 			mType = APIRateType
 		default:
-			log.Infof("Configured aggregate '%s' is not implemented, skipping", aggregate)
+			logutil.BgLogger().Info(fmt.Sprintf("Configured aggregate '%s' is not implemented, skipping", aggregate))
 			continue
 		}
 

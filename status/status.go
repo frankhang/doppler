@@ -8,6 +8,7 @@ package status
 import (
 	"encoding/json"
 	"expvar"
+	"go.uber.org/zap"
 	"os"
 	"runtime"
 	"strconv"
@@ -16,7 +17,7 @@ import (
 
 	"github.com/frankhang/doppler/clusteragent/clusterchecks"
 	"github.com/frankhang/doppler/clusteragent/custommetrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/config"
@@ -35,7 +36,7 @@ func GetStatus() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 	stats, err := expvarStats(stats)
 	if err != nil {
-		log.Errorf("Error Getting ExpVar Stats: %v", err)
+		logutil.BgLogger().Error("Error Getting ExpVar Stats", zap.Error(err))
 	}
 
 	stats["version"] = version.AgentVersion
@@ -43,7 +44,7 @@ func GetStatus() (map[string]interface{}, error) {
 
 	var metadata *host.Payload
 	if err != nil {
-		log.Errorf("Error grabbing hostname for status: %v", err)
+		logutil.BgLogger().Error("Error grabbing hostname for status", zap.Error(err))
 		metadata = host.GetPayloadFromCache(util.HostnameData{Hostname: "unknown", Provider: "unknown"})
 	} else {
 		metadata = host.GetPayloadFromCache(hostnameData)
@@ -144,7 +145,7 @@ func GetDCAStatus() (map[string]interface{}, error) {
 	stats := make(map[string]interface{})
 	stats, err := expvarStats(stats)
 	if err != nil {
-		log.Errorf("Error Getting ExpVar Stats: %v", err)
+		logutil.BgLogger().Error("Error Getting ExpVar Stats", zap.Error(err))
 	}
 	stats["config"] = getDCAPartialConfig()
 	stats["conf_file"] = config.Datadog.ConfigFileUsed()
@@ -152,7 +153,7 @@ func GetDCAStatus() (map[string]interface{}, error) {
 	stats["pid"] = os.Getpid()
 	hostnameData, err := util.GetHostnameData()
 	if err != nil {
-		log.Errorf("Error grabbing hostname for status: %v", err)
+		logutil.BgLogger().Error("Error grabbing hostname for status", zap.Error(err))
 		stats["metadata"] = host.GetPayloadFromCache(util.HostnameData{Hostname: "unknown", Provider: "unknown"})
 	} else {
 		stats["metadata"] = host.GetPayloadFromCache(hostnameData)
@@ -178,7 +179,7 @@ func GetDCAStatus() (map[string]interface{}, error) {
 	if config.Datadog.GetBool("cluster_checks.enabled") {
 		cchecks, err := clusterchecks.GetStats()
 		if err != nil {
-			log.Errorf("Error grabbing clusterchecks stats: %s", err)
+			logutil.BgLogger().Error("Error grabbing clusterchecks stats", zap.Error(err))
 		} else {
 			stats["clusterchecks"] = cchecks
 		}
@@ -191,17 +192,17 @@ func GetDCAStatus() (map[string]interface{}, error) {
 func GetAndFormatDCAStatus() ([]byte, error) {
 	s, err := GetDCAStatus()
 	if err != nil {
-		log.Infof("Error while getting status %q", err)
+		logutil.BgLogger().Info("Error while getting status", zap.Error(err))
 		return nil, err
 	}
 	statusJSON, err := json.Marshal(s)
 	if err != nil {
-		log.Infof("Error while marshalling %q", err)
+		logutil.BgLogger().Info("Error while marshalling", zap.Error(err))
 		return nil, err
 	}
 	st, err := FormatDCAStatus(statusJSON)
 	if err != nil {
-		log.Infof("Error formatting the status %q", err)
+		logutil.BgLogger().Info("Error formatting the status", zap.Error(err))
 		return nil, err
 	}
 	return []byte(st), nil

@@ -9,11 +9,12 @@ package providers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/coreos/etcd/client"
 	"golang.org/x/net/context"
 
@@ -42,7 +43,7 @@ func NewEtcdConfigProvider(config config.ConfigurationProviders) (ConfigProvider
 		HeaderTimeoutPerRequest: time.Second,
 	}
 	if len(config.Username) > 0 && len(config.Password) > 0 {
-		log.Info("Using provided etcd credentials: username ", config.Username)
+		logutil.BgLogger().Info(fmt.Sprintf("Using provided etcd credentials: username ", config.Username))
 		clientCfg.Username = config.Username
 		clientCfg.Password = config.Password
 	}
@@ -80,7 +81,7 @@ func (p *EtcdConfigProvider) getIdentifiers(key string) []string {
 	identifiers := make([]string, 0)
 	resp, err := p.Client.Get(context.Background(), key, &client.GetOptions{Recursive: true})
 	if err != nil {
-		log.Error("Can't get templates keys from etcd: ", err)
+		logutil.BgLogger().Error("Can't get templates keys from etcd", zap.Error(err))
 		return identifiers
 	}
 	children := resp.Node.Nodes
@@ -102,19 +103,19 @@ func (p *EtcdConfigProvider) getTemplates(key string) []integration.Config {
 
 	checkNames, err := p.getCheckNames(checkNameKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve check names at %s. Error: %s", checkNameKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve check names at %s", checkNameKey), zap.Error(err))
 		return nil
 	}
 
 	initConfigs, err := p.getJSONValue(initKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve init configs at %s. Error: %s", initKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve init configs at %s", initKey), zap.Error(err))
 		return nil
 	}
 
 	instances, err := p.getJSONValue(instanceKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve instances at %s. Error: %s", instanceKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve instances at %s", instanceKey), zap.Error(err))
 		return nil
 	}
 
@@ -165,16 +166,16 @@ func (p *EtcdConfigProvider) IsUpToDate() (bool, error) {
 	// When a node is deleted the Modified time of the children processed isn't changed.
 	if p.cache.NumAdTemplates != len(identifiers) {
 		if p.cache.NumAdTemplates != 0 {
-			log.Debugf("List of AD Template was modified, updating cache.")
+			logutil.BgLogger().Debug("List of AD Template was modified, updating cache.")
 			adListUpdated = true
 		}
-		log.Debugf("Initializing cache for %v", p.String())
+		logutil.BgLogger().Debug(fmt.Sprintf("Initializing cache for %v", p.String()))
 		p.cache.NumAdTemplates = len(identifiers)
 	}
 
 	for _, identifier := range identifiers {
 		if len(identifier.Nodes) != 3 {
-			log.Infof("%v does not have a correct format to be considered in the cache", identifier.Key)
+			logutil.BgLogger().Info(fmt.Sprintf("%v does not have a correct format to be considered in the cache", identifier.Key))
 			continue
 		}
 		for _, tplkey := range identifier.Nodes {
@@ -182,12 +183,12 @@ func (p *EtcdConfigProvider) IsUpToDate() (bool, error) {
 		}
 	}
 	if dateIdx > p.cache.LatestTemplateIdx || adListUpdated {
-		log.Debugf("Idx was %v and is now %v", p.cache.LatestTemplateIdx, dateIdx)
+		logutil.BgLogger().Debug(fmt.Sprintf("Idx was %v and is now %v", p.cache.LatestTemplateIdx, dateIdx))
 		p.cache.LatestTemplateIdx = dateIdx
-		log.Infof("cache updated for %v", p.String())
+		logutil.BgLogger().Info(fmt.Sprintf("cache updated for %v", p.String()))
 		return false, nil
 	}
-	log.Infof("cache up to date for %v", p.String())
+	logutil.BgLogger().Info(fmt.Sprintf("cache up to date for %v", p.String()))
 	return true, nil
 }
 

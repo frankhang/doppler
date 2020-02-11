@@ -7,6 +7,7 @@ package common
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/url"
 	"os"
@@ -17,7 +18,7 @@ import (
 
 	"github.com/frankhang/doppler/config"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/winutil"
 	"github.com/cihub/seelog"
 	"golang.org/x/sys/windows/registry"
@@ -75,12 +76,12 @@ func getInstallPath() string {
 	var s string
 	k, err := registry.OpenKey(registry.LOCAL_MACHINE, `SOFTWARE\DataDog\Datadog Agent`, registry.QUERY_VALUE)
 	if err != nil {
-		log.Warnf("Failed to open registry key: %s", err)
+		logutil.BgLogger().Warn("Failed to open registry key", zap.Error(err))
 	} else {
 		defer k.Close()
 		s, _, err = k.GetStringValue("InstallPath")
 		if err != nil {
-			log.Warnf("Installpath not found in registry: %s", err)
+			logutil.BgLogger().Warn("Installpath not found in registry", zap.Error(err))
 		}
 	}
 	// if unable to figure out the install path from the registry,
@@ -111,7 +112,7 @@ func GetViewsPath() string {
 			return ""
 		}
 		viewsPath = filepath.Join(s, "bin", "agent", "dist", "views")
-		log.Debugf("ViewsPath is now %s", viewsPath)
+		logutil.BgLogger().Debug(fmt.Sprintf("ViewsPath is now %s", viewsPath))
 	}
 	return viewsPath
 }
@@ -121,7 +122,7 @@ func GetViewsPath() string {
 func CheckAndUpgradeConfig() error {
 	datadogConfPath := filepath.Join(DefaultConfPath, "datadog.conf")
 	if _, err := os.Stat(datadogConfPath); os.IsNotExist(err) {
-		log.Debug("Previous config file not found, not upgrading")
+		logutil.BgLogger().Debug("Previous config file not found, not upgrading")
 		return nil
 	}
 	config.Datadog.AddConfigPath(DefaultConfPath)
@@ -129,7 +130,7 @@ func CheckAndUpgradeConfig() error {
 	if err == nil {
 		// was able to read config, check for api key
 		if config.Datadog.GetString("api_key") != "" {
-			log.Debug("Datadog.yaml found, and API key present.  Not upgrading config")
+			logutil.BgLogger().Debug("Datadog.yaml found, and API key present.  Not upgrading config")
 			return nil
 		}
 	}
@@ -144,11 +145,11 @@ func ImportRegistryConfig() error {
 		registry.ALL_ACCESS)
 	if err != nil {
 		if err == registry.ErrNotExist {
-			log.Debug("Windows installation key not found, not updating config")
+			logutil.BgLogger().Debug("Windows installation key not found, not updating config")
 			return nil
 		}
 		// otherwise, unexpected error
-		log.Warnf("Unexpected error getting registry config %s", err.Error())
+		logutil.BgLogger().Warnf("Unexpected error getting registry config", zap.Error(err))
 		return err
 	}
 	defer k.Close()
@@ -172,34 +173,34 @@ func ImportRegistryConfig() error {
 
 	if val, _, err = k.GetStringValue("api_key"); err == nil && val != "" {
 		overrides["api_key"] = val
-		log.Debug("Setting API key")
+		logutil.BgLogger().Debug("Setting API key")
 	} else {
-		log.Debug("API key not found, not setting")
+		logutil.BgLogger().Debug("API key not found, not setting")
 	}
 	if val, _, err = k.GetStringValue("tags"); err == nil && val != "" {
 		overrides["tags"] = strings.Split(val, ",")
-		log.Debugf("Setting tags %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting tags %s", val))
 	} else {
-		log.Debug("Tags not found, not setting")
+		logutil.BgLogger().Debug("Tags not found, not setting")
 	}
 	if val, _, err = k.GetStringValue("hostname"); err == nil && val != "" {
 		overrides["hostname"] = val
-		log.Debugf("Setting hostname %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting hostname %s", val))
 	} else {
-		log.Debug("hostname not found in registry: using default value")
+		logutil.BgLogger().Debug("hostname not found in registry: using default value")
 	}
 	if val, _, err = k.GetStringValue("cmd_port"); err == nil && val != "" {
 		cmdPortInt, err := strconv.Atoi(val)
 		if err != nil {
-			log.Warnf("Not setting api port, invalid configuration %s %v", val, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Not setting api port, invalid configuration %s", val), zap.Error(err))
 		} else if cmdPortInt <= 0 || cmdPortInt > 65534 {
-			log.Warnf("Not setting api port, invalid configuration %s", val)
+			logutil.BgLogger().Warn(fmt.Sprintf("Not setting api port, invalid configuration %s", val))
 		} else {
 			overrides["cmd_port"] = cmdPortInt
-			log.Debugf("Setting cmd_port  %d", cmdPortInt)
+			logutil.BgLogger().Debug(fmt.Sprintf("Setting cmd_port  %d", cmdPortInt))
 		}
 	} else {
-		log.Debug("cmd_port not found, not setting")
+		logutil.BgLogger().Debug("cmd_port not found, not setting")
 	}
 	for key, cfg := range subServices {
 		if val, _, err = k.GetStringValue(key); err == nil {
@@ -216,7 +217,7 @@ func ImportRegistryConfig() error {
 					case "process_config.enabled":
 						overrides[cfg] = "true"
 					}
-					log.Debugf("Setting %s to true", cfg)
+					logutil.BgLogger().Debug(fmt.Sprintf("Setting %s to true", cfg))
 				} else {
 					switch cfg {
 					case "logs_enabled":
@@ -226,17 +227,17 @@ func ImportRegistryConfig() error {
 					case "process_config.enabled":
 						overrides[cfg] = "disabled"
 					}
-					log.Debugf("Setting %s to false", cfg)
+					logutil.BgLogger().Debug(fmt.Sprintf("Setting %s to false", cfg))
 				}
 			} else {
-				log.Warnf("Unknown setting %s = %s", key, val)
+				logutil.BgLogger().Warn(fmt.Sprintf("Unknown setting %s = %s", key, val))
 			}
 		}
 	}
 	if val, _, err = k.GetStringValue("proxy_host"); err == nil && val != "" {
 		var u *url.URL
 		if u, err = url.Parse(val); err != nil {
-			log.Warnf("unable to import value of settings 'proxy_host': %v", err)
+			logutil.BgLogger().Warn("unable to import value of settings 'proxy_host'", zap.Error(err))
 		} else {
 			// set scheme if missing
 			if u.Scheme == "" {
@@ -258,31 +259,31 @@ func ImportRegistryConfig() error {
 		proxyMap["https"] = u.String()
 		overrides["proxy"] = proxyMap
 	} else {
-		log.Debug("proxy key not found, not setting proxy config")
+		logutil.BgLogger().Debug("proxy key not found, not setting proxy config")
 	}
 	if val, _, err = k.GetStringValue("site"); err == nil && val != "" {
 		overrides["site"] = val
-		log.Debugf("Setting site to %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting site to %s", val))
 	}
 	if val, _, err = k.GetStringValue("dd_url"); err == nil && val != "" {
 		overrides["dd_url"] = val
-		log.Debugf("Setting dd_url to %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting dd_url to %s", val))
 	}
 	if val, _, err = k.GetStringValue("logs_dd_url"); err == nil && val != "" {
 		overrides["logs_config.logs_dd_url"] = val
-		log.Debugf("Setting logs_config.dd_url to %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting logs_config.dd_url to %s", val))
 	}
 	if val, _, err = k.GetStringValue("process_dd_url"); err == nil && val != "" {
 		overrides["process_config.process_dd_url"] = val
-		log.Debugf("Setting process_config.process_dd_url to %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting process_config.process_dd_url to %s", val))
 	}
 	if val, _, err = k.GetStringValue("trace_dd_url"); err == nil && val != "" {
 		overrides["apm_config.apm_dd_url"] = val
-		log.Debugf("Setting apm_config.apm_dd_url to %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting apm_config.apm_dd_url to %s", val))
 	}
 	if val, _, err = k.GetStringValue("py_version"); err == nil && val != "" {
 		overrides["python_version"] = val
-		log.Debugf("Setting python version to %s", val)
+		logutil.BgLogger().Debug(fmt.Sprintf("Setting python version to %s", val))
 	}
 
 	// apply overrides to the config
@@ -297,13 +298,13 @@ func ImportRegistryConfig() error {
 	// dump the current configuration to datadog.yaml
 	b, err := yaml.Marshal(config.Datadog.AllSettings())
 	if err != nil {
-		log.Errorf("unable to unmarshal config to YAML: %v", err)
+		logutil.BgLogger().Error("unable to unmarshal config to YAML", zap.Error(err))
 		return fmt.Errorf("unable to unmarshal config to YAML: %v", err)
 	}
 	// file permissions will be used only to create the file if doesn't exist,
 	// please note on Windows such permissions have no effect.
 	if err = ioutil.WriteFile(datadogYamlPath, b, 0640); err != nil {
-		log.Errorf("unable to unmarshal config to %s: %v", datadogYamlPath, err)
+		logutil.BgLogger().Error(fmt.Sprintf("unable to unmarshal config to %s", datadogYamlPath), zap.Error(err))
 		return fmt.Errorf("unable to unmarshal config to %s: %v", datadogYamlPath, err)
 	}
 
@@ -315,7 +316,7 @@ func ImportRegistryConfig() error {
 	for valuename := range subServices {
 		k.DeleteValue(valuename)
 	}
-	log.Debugf("Successfully wrote the config into %s\n", datadogYamlPath)
+	logutil.BgLogger().Debug("Successfully wrote the config into %s", datadogYamlPath)
 
 	return nil
 }

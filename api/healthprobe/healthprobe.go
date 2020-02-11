@@ -10,12 +10,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/frankhang/doppler/status/health"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const defaultTimeout = time.Second
@@ -64,12 +65,12 @@ func (h healthHandler) ServeHTTP(w http.ResponseWriter, _ *http.Request) {
 
 	if len(health.Unhealthy) > 0 {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Debugf("Healthcheck failed on: %v", health.Unhealthy)
+		logutil.BgLogger().Debug(fmt.Sprintf("Healthcheck failed on: %v", health.Unhealthy))
 	}
 
 	jsonHealth, err := json.Marshal(health)
 	if err != nil {
-		log.Errorf("Error marshalling status. Error: %v, Status: %v", err, h)
+		logutil.BgLogger().Error(fmt.Sprintf("Error marshalling status: %v", h), zap.Error(err))
 		body, _ := json.Marshal(map[string]string{"error": err.Error()})
 		http.Error(w, string(body), 500)
 		return

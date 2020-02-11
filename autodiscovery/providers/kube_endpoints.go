@@ -10,6 +10,7 @@ package providers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 
 	v1 "k8s.io/api/core/v1"
@@ -22,7 +23,7 @@ import (
 	"github.com/frankhang/doppler/autodiscovery/providers/names"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -101,7 +102,7 @@ func (k *kubeEndpointsConfigProvider) Collect() ([]integration.Config, error) {
 	for _, config := range parsedConfigsInfo {
 		kep, err := k.endpointsLister.Endpoints(config.namespace).Get(config.name)
 		if err != nil {
-			log.Errorf("Cannot get Kubernetes endpoints: %s", err)
+			logutil.BgLogger().Error("Cannot get Kubernetes endpoints", zap.Error(err))
 			continue
 		}
 		generatedConfigs = append(generatedConfigs, generateConfigs(config.tpl, kep)...)
@@ -121,11 +122,11 @@ func (k *kubeEndpointsConfigProvider) IsUpToDate() (bool, error) {
 func (k *kubeEndpointsConfigProvider) invalidate(obj interface{}) {
 	castedObj, ok := obj.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %T", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %T", obj))
 		return
 	}
 	endpointsID := apiserver.EntityForEndpoints(castedObj.Namespace, castedObj.Name, "")
-	log.Tracef("Invalidating configs on new/deleted service, endpoints entity: %s", endpointsID)
+	logutil.BgLogger().Debug(fmt.Sprintf("Invalidating configs on new/deleted service, endpoints entity: %s", endpointsID))
 	k.Lock()
 	defer k.Unlock()
 	delete(k.monitoredEndpoints, endpointsID)
@@ -137,13 +138,13 @@ func (k *kubeEndpointsConfigProvider) invalidateIfChangedService(old, obj interf
 	// nil pointers are safely handled by the casting logic.
 	castedObj, ok := obj.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %T", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %T", obj))
 		return
 	}
 	// Cast the old object, invalidate on casting error
 	castedOld, ok := old.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %T", old)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %T", old))
 		k.setUpToDate(false)
 		return
 	}
@@ -152,7 +153,7 @@ func (k *kubeEndpointsConfigProvider) invalidateIfChangedService(old, obj interf
 		return
 	}
 	if valuesDiffer(castedObj.Annotations, castedOld.Annotations, kubeEndpointAnnotationPrefix) {
-		log.Trace("Invalidating configs on service end annotations change")
+		logutil.BgLogger().Debug("Invalidating configs on service end annotations change")
 		k.setUpToDate(false)
 		return
 	}
@@ -163,13 +164,13 @@ func (k *kubeEndpointsConfigProvider) invalidateIfChangedEndpoints(old, obj inte
 	// nil pointers are safely handled by the casting logic.
 	castedObj, ok := obj.(*v1.Endpoints)
 	if !ok {
-		log.Errorf("Expected an Endpoints type, got: %T", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an Endpoints type, got: %T", obj))
 		return
 	}
 	// Cast the old object, invalidate on casting error
 	castedOld, ok := old.(*v1.Endpoints)
 	if !ok {
-		log.Errorf("Expected a Endpoints type, got: %T", old)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Endpoints type, got: %T", old))
 		k.setUpToDate(false)
 		return
 	}
@@ -199,13 +200,13 @@ func parseServiceAnnotationsForEndpoints(services []*v1.Service) []configInfo {
 	var configsInfo []configInfo
 	for _, svc := range services {
 		if svc == nil || svc.ObjectMeta.UID == "" {
-			log.Debug("Ignoring a nil service")
+			logutil.BgLogger().Debug("Ignoring a nil service")
 			continue
 		}
 		endpointsID := apiserver.EntityForEndpoints(svc.Namespace, svc.Name, "")
 		endptConf, errors := extractTemplatesFromMap(endpointsID, svc.Annotations, kubeEndpointAnnotationPrefix)
 		for _, err := range errors {
-			log.Errorf("Cannot parse endpoint template for service %s/%s: %s", svc.Namespace, svc.Name, err)
+			logutil.BgLogger().Error(fmt.Sprintf("Cannot parse endpoint template for service %s/%s", svc.Namespace, svc.Name), zap.Error(err))
 		}
 		for i := range endptConf {
 			endptConf[i].Source = "kube_endpoints:" + endpointsID
@@ -222,7 +223,7 @@ func parseServiceAnnotationsForEndpoints(services []*v1.Service) []configInfo {
 // generateConfigs creates a config template for each Endpoints IP
 func generateConfigs(tpl integration.Config, kep *v1.Endpoints) []integration.Config {
 	if kep == nil {
-		log.Warn("Nil Kubernetes Endpoints object, cannot generate config templates")
+		logutil.BgLogger().Warn("Nil Kubernetes Endpoints object, cannot generate config templates")
 		return []integration.Config{tpl}
 	}
 	generatedConfigs := []integration.Config{}

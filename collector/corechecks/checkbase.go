@@ -7,6 +7,8 @@ package corechecks
 
 import (
 	"fmt"
+	"github.com/frankhang/doppler/util/log"
+	"go.uber.org/zap"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -16,7 +18,7 @@ import (
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/collector/check/defaults"
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // CheckBase provides default implementations for most of the check.Check
@@ -79,7 +81,7 @@ func (c *CheckBase) CommonConfigure(instance integration.Data, source string) er
 	commonOptions := integration.CommonInstanceConfig{}
 	err := yaml.Unmarshal(instance, &commonOptions)
 	if err != nil {
-		log.Errorf("invalid instance section for check %s: %s", string(c.ID()), err)
+		logutil.BgLogger().Error(fmt.Sprintf("invalid instance section for check %s", string(c.ID())), zap.Error(err))
 		return err
 	}
 
@@ -92,7 +94,7 @@ func (c *CheckBase) CommonConfigure(instance integration.Data, source string) er
 	if commonOptions.EmptyDefaultHostname {
 		s, err := aggregator.GetSender(c.checkID)
 		if err != nil {
-			log.Errorf("failed to retrieve a sender for check %s: %s", string(c.ID()), err)
+			logutil.BgLogger().Error(fmt.Sprintf("failed to retrieve a sender for check %s", string(c.ID())), zap.Error(err))
 			return err
 		}
 		s.DisableDefaultHostname(true)
@@ -102,7 +104,7 @@ func (c *CheckBase) CommonConfigure(instance integration.Data, source string) er
 	if len(commonOptions.Tags) > 0 {
 		s, err := aggregator.GetSender(c.checkID)
 		if err != nil {
-			log.Errorf("failed to retrieve a sender for check %s: %s", string(c.ID()), err)
+			logutil.BgLogger().Error(fmt.Sprintf("failed to retrieve a sender for check %s", string(c.ID())), zap.Error(err))
 			return err
 		}
 		s.SetCheckCustomTags(commonOptions.Tags)

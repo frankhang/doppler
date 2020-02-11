@@ -9,12 +9,13 @@ package providers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"net/url"
 	"sort"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	consul "github.com/hashicorp/consul/api"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
@@ -73,7 +74,7 @@ func NewConsulConfigProvider(config config.ConfigurationProviders) (ConfigProvid
 	}
 
 	if len(config.Username) > 0 && len(config.Password) > 0 {
-		log.Infof("Using provided consul credentials (username): %s", config.Username)
+		logutil.BgLogger().Info(fmt.Sprintf("Using provided consul credentials (username): %s", config.Username))
 		auth := &consul.HttpBasicAuth{
 			Username: config.Username,
 			Password: config.Password,
@@ -107,7 +108,7 @@ func (p *ConsulConfigProvider) String() string {
 func (p *ConsulConfigProvider) Collect() ([]integration.Config, error) {
 	configs := make([]integration.Config, 0)
 	identifiers := p.getIdentifiers(p.TemplateDir)
-	log.Debugf("identifiers found in backend: %v", identifiers)
+	logutil.BgLogger().Debug(fmt.Sprintf("identifiers found in backend: %v", identifiers))
 	for _, id := range identifiers {
 		templates := p.getTemplates(id)
 
@@ -132,9 +133,9 @@ func (p *ConsulConfigProvider) IsUpToDate() (bool, error) {
 	}
 	if p.cache.NumAdTemplates != len(identifiers) {
 		if p.cache.NumAdTemplates == 0 {
-			log.Infof("Initializing cache for %v", p.String())
+			logutil.BgLogger().Info(fmt.Sprintf("Initializing cache for %v", p.String()))
 		}
-		log.Debugf("List of AD Template was modified, updating cache.")
+		logutil.BgLogger().Debug("List of AD Template was modified, updating cache.")
 		p.cache.NumAdTemplates = len(identifiers)
 		adListUpdated = true
 	}
@@ -143,9 +144,9 @@ func (p *ConsulConfigProvider) IsUpToDate() (bool, error) {
 		dateIdx = math.Max(float64(identifier.ModifyIndex), dateIdx)
 	}
 	if dateIdx > p.cache.LatestTemplateIdx || adListUpdated {
-		log.Debugf("Cache Index was %v and is now %v", p.cache.LatestTemplateIdx, dateIdx)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cache Index was %v and is now %v", p.cache.LatestTemplateIdx, dateIdx))
 		p.cache.LatestTemplateIdx = dateIdx
-		log.Infof("Cache updated for %v", p.String())
+		logutil.BgLogger().Info(fmt.Sprintf("Cache updated for %v", p.String()))
 		return false, nil
 	}
 	return true, nil
@@ -161,7 +162,7 @@ func (p *ConsulConfigProvider) getIdentifiers(prefix string) []string {
 	// TODO: decide on the query parameters.
 	keys, _, err := kv.Keys(prefix, "", nil)
 	if err != nil {
-		log.Error("Can't get templates keys from consul: ", err)
+		logutil.BgLogger().Error("Can't get templates keys from consul", zap.Error(err))
 		return identifiers
 	}
 
@@ -211,19 +212,19 @@ func (p *ConsulConfigProvider) getTemplates(key string) []integration.Config {
 
 	checkNames, err := p.getCheckNames(checkNameKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve check names at %s. Error: %s", checkNameKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve check names at %s", checkNameKey), zap.Error(err))
 		return templates
 	}
 
 	initConfigs, err := p.getJSONValue(initKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve init configs at %s. Error: %s", initKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve init configs at %s", initKey), zap.Error(err))
 		return templates
 	}
 
 	instances, err := p.getJSONValue(instanceKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve instances at %s. Error: %s", instanceKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve instances at %s", instanceKey), zap.Error(err))
 		return templates
 	}
 	return buildTemplates(key, checkNames, initConfigs, instances)

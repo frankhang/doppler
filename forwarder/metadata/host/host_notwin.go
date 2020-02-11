@@ -8,6 +8,7 @@
 package host
 
 import (
+	"go.uber.org/zap"
 	"runtime"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/host"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // Collect at init time
@@ -64,7 +65,7 @@ func getCPUInfo() *cpu.InfoStat {
 	i, err := cpu.Info()
 	if err != nil {
 		// don't cache and return zero value
-		log.Errorf("failed to retrieve cpu info: %s", err)
+		logutil.BgLogger().Error("failed to retrieve cpu info", zap.Error(err))
 		return &cpu.InfoStat{}
 	}
 	info := &i[0]
@@ -81,7 +82,7 @@ func getHostInfo() *host.InfoStat {
 	info, err := host.Info()
 	if err != nil {
 		// don't cache and return zero value
-		log.Errorf("failed to retrieve host info: %s", err)
+		logutil.BgLogger().Error("failed to retrieve host info", zap.Error(err))
 		return &host.InfoStat{}
 	}
 	cache.Cache.Set(key, info, cache.NoExpiration)

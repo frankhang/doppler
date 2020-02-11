@@ -6,12 +6,14 @@
 package aggregator
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"time"
 
 	"github.com/frankhang/doppler/aggregator/ckey"
 	"github.com/frankhang/doppler/metrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const checksSourceTypeName = "System"
@@ -48,7 +50,7 @@ func (cs *CheckSampler) addSample(metricSample *metrics.MetricSample) {
 	contextKey := cs.contextResolver.trackContext(metricSample, metricSample.Timestamp)
 
 	if err := cs.metrics.AddSample(contextKey, metricSample, metricSample.Timestamp, 1); err != nil {
-		log.Debug("Ignoring sample '%s' on host '%s' and tags '%s': %s", metricSample.Name, metricSample.Host, metricSample.Tags, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Ignoring sample '%s' on host '%s' and tags '%s': %s", metricSample.Name, metricSample.Host, metricSample.Tags, err))
 	}
 }
 
@@ -68,7 +70,7 @@ func (cs *CheckSampler) newSketchSeries(ck ckey.ContextKey, points []metrics.Ske
 
 func (cs *CheckSampler) addBucket(bucket *metrics.HistogramBucket) {
 	if bucket.Value < 0 {
-		log.Warnf("Negative bucket value %d for metric %s discarding", bucket.Value, bucket.Name)
+		logutil.BgLogger().Warn(fmt.Sprintf("Negative bucket value %d for metric %s discarding", bucket.Value, bucket.Name))
 		return
 	}
 	if bucket.Value == 0 {
@@ -78,10 +80,10 @@ func (cs *CheckSampler) addBucket(bucket *metrics.HistogramBucket) {
 
 	bucketRange := bucket.UpperBound - bucket.LowerBound
 	if bucketRange < 0 {
-		log.Warnf(
-			"Negative bucket range [%f-%f] for metric %s discarding",
+		logutil.BgLogger().Warn(
+			fmt.Sprintf("Negative bucket range [%f-%f] for metric %s discarding",
 			bucket.LowerBound, bucket.UpperBound, bucket.Name,
-		)
+		))
 		return
 	}
 
@@ -100,7 +102,7 @@ func (cs *CheckSampler) addBucket(bucket *metrics.HistogramBucket) {
 	}
 
 	if bucket.Value < 0 {
-		log.Warnf("Negative bucket delta %d for metric %s discarding", bucket.Value, bucket.Name)
+		logutil.BgLogger().Warn(fmt.Sprintf("Negative bucket delta %d for metric %s discarding", bucket.Value, bucket.Name))
 		return
 	}
 	if bucket.Value == 0 {
@@ -128,10 +130,10 @@ func (cs *CheckSampler) addBucket(bucket *metrics.HistogramBucket) {
 		countPerIncr = uint(bucket.Value)
 	}
 	currentVal := bucket.LowerBound
-	log.Tracef(
-		"Interpolating %d values by group of %d over the [%f-%f] bucket with %f increment",
+	logutil.BgLogger().Debug(
+		fmt.Sprintf("Interpolating %d values by group of %d over the [%f-%f] bucket with %f increment",
 		bucket.Value, countPerIncr, bucket.LowerBound, bucket.UpperBound, linearIncr,
-	)
+	))
 	for i := 0; i < incrCount; i++ {
 		cs.sketchMap.insertN(int64(bucket.Timestamp), contextKey, currentVal, countPerIncr)
 		currentVal += linearIncr
@@ -143,16 +145,16 @@ func (cs *CheckSampler) commitSeries(timestamp float64) {
 	for ckey, err := range errors {
 		context, ok := cs.contextResolver.contextsByKey[ckey]
 		if !ok {
-			log.Errorf("Can't resolve context of error '%s': inconsistent context resolver state: context with key '%v' is not tracked", err, ckey)
+			logutil.BgLogger().Error(fmt.Sprintf("Can't resolve context: inconsistent context resolver state: context with key '%v' is not tracked", ckey), zap.Error(err))
 			continue
 		}
-		log.Infof("No value returned for check metric '%s' on host '%s' and tags '%s': %s", context.Name, context.Host, context.Tags, err)
+		logutil.BgLogger().Info(fmt.Sprintf("No value returned for check metric '%s' on host '%s' and tags '%s': %s", context.Name, context.Host, context.Tags, err))
 	}
 	for _, serie := range series {
 		// Resolve context and populate new []Serie
 		context, ok := cs.contextResolver.contextsByKey[serie.ContextKey]
 		if !ok {
-			log.Errorf("Ignoring all metrics on context key '%v': inconsistent context resolver state: the context is not tracked", serie.ContextKey)
+			logutil.BgLogger().Error(fmt.Sprintf("Ignoring all metrics on context key '%v': inconsistent context resolver state: the context is not tracked", serie.ContextKey))
 			continue
 		}
 		serie.Name = context.Name + serie.NameSuffix

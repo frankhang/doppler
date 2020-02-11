@@ -9,7 +9,7 @@
 package python
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/config"
 )
@@ -32,7 +32,7 @@ func initializePlatform() error {
 		}
 
 		if C.handle_crashes(rtloader, C.int(cCoreDump)) == 0 {
-			log.Errorf("Unable to install crash handler, C-land stacktraces and dumps will be unavailable")
+			logutil.BgLogger().Error("Unable to install crash handler, C-land stacktraces and dumps will be unavailable")
 		}
 	}
 

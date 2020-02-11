@@ -8,12 +8,13 @@ package system
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"runtime"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/winutil"
 	"github.com/frankhang/doppler/util/winutil/pdhutil"
 
@@ -69,7 +70,7 @@ func (c *MemoryCheck) Run() error {
 		if err == nil {
 			sender.Gauge("system.mem.cached", float64(val)/mbSize, "", nil)
 		} else {
-			log.Warnf("Could not retrieve value for system.mem.cached %v", err)
+			logutil.BgLogger().Warn("Could not retrieve value for system.mem.cached", zap.Error(err))
 		}
 	}
 
@@ -78,7 +79,7 @@ func (c *MemoryCheck) Run() error {
 		if err == nil {
 			sender.Gauge("system.mem.committed", float64(val)/mbSize, "", nil)
 		} else {
-			log.Warnf("Could not retrieve value for system.mem.committed %v", err)
+			logutil.BgLogger().Warn("Could not retrieve value for system.mem.committed", zap.Error(err))
 		}
 	}
 
@@ -87,7 +88,7 @@ func (c *MemoryCheck) Run() error {
 		if err == nil {
 			sender.Gauge("system.mem.paged", float64(val)/mbSize, "", nil)
 		} else {
-			log.Warnf("Could not retrieve value for system.mem.paged %v", err)
+			logutil.BgLogger().Warn("Could not retrieve value for system.mem.paged", zap.Error(err))
 		}
 	}
 
@@ -96,7 +97,7 @@ func (c *MemoryCheck) Run() error {
 		if err == nil {
 			sender.Gauge("system.mem.nonpaged", float64(val)/mbSize, "", nil)
 		} else {
-			log.Warnf("Could not retrieve value for system.mem.nonpaged %v", err)
+			logutil.BgLogger().Warn("Could not retrieve value for system.mem.nonpaged", zap.Error(err))
 		}
 	}
 	v, errVirt := virtualMemory()
@@ -107,7 +108,7 @@ func (c *MemoryCheck) Run() error {
 		sender.Gauge("system.mem.used", float64(v.Total-v.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pct_usable", float64(100-v.UsedPercent)/100, "", nil)
 	} else {
-		log.Errorf("system.MemoryCheck: could not retrieve virtual memory stats: %s", errVirt)
+		logutil.BgLogger().Error("system.MemoryCheck: could not retrieve virtual memory stats", zap.Error(errVirt))
 	}
 
 	s, errSwap := swapMemory()
@@ -117,7 +118,7 @@ func (c *MemoryCheck) Run() error {
 		sender.Gauge("system.swap.used", float64(s.Used)/mbSize, "", nil)
 		sender.Gauge("system.swap.pct_free", float64(100-s.UsedPercent)/100, "", nil)
 	} else {
-		log.Errorf("system.MemoryCheck: could not retrieve swap memory stats: %s", errSwap)
+		logutil.BgLogger().Error("system.MemoryCheck: could not retrieve swap memory stats", zap.String(errSwap))
 	}
 
 	p, errPage := pageMemory()
@@ -127,7 +128,7 @@ func (c *MemoryCheck) Run() error {
 		sender.Gauge("system.mem.pagefile.free", float64(p.Available)/mbSize, "", nil)
 		sender.Gauge("system.mem.pagefile.used", float64(p.Used)/mbSize, "", nil)
 	} else {
-		log.Errorf("system.MemoryCheck: could not retrieve swap memory stats: %s", errSwap)
+		logutil.BgLogger().Error("system.MemoryCheck: could not retrieve swap memory stats", zap.Error(errSwap))
 	}
 
 	if errVirt != nil && errSwap != nil {

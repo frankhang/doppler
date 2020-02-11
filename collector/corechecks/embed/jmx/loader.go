@@ -9,11 +9,12 @@ package jmx
 
 import (
 	"errors"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/collector/loaders"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -58,13 +59,13 @@ func (jl *JMXCheckLoader) Load(config integration.Config) ([]check.Check, error)
 	rawInitConfig := integration.RawMap{}
 	err = yaml.Unmarshal(config.InitConfig, &rawInitConfig)
 	if err != nil {
-		log.Errorf("jmx.loader: could not unmarshal instance config: %s", err)
+		logutil.BgLogger().Error("jmx.loader: could not unmarshal instance config", zap.Error(err))
 		return checks, err
 	}
 
 	for _, instance := range config.Instances {
 		if err = state.runner.configureRunner(instance, config.InitConfig); err != nil {
-			log.Errorf("jmx.loader: could not configure check: %s", err)
+			logutil.BgLogger().Error("jmx.loader: could not configure check", zap.Error(err))
 			return checks, err
 		}
 	}

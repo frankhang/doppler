@@ -10,6 +10,7 @@ package listeners
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"sort"
 	"sync"
 	"time"
@@ -20,7 +21,7 @@ import (
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -101,7 +102,7 @@ func (l *KubeletListener) Listen(newSvc chan<- Service, delSvc chan<- Service) {
 	go func() {
 		pods, err := l.watcher.PullChanges()
 		if err != nil {
-			log.Error(err)
+			logutil.BgLogger().Error(String(err))
 		}
 		l.processNewPods(pods, true)
 
@@ -115,14 +116,14 @@ func (l *KubeletListener) Listen(newSvc chan<- Service, delSvc chan<- Service) {
 				// Compute new/updated pods
 				updatedPods, err := l.watcher.PullChanges()
 				if err != nil {
-					log.Error(err)
+					logutil.BgLogger().Error(String(err))
 					continue
 				}
 				l.processNewPods(updatedPods, false)
 				// Compute deleted pods
 				expiredContainerList, err := l.watcher.Expire()
 				if err != nil {
-					log.Error(err)
+					logutil.BgLogger().Error(String(err))
 					continue
 				}
 				for _, entity := range expiredContainerList {
@@ -165,7 +166,7 @@ func (l *KubeletListener) createPodService(pod *kubelet.Pod, firstRun bool) {
 	// Hosts
 	podIp := pod.Status.PodIP
 	if podIp == "" {
-		log.Errorf("Unable to get pod %s IP", pod.Metadata.Name)
+		logutil.BgLogger().Error(fmt.Sprintf("Unable to get pod %s IP", pod.Metadata.Name))
 	}
 
 	// Ports: adding all ports of pod's containers
@@ -181,7 +182,7 @@ func (l *KubeletListener) createPodService(pod *kubelet.Pod, firstRun bool) {
 
 	if len(ports) == 0 {
 		// Port might not be specified in pod spec
-		log.Debugf("No ports found for pod %s", pod.Metadata.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("No ports found for pod %s", pod.Metadata.Name))
 	}
 
 	svc := KubePodService{
@@ -218,7 +219,7 @@ func (l *KubeletListener) createService(entity string, pod *kubelet.Pod, firstRu
 	for _, container := range pod.Status.GetAllContainers() {
 		if container.ID == svc.entity {
 			if l.filter.IsExcluded(container.Name, container.Image) {
-				log.Debugf("container %s filtered out: name %q image %q", container.ID, container.Name, container.Image)
+				logutil.BgLogger().Debug(fmt.Sprintf("container %s filtered out: name %q image %q", container.ID, container.Name, container.Image))
 				return
 			}
 			containerName = container.Name
@@ -231,7 +232,7 @@ func (l *KubeletListener) createService(entity string, pod *kubelet.Pod, firstRu
 				var err error
 				svc.checkNames, err = getCheckNamesFromAnnotations(pod.Metadata.Annotations, containerName)
 				if err != nil {
-					log.Error(err.Error())
+					logutil.BgLogger().Error(err.Error())
 				}
 			}
 
@@ -239,7 +240,7 @@ func (l *KubeletListener) createService(entity string, pod *kubelet.Pod, firstRu
 			svc.adIdentifiers = append(svc.adIdentifiers, container.Image)
 			_, short, _, err := containers.SplitImageName(container.Image)
 			if err != nil {
-				log.Warnf("Error while spliting image name: %s", err)
+				logutil.BgLogger().Warn("Error while spliting image name", zap.Error(err))
 			}
 			if len(short) > 0 && short != container.Image {
 				svc.adIdentifiers = append(svc.adIdentifiers, short)
@@ -251,7 +252,7 @@ func (l *KubeletListener) createService(entity string, pod *kubelet.Pod, firstRu
 	// Hosts
 	podIp := pod.Status.PodIP
 	if podIp == "" {
-		log.Errorf("Unable to get pod %s IP", podName)
+		logutil.BgLogger().Error(fmt.Sprintf("Unable to get pod %s IP", podName))
 	}
 	svc.hosts = map[string]string{"pod": podIp}
 
@@ -271,7 +272,7 @@ func (l *KubeletListener) createService(entity string, pod *kubelet.Pod, firstRu
 	svc.ports = ports
 	if len(svc.ports) == 0 {
 		// Port might not be specified in pod spec
-		log.Debugf("No ports found for pod %s", podName)
+		logutil.BgLogger().Debug(fmt.Sprintf("No ports found for pod %s", podName))
 	}
 
 	l.m.Lock()
@@ -328,7 +329,7 @@ func (l *KubeletListener) removeService(entity string) {
 
 		l.delService <- svc
 	} else {
-		log.Debugf("Entity %s not found, not removing", entity)
+		logutil.BgLogger().Debug(fmt.Sprintf("Entity %s not found, not removing", entity))
 	}
 }
 

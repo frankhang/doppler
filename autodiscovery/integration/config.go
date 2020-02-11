@@ -8,13 +8,13 @@ package integration
 import (
 	"fmt"
 	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"hash/fnv"
 	"sort"
 	"strconv"
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/frankhang/doppler/util/log"
 	"github.com/frankhang/doppler/util/tmplvar"
 )
 
@@ -181,7 +181,7 @@ func (c *Data) GetNameForInstance() string {
 	commonOptions := CommonInstanceConfig{}
 	err := yaml.Unmarshal(*c, &commonOptions)
 	if err != nil {
-		log.Errorf("invalid instance section: %s", err)
+		logutil.BgLogger().Error("invalid instance section", zap.Error(err))
 		return ""
 	}
 
