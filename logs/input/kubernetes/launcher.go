@@ -9,13 +9,14 @@ package kubernetes
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/service"
@@ -81,13 +82,13 @@ func (l *Launcher) setup() error {
 
 // Start starts the launcher
 func (l *Launcher) Start() {
-	log.Info("Starting Kubernetes launcher")
+	logutil.BgLogger().Info("Starting Kubernetes launcher")
 	go l.run()
 }
 
 // Stop stops the launcher
 func (l *Launcher) Stop() {
-	log.Info("Stopping Kubernetes launcher")
+	logutil.BgLogger().Info("Stopping Kubernetes launcher")
 	l.stopped <- struct{}{}
 }
 
@@ -101,7 +102,7 @@ func (l *Launcher) run() {
 		case service := <-l.removedServices:
 			l.removeSource(service)
 		case <-l.stopped:
-			log.Info("Kubernetes launcher stopped")
+			logutil.BgLogger().Info("Kubernetes launcher stopped")
 			return
 		}
 	}
@@ -113,24 +114,24 @@ func (l *Launcher) addSource(svc *service.Service) {
 	// If the container is already tailed, we don't do anything
 	// That shoudn't happen
 	if _, exists := l.sourcesByContainer[svc.GetEntityID()]; exists {
-		log.Warnf("A source already exist for container %v", svc.GetEntityID())
+		logutil.BgLogger().Warn(fmt.Sprintf("A source already exist for container %v", svc.GetEntityID()))
 		return
 	}
 
 	pod, err := l.kubeutil.GetPodForEntityID(svc.GetEntityID())
 	if err != nil {
-		log.Warnf("Could not add source for container %v: %v", svc.Identifier, err)
+		logutil.BgLogger().Warnf(fmt.Sprintf("Could not add source for container %v: %v", svc.Identifier, err))
 		return
 	}
 	container, err := l.kubeutil.GetStatusForContainerID(pod, svc.GetEntityID())
 	if err != nil {
-		log.Warn(err)
+		logutil.BgLogger().Warn(string(err))
 		return
 	}
 	source, err := l.getSource(pod, container)
 	if err != nil {
 		if err != collectAllDisabledError {
-			log.Warnf("Invalid configuration for pod %v, container %v: %v", pod.Metadata.Name, container.Name, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Invalid configuration for pod %v, container %v", pod.Metadata.Name, container.Name), zap.Error(err))
 		}
 		return
 	}
@@ -200,7 +201,7 @@ func (l *Launcher) getSource(pod *kubelet.Pod, container kubelet.ContainerStatus
 func getTaggerEntityID(ctrID string) string {
 	taggerEntityID, err := kubelet.KubeContainerIDToTaggerEntityID(ctrID)
 	if err != nil {
-		log.Warnf("Could not get tagger entity ID: %v", err)
+		logutil.BgLogger().Warn("Could not get tagger entity ID", zap.Error(err))
 		return ctrID
 	}
 	return taggerEntityID
@@ -262,7 +263,7 @@ func (l *Launcher) getPodDirectorySince1_14(pod *kubelet.Pod) string {
 func (l *Launcher) getShortImageName(container kubelet.ContainerStatus) (string, error) {
 	_, shortName, _, err := containers.SplitImageName(container.Image)
 	if err != nil {
-		log.Debugf("Cannot parse image name: %v", err)
+		logutil.BgLogger().Debug("Cannot parse image name", zap.Error(err))
 	}
 	return shortName, err
 }

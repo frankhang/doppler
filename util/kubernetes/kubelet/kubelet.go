@@ -12,6 +12,7 @@ import (
 	"crypto/tls"
 	"expvar"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -27,7 +28,7 @@ import (
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/docker"
 	"github.com/frankhang/doppler/util/kubernetes"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/retry"
 )
 
@@ -111,7 +112,7 @@ func GetKubeUtil() (KubeUtilInterface, error) {
 	}
 	err := globalKubeUtil.initRetry.TriggerRetry()
 	if err != nil {
-		log.Debugf("Kube util init error: %s", err)
+		logutil.BgLogger().Debug("Kube util init error", zap.Error(err))
 		return nil, err
 	}
 	return globalKubeUtil, nil
@@ -161,7 +162,7 @@ func (ku *KubeUtil) GetLocalPodList() ([]*Pod, error) {
 	if cached, hit := cache.Cache.Get(podListCacheKey); hit {
 		pods, ok = cached.(PodList)
 		if !ok {
-			log.Errorf("Invalid pod list cache format, forcing a cache miss")
+			logutil.BgLogger().Error("Invalid pod list cache format, forcing a cache miss")
 		} else {
 			return pods.Items, nil
 		}
@@ -217,7 +218,7 @@ func (ku *KubeUtil) GetPodForContainerID(containerID string) (*Pod, error) {
 
 	// Retry with cache invalidation
 	if err != nil && errors.IsNotFound(err) {
-		log.Debugf("Cannot get container %q: %s, retrying without cache...", containerID, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot get container %q, retrying without cache...", containerID), zap.Error(err))
 		pods, err = ku.ForceGetLocalPodList()
 		if err != nil {
 			return nil, err
@@ -231,7 +232,7 @@ func (ku *KubeUtil) GetPodForContainerID(containerID string) (*Pod, error) {
 	// On some kubelet versions, containers can take up to a second to
 	// register in the podlist, retry a few times before failing
 	if ku.waitOnMissingContainer == 0 {
-		log.Tracef("Still cannot get container %q, wait disabled", containerID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Still cannot get container %q, wait disabled", containerID))
 		return pod, err
 	}
 	timeout := time.NewTimer(ku.waitOnMissingContainer)
@@ -239,7 +240,7 @@ func (ku *KubeUtil) GetPodForContainerID(containerID string) (*Pod, error) {
 	retryTicker := time.NewTicker(250 * time.Millisecond)
 	defer retryTicker.Stop()
 	for {
-		log.Tracef("Still cannot get container %q: %s, retrying in 250ms", containerID, err)
+		logutil.BgLogger().Debug("Still cannot get container %q: %s, retrying in 250ms", containerID, err)
 		select {
 		case <-retryTicker.C:
 			pods, err = ku.ForceGetLocalPodList()
@@ -299,7 +300,7 @@ func (ku *KubeUtil) GetPodFromUID(podUID string) (*Pod, error) {
 			return pod, nil
 		}
 	}
-	log.Debugf("cannot get the pod uid %q: %s, retrying without cache...", podUID, err)
+	logutil.BgLogger().Debug(fmt.Sprintf("cannot get the pod uid %q, retrying without cache...", podUID), zap.Error(err))
 
 	pods, err = ku.ForceGetLocalPodList()
 	if err != nil {
@@ -337,28 +338,28 @@ func (ku *KubeUtil) setupKubeletApiClient() error {
 		config.Datadog.GetString("kubelet_client_ca"),
 		transport)
 	if err != nil {
-		log.Debugf("Failed to init tls, will try http only: %s", err)
+		logutil.BgLogger().Debug("Failed to init tls, will try http only", zap.Error(err))
 		return nil
 	}
 
 	ku.kubeletApiClient.Transport = transport
 	switch {
 	case isCertificatesConfigured():
-		log.Debug("Using HTTPS with configured TLS certificates")
+		logutil.BgLogger().Debug("Using HTTPS with configured TLS certificates")
 		return ku.setCertificates(
 			config.Datadog.GetString("kubelet_client_crt"),
 			config.Datadog.GetString("kubelet_client_key"),
 			transport.TLSClientConfig)
 
 	case isTokenPathConfigured():
-		log.Debug("Using HTTPS with configured bearer token")
+		logutil.BgLogger().Debug("Using HTTPS with configured bearer token")
 		return ku.setBearerToken(config.Datadog.GetString("kubelet_auth_token_path"))
 
 	case kubernetes.IsServiceAccountTokenAvailable():
-		log.Debug("Using HTTPS with service account bearer token")
+		logutil.BgLogger().Debug("Using HTTPS with service account bearer token")
 		return ku.setBearerToken(kubernetes.ServiceAccountTokenPath)
 	default:
-		log.Debug("No configured token or TLS certificates, will try http only")
+		logutil.BgLogger().Debug("No configured token or TLS certificates, will try http only")
 		return nil
 	}
 }
@@ -429,24 +430,24 @@ func (ku *KubeUtil) QueryKubelet(path string) ([]byte, int, error) {
 	req.Header = *ku.kubeletApiRequestHeaders
 	req.URL, err = url.Parse(fmt.Sprintf("%s%s", ku.kubeletApiEndpoint, path))
 	if err != nil {
-		log.Debugf("Fail to create the kubelet request: %s", err)
+		logutil.BgLogger().Debug("Fail to create the kubelet request", zap.Error(err))
 		return nil, 0, err
 	}
 
 	response, err := ku.kubeletApiClient.Do(req)
 	kubeletExpVar.Add(1)
 	if err != nil {
-		log.Debugf("Cannot request %s: %s", req.URL.String(), err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot request %s", req.URL.String()), zap.Error(err))
 		return nil, 0, err
 	}
 	defer response.Body.Close()
 
 	b, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		log.Debugf("Fail to read request %s body: %s", req.URL.String(), err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Fail to read request %s body: %s", req.URL.String()), zap.Error(err))
 		return nil, 0, err
 	}
-	log.Tracef("Successfully connected to %s, status code: %d, body len: %d", req.URL.String(), response.StatusCode, len(b))
+	logutil.BgLogger().Debug(fmt.Sprintf("Successfully connected to %s, status code: %d, body len: %d", req.URL.String(), response.StatusCode, len(b)))
 	return b, response.StatusCode, nil
 }
 
@@ -506,15 +507,15 @@ func (ku *KubeUtil) setupKubeletApiEndpoint() error {
 		_, code, httpsUrlErr := ku.QueryKubelet(kubeletPodPath)
 		if httpsUrlErr == nil {
 			if code == http.StatusOK {
-				log.Debugf("Kubelet endpoint is: %s", ku.kubeletApiEndpoint)
+				logutil.BgLogger().Debug(fmt.Sprintf("Kubelet endpoint is: %s", ku.kubeletApiEndpoint))
 				return nil
 			}
 			if code >= 500 {
 				return fmt.Errorf("unexpected status code %d on endpoint %s%s", code, ku.kubeletApiEndpoint, kubeletPodPath)
 			}
-			log.Warnf("Failed to securely reach the kubelet over HTTPS, received a status %d. Trying a non secure connection over HTTP. We highly recommend configuring TLS to access the kubelet", code)
+			logutil.BgLogger().Warn(fmt.Sprintf("Failed to securely reach the kubelet over HTTPS, received a status %d. Trying a non secure connection over HTTP. We highly recommend configuring TLS to access the kubelet", code))
 		}
-		log.Debugf("Cannot query %s%s: %s", ku.kubeletApiEndpoint, kubeletPodPath, httpsUrlErr)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot query %s%s: %s", ku.kubeletApiEndpoint, kubeletPodPath), zap.Error(httpsUrlErr))
 	}
 	// HTTPS
 	ku.kubeletApiEndpoint = fmt.Sprintf("https://%s:%d", ku.kubeletHost, config.Datadog.GetInt("kubernetes_https_kubelet_port"))

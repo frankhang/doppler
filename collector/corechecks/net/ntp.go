@@ -8,6 +8,7 @@ package net
 import (
 	"expvar"
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"sort"
 	"time"
@@ -21,7 +22,7 @@ import (
 	core "github.com/frankhang/doppler/collector/corechecks"
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const ntpCheckName = "ntp"
@@ -91,7 +92,7 @@ func (c *ntpConfig) parse(data []byte, initData []byte, getLocalServers func() (
 		if err != nil {
 			return err
 		}
-		log.Infof("Use local defined servers: %v", localNtpServers)
+		logutil.BgLogger().Info(fmt.Sprintf("Use local defined servers: %v", localNtpServers))
 	}
 
 	if len(localNtpServers) > 0 {
@@ -131,7 +132,7 @@ func (c *NTPCheck) Configure(data integration.Data, initConfig integration.Data,
 	cfg := new(ntpConfig)
 	err := cfg.parse(data, initConfig, getLocalDefinedNTPServers)
 	if err != nil {
-		log.Errorf("Error parsing configuration file: %s", err)
+		logutil.BgLogger().Error("Error parsing configuration file", zap.Error(err))
 		return err
 	}
 
@@ -159,7 +160,7 @@ func (c *NTPCheck) Run() error {
 
 	clockOffset, err := c.queryOffset()
 	if err != nil {
-		log.Info(err)
+		logutil.BgLogger().Info(err.Error())
 		serviceCheckStatus = metrics.ServiceCheckUnknown
 	} else {
 		if int(math.Abs(clockOffset)) > offsetThreshold {
@@ -191,17 +192,17 @@ func (c *NTPCheck) queryOffset() (float64, error) {
 		if err != nil {
 			if c.errCount >= 10 {
 				c.errCount = 0
-				log.Warnf("Couldn't query the ntp host %s for 10 times in a row: %s", host, err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Couldn't query the ntp host %s for 10 times in a row", host), zap.Error(err))
 			} else {
 				c.errCount++
-				log.Debugf("There was an error querying the ntp host %s: %s", host, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("There was an error querying the ntp host %s", host), zap.Error(err))
 			}
 			continue
 		}
 		c.errCount = 0
 		err = response.Validate()
 		if err != nil {
-			log.Infof("The ntp response is not valid for host %s: %s", host, err)
+			logutil.BgLogger().Info(fmt.Sprintf("The ntp response is not valid for host %s", host), zap.Error(err))
 			continue
 		}
 		offsets = append(offsets, response.ClockOffset.Seconds())

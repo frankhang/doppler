@@ -10,6 +10,7 @@ package clusterchecks
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
@@ -17,7 +18,7 @@ import (
 	"github.com/frankhang/doppler/status/health"
 	"github.com/frankhang/doppler/util/clusteragent"
 	"github.com/frankhang/doppler/util/kubernetes/clustername"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const firstRunnerStatsMinutes = 2  // collect runner stats after the first 2 minutes
@@ -54,7 +55,7 @@ func newDispatcher() *dispatcher {
 	var err error
 	d.clcRunnersClient, err = clusteragent.GetCLCRunnerClient()
 	if err != nil {
-		log.Warnf("Cannot create CLC runners client, advanced dispatching will be disabled: %v", err)
+		logutil.BgLogger().Warn("Cannot create CLC runners client, advanced dispatching will be disabled", zap.Error(err))
 		d.advancedDispatching = false
 	}
 	return d
@@ -75,7 +76,7 @@ func (d *dispatcher) Schedule(configs []integration.Config) {
 			// An endpoint check backed by a pod
 			patched, err := d.patchEndpointsConfiguration(c)
 			if err != nil {
-				log.Warnf("Cannot patch endpoint configuration %s: %s", c.Digest(), err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Cannot patch endpoint configuration %s", c.Digest()), zap.Error(err))
 				continue
 			}
 			d.addEndpointConfig(patched, c.NodeName)
@@ -83,7 +84,7 @@ func (d *dispatcher) Schedule(configs []integration.Config) {
 		}
 		patched, err := d.patchConfiguration(c)
 		if err != nil {
-			log.Warnf("Cannot patch configuration %s: %s", c.Digest(), err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Cannot patch configuration %s", c.Digest()), zap.Error(err))
 			continue
 		}
 		d.add(patched)
@@ -99,7 +100,7 @@ func (d *dispatcher) Unschedule(configs []integration.Config) {
 		if c.NodeName != "" {
 			patched, err := d.patchEndpointsConfiguration(c)
 			if err != nil {
-				log.Warnf("Cannot patch endpoint configuration %s: %s", c.Digest(), err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Cannot patch endpoint configuration %s", c.Digest()), zap.Error(err))
 				continue
 			}
 			d.removeEndpointConfig(patched, c.NodeName)
@@ -107,7 +108,7 @@ func (d *dispatcher) Unschedule(configs []integration.Config) {
 		}
 		patched, err := d.patchConfiguration(c)
 		if err != nil {
-			log.Warnf("Cannot patch configuration %s: %s", c.Digest(), err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Cannot patch configuration %s", c.Digest()), zap.Error(err))
 			continue
 		}
 		d.remove(patched)
@@ -117,7 +118,7 @@ func (d *dispatcher) Unschedule(configs []integration.Config) {
 // reschdule sends configurations to dispatching without checking or patching them as Schedule does.
 func (d *dispatcher) reschedule(configs []integration.Config) {
 	for _, c := range configs {
-		log.Debugf("Rescheduling the check %s:%s", c.Name, c.Digest())
+		logutil.BgLogger().Debug(fmt.Sprintf("Rescheduling the check %s:%s", c.Name, c.Digest()))
 		d.add(c)
 	}
 }
@@ -127,9 +128,9 @@ func (d *dispatcher) add(config integration.Config) {
 	target := d.getLeastBusyNode()
 	if target == "" {
 		// If no node is found, store it in the danglingConfigs map for retrying later.
-		log.Warnf("No available node to dispatch %s:%s on, will retry later", config.Name, config.Digest())
+		logutil.BgLogger().Warn(fmt.Sprintf("No available node to dispatch %s:%s on, will retry later", config.Name, config.Digest()))
 	} else {
-		log.Infof("Dispatching configuration %s:%s to node %s", config.Name, config.Digest(), target)
+		logutil.BgLogger().Info(fmt.Sprintf("Dispatching configuration %s:%s to node %s", config.Name, config.Digest(), target))
 	}
 
 	d.addConfig(config, target)
@@ -138,7 +139,7 @@ func (d *dispatcher) add(config integration.Config) {
 // remove deletes a given configuration
 func (d *dispatcher) remove(config integration.Config) {
 	digest := config.Digest()
-	log.Debugf("Removing configuration %s:%s", config.Name, digest)
+	logutil.BgLogger().Debug(fmt.Sprintf("Removing configuration %s:%s", config.Name, digest))
 	d.removeConfig(digest)
 }
 

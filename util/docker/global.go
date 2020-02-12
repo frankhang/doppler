@@ -8,11 +8,12 @@
 package docker
 
 import (
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/util/retry"
 )
@@ -38,7 +39,7 @@ func GetDockerUtil() (*DockerUtil, error) {
 		})
 	}
 	if err := globalDockerUtil.initRetry.TriggerRetry(); err != nil {
-		log.Debugf("Docker init error: %s", err)
+		logutil.BgLogger().Debug("Docker init error", zap.Error(err))
 		return nil, err
 	}
 	return globalDockerUtil, nil

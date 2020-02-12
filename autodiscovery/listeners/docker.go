@@ -26,7 +26,7 @@ import (
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/docker"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // DockerListener implements the ServiceListener interface.
@@ -145,7 +145,7 @@ func (l *DockerListener) init() {
 
 		checkNames, err := getCheckNamesFromLabels(co.Labels)
 		if err != nil {
-			log.Errorf("Error getting check names from docker labels on container %s: %v", co.ID, err)
+			logutil.BgLogger().Error("Error getting check names from docker labels on container", zap.String("id", co.ID), zap.Error(err))
 		}
 
 		if findKubernetesInLabels(co.Labels) {
@@ -403,7 +403,7 @@ func (s *DockerService) GetADIdentifiers() ([]string, error) {
 		}
 		image, err := du.ResolveImageName(cj.Image)
 		if err != nil {
-			log.Warnf("error while resolving image name: %s", err)
+			logutil.BgLogger().Warn("error while resolving image name", zap.Error(err))
 		}
 		entity := docker.ContainerIDToEntityName(s.cID)
 		s.adIdentifiers = ComputeContainerServiceIDs(entity, image, cj.Config.Labels)
@@ -477,17 +477,17 @@ func (s *DockerService) GetPorts() ([]ContainerPort, error) {
 		for p := range cInspect.NetworkSettings.Ports {
 			out, err := parseDockerPort(p)
 			if err != nil {
-				log.Warn(err.Error())
+				logutil.BgLogger().Warn(err.Error())
 				continue
 			}
 			ports = append(ports, out...)
 		}
 	case cInspect.Config != nil && len(cInspect.Config.ExposedPorts) > 0:
-		log.Infof("using ExposedPorts for container %s as no port bindings are listed", s.cID[:12])
+		logutil.BgLogger().Info(fmt.Sprintf("using ExposedPorts for container %s as no port bindings are listed", s.cID[:12]))
 		for p := range cInspect.Config.ExposedPorts {
 			out, err := parseDockerPort(p)
 			if err != nil {
-				log.Warn(err.Error())
+				logutil.BgLogger().Warn(err.Error())
 				continue
 			}
 			ports = append(ports, out...)
@@ -610,7 +610,7 @@ func (s *DockerService) GetCheckNames() []string {
 		}
 		s.checkNames, err = getCheckNamesFromLabels(cj.Config.Labels)
 		if err != nil {
-			log.Error(err.Error())
+			logutil.BgLogger().Error(err.Error())
 		}
 	}
 

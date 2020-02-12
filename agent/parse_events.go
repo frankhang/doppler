@@ -3,8 +3,9 @@ package agent
 import (
 	"bytes"
 	"fmt"
+	"go.uber.org/zap"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type eventPriority int
@@ -184,7 +185,7 @@ func parseEvent(message []byte) (dogstatsdEvent, error) {
 		optionalField, optionalFields = nextField(optionalFields)
 		event, err = applyEventOptionalField(event, optionalField)
 		if err != nil {
-			log.Warnf("invalid event optional field: %v", err)
+			logutil.BgLogger().Warn("invalid event optional field", zap.Error(err))
 		}
 	}
 	return event, nil

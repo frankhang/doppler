@@ -8,13 +8,14 @@
 package kubelet
 
 import (
+	"fmt"
 	"hash/fnv"
 	"sort"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const unreadinessTimeout = 30 * time.Second
@@ -136,7 +137,7 @@ func (w *PodWatcher) computeChanges(podList []*Pod) ([]*Pod, error) {
 			updatedPods = append(updatedPods, pod)
 		}
 	}
-	log.Debugf("Found %d changed pods out of %d", len(updatedPods), len(podList))
+	logutil.BgLogger().Debug(fmt.Sprintf("Found %d changed pods out of %d", len(updatedPods), len(podList)))
 	return updatedPods, nil
 }
 

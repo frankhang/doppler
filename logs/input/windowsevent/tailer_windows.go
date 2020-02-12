@@ -14,23 +14,25 @@ package windowsevent
 import "C"
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"syscall"
 	"unicode/utf16"
 	"unsafe"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"golang.org/x/sys/windows"
 )
 
 // Start starts tailing the event log.
 func (t *Tailer) Start() {
-	log.Infof("Starting windows event log tailing for channel %s query %s", t.config.ChannelPath, t.config.Query)
+	logutil.BgLogger().Info(fmt.Sprintf("Starting windows event log tailing for channel %s query %s", t.config.ChannelPath, t.config.Query))
 	go t.tail()
 }
 
 // Stop stops the tailer
 func (t *Tailer) Stop() {
-	log.Info("Stop tailing windows event log")
+	logutil.BgLogger().Info("Stop tailing windows event log")
 	t.stop <- struct{}{}
 	<-t.done
 }
@@ -64,32 +66,32 @@ func (t *Tailer) tail() {
 
 //export goStaleCallback
 func goStaleCallback(errCode C.ULONGLONG, ctx C.PVOID) {
-	log.Warn("EventLog tailer got Stale callback")
+	logutil.BgLogger().Warn("EventLog tailer got Stale callback")
 }
 
 //export goErrorCallback
 func goErrorCallback(errCode C.ULONGLONG, ctx C.PVOID) {
-	log.Warn("EventLog tailer got Error callback with code ", errCode)
+	logutil.BgLogger().Warn(fmt.Sprintf("EventLog tailer got Error callback with code ", errCode))
 }
 
 //export goNotificationCallback
 func goNotificationCallback(handle C.ULONGLONG, ctx C.PVOID) {
 	goctx := *(*eventContext)(unsafe.Pointer(uintptr(ctx)))
-	log.Debug("Callback from ", goctx.id)
+	logutil.BgLogger().Debug(fmt.Sprintf("Callback from ", goctx.id))
 
 	richEvt, err := EvtRender(handle)
 	if err != nil {
-		log.Warnf("Error rendering xml: %v", err)
+		logutil.BgLogger().Warn("Error rendering xml", zap.Error(err))
 		return
 	}
 	t, exists := tailerForIndex(goctx.id)
 	if !exists {
-		log.Warnf("Got invalid eventContext id %d when map is %v", goctx.id, eventContextToTailerMap)
+		logutil.BgLogger().Warn(fmt.Sprintf("Got invalid eventContext id %d when map is %v", goctx.id, eventContextToTailerMap))
 		return
 	}
 	msg, err := t.toMessage(richEvt)
 	if err != nil {
-		log.Warnf("Couldn't convert xml to json: %s for event %s", err, richEvt.xmlEvent)
+		logutil.BgLogger().Warn(fmt.Sprintf("Couldn't convert xml to json: %s for event %s", err, richEvt.xmlEvent))
 		return
 	}
 
@@ -120,7 +122,7 @@ func EvtRender(h C.ULONGLONG) (richEvt *richEvent, err error) {
 		uintptr(unsafe.Pointer(&bufUsed)), // filled in with necessary buffer size
 		uintptr(0))                        // not used but must be provided
 	if err != error(windows.ERROR_INSUFFICIENT_BUFFER) {
-		log.Warnf("Couldn't render xml event: %s", err)
+		logutil.BgLogger().Warn("Couldn't render xml event", zap.Error(err))
 		return
 	}
 	bufSize = bufUsed

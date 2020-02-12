@@ -7,13 +7,14 @@ package tagger
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"sync"
 
 	"github.com/DataDog/datadog-agent/cmd/agent/api/response"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/tagger/collectors"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // defaultTagger is the shared tagger instance backing the global Tag and Init functions
@@ -37,12 +38,12 @@ func Init() {
 
 		ChecksCardinality, err = stringToTagCardinality(checkCard)
 		if err != nil {
-			log.Warnf("failed to parse check tag cardinality, defaulting to low. Error: %s", err)
+			logutil.BgLogger().Warn("failed to parse check tag cardinality, defaulting to low", zap.Error(err))
 			ChecksCardinality = collectors.LowCardinality
 		}
 		DogstatsdCardinality, err = stringToTagCardinality(dsdCard)
 		if err != nil {
-			log.Warnf("failed to parse dogstatsd tag cardinality, defaulting to low. Error: %s", err)
+			logutil.BgLogger().Warn("failed to parse dogstatsd tag cardinality, defaulting to low", zap.Error(err))
 			DogstatsdCardinality = collectors.LowCardinality
 		}
 

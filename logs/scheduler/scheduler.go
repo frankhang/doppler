@@ -7,6 +7,7 @@ package scheduler
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
@@ -14,7 +15,7 @@ import (
 	logsConfig "github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/service"
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // Scheduler creates and deletes new sources and services to start or stop
@@ -49,10 +50,10 @@ func (s *Scheduler) Schedule(configs []integration.Config) {
 		}
 		switch {
 		case s.newSources(config):
-			log.Infof("Received a new logs config: %v", s.configName(config))
+			logutil.BgLogger().Info(fmt.Sprintf("Received a new logs config: %v", s.configName(config)))
 			sources, err := s.toSources(config)
 			if err != nil {
-				log.Warnf("Invalid configuration: %v", err)
+				logutil.BgLogger().Warn("Invalid configuration", zap.Error(err))
 				continue
 			}
 			for _, source := range sources {
@@ -61,17 +62,17 @@ func (s *Scheduler) Schedule(configs []integration.Config) {
 		case s.newService(config):
 			entityType, _, err := s.parseEntity(config.TaggerEntity)
 			if err != nil {
-				log.Warnf("Invalid service: %v", err)
+				logutil.BgLogger().Warn("Invalid service", zap.Error(err))
 				continue
 			}
 			// logs only consider container services
 			if entityType != containers.ContainerEntityName {
 				continue
 			}
-			log.Infof("Received a new service: %v", config.Entity)
+			logutil.BgLogger().Info(fmt.Sprintf("Received a new service: %v", config.Entity))
 			service, err := s.toService(config)
 			if err != nil {
-				log.Warnf("Invalid service: %v", err)
+				logutil.BgLogger().Warn("Invalid service", zap.Error(err))
 				continue
 			}
 			s.services.AddService(service)
@@ -90,11 +91,11 @@ func (s *Scheduler) Unschedule(configs []integration.Config) {
 		}
 		switch {
 		case s.newSources(config):
-			log.Infof("New source to remove: entity: %v", config.Entity)
+			logutil.BgLogger().Info(fmt.Sprintf("New source to remove: entity: %v", config.Entity))
 
 			_, identifier, err := s.parseEntity(config.Entity)
 			if err != nil {
-				log.Warnf("Invalid configuration: %v", err)
+				logutil.BgLogger().Warn("Invalid configuration", zap.Error(err))
 				continue
 			}
 
@@ -107,17 +108,17 @@ func (s *Scheduler) Unschedule(configs []integration.Config) {
 			// new service to remove
 			entityType, _, err := s.parseEntity(config.TaggerEntity)
 			if err != nil {
-				log.Warnf("Invalid service: %v", err)
+				logutil.BgLogger().Warn("Invalid service", zap.Error(err))
 				continue
 			}
 			// logs only consider container services
 			if entityType != containers.ContainerEntityName {
 				continue
 			}
-			log.Infof("New service to remove: entity: %v", config.Entity)
+			logutil.BgLogger().Info(fmt.Sprintf("New service to remove: entity: %v", config.Entity))
 			service, err := s.toService(config)
 			if err != nil {
-				log.Warnf("Invalid service: %v", err)
+				logutil.BgLogger().Warn("Invalid service", zap.Error(err))
 				continue
 			}
 			s.services.RemoveService(service)
@@ -196,7 +197,7 @@ func (s *Scheduler) toSources(config integration.Config) ([]*logsConfig.LogSourc
 		source := logsConfig.NewLogSource(configName, cfg)
 		sources = append(sources, source)
 		if err := cfg.Validate(); err != nil {
-			log.Warnf("Invalid logs configuration: %v", err)
+			logutil.BgLogger().Warn("Invalid logs configuration", zap.Error(err))
 			source.Status.Error(err)
 			continue
 		}

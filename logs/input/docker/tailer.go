@@ -10,13 +10,14 @@ package docker
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"strings"
 	"sync"
 	"time"
 
 	dockerutil "github.com/frankhang/doppler/util/docker"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/decoder"
@@ -77,7 +78,7 @@ func (t *Tailer) Identifier() string {
 // Stop stops the tailer from reading new container logs,
 // this call blocks until the decoder is completely flushed
 func (t *Tailer) Stop() {
-	log.Infof("Stop tailing container: %v", ShortContainerID(t.ContainerID))
+	logutil.BgLogger().Info(fmt.Sprintf("Stop tailing container: %v", ShortContainerID(t.ContainerID)))
 	t.stop <- struct{}{}
 
 	t.reader.Close()
@@ -93,7 +94,7 @@ func (t *Tailer) Stop() {
 // start from now if the container has been created before the agent started
 // start from oldest log otherwise
 func (t *Tailer) Start(since time.Time) error {
-	log.Debugf("Start tailing container: %v", ShortContainerID(t.ContainerID))
+	logutil.BgLogger().Debug(fmt.Sprintf("Start tailing container: %v", ShortContainerID(t.ContainerID)))
 	return t.tail(since.Format(config.DateFormat))
 }
 
@@ -173,10 +174,10 @@ func (t *Tailer) readForever() {
 					// of the tailer, stop reading
 					return
 				case isContextCanceled(err):
-					log.Debugf("Restarting reader for container %v after a read timeout", ShortContainerID(t.ContainerID))
+					logutil.BgLogger().Debug(fmt.Sprintf("Restarting reader for container %v after a read timeout", ShortContainerID(t.ContainerID)))
 					err := t.setupReader()
 					if err != nil {
-						log.Warnf("Could not restart the docker reader for container %v: %v:", ShortContainerID(t.ContainerID), err)
+						logutil.BgLogger().Warn(fmt.Sprintf("Could not restart the docker reader for container %v", ShortContainerID(t.ContainerID)), zap.Error(err))
 						t.erroredContainerID <- t.ContainerID
 						return
 					}
@@ -190,10 +191,10 @@ func (t *Tailer) readForever() {
 					// Retry to read to make sure all logs are collected
 					// or stop reading on the next iteration
 					// if the tailer has been stopped.
-					log.Debugf("No new logs are available for container %v", ShortContainerID(t.ContainerID))
+					logutil.BgLogger().Debug(fmt.Sprintf("No new logs are available for container %v", ShortContainerID(t.ContainerID)))
 				default:
 					t.source.Status.Error(err)
-					log.Errorf("Could not tail logs for container %v: %v", ShortContainerID(t.ContainerID), err)
+					logutil.BgLogger().Error(fmt.Sprintf("Could not tail logs for container %v", ShortContainerID(t.ContainerID)), zap.Error(err))
 					t.erroredContainerID <- t.ContainerID
 					return
 				}

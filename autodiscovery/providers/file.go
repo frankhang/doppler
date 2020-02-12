@@ -7,6 +7,8 @@ package providers
 
 import (
 	"errors"
+	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -18,7 +20,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type configFormat struct {
@@ -71,11 +73,11 @@ func (c *FileConfigProvider) Collect() ([]integration.Config, error) {
 	defaultConfigs := []integration.Config{}
 
 	for _, path := range c.paths {
-		log.Infof("%v: searching for configuration files at: %s", c, path)
+		logutil.BgLogger().Info(fmt.Sprintf("%v: searching for configuration files at: %s", c, path))
 
 		entries, err := readDirPtr(path)
 		if err != nil {
-			log.Warnf("Skipping, %s", err)
+			logutil.BgLogger().Warn("Skipping", zap.Error(err))
 			continue
 		}
 
@@ -124,7 +126,7 @@ func (c *FileConfigProvider) Collect() ([]integration.Config, error) {
 		if _, isThere := configNames[conf.Name]; !isThere {
 			configs = append(configs, conf)
 		} else {
-			log.Debugf("Ignoring default config file '%s' because non-default config was found", conf.Name)
+			logutil.BgLogger().Debug(fmt.Sprintf("Ignoring default config file '%s' because non-default config was found", conf.Name))
 		}
 	}
 
@@ -173,7 +175,7 @@ func (c *FileConfigProvider) collectEntry(file os.FileInfo, path string, integra
 	entry.name = integrationName
 
 	if ext != ".yaml" && ext != ".yml" {
-		log.Tracef("Skipping file: %s", absPath)
+		logutil.BgLogger().Debug(fmt.Sprintf("Skipping file: %s", absPath))
 		entry.err = errors.New("Invalid config file extension")
 		return entry
 	}
@@ -181,7 +183,7 @@ func (c *FileConfigProvider) collectEntry(file os.FileInfo, path string, integra
 	var err error
 	entry.conf, err = GetIntegrationConfigFromFile(integrationName, absPath)
 	if err != nil {
-		log.Warnf("%s is not a valid config file: %s", absPath, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("%s is not a valid config file", absPath), zap.Error(err))
 		c.Errors[integrationName] = err.Error()
 		entry.err = errors.New("Invalid config file format")
 		return entry
@@ -193,7 +195,7 @@ func (c *FileConfigProvider) collectEntry(file os.FileInfo, path string, integra
 	}
 
 	delete(c.Errors, integrationName) // noop if entry is nonexistant
-	log.Debug("Found valid configuration in file:", absPath)
+	logutil.BgLogger().Debug(fmt.Sprintf("Found valid configuration in file:", absPath))
 	return entry
 }
 
@@ -207,14 +209,14 @@ func (c *FileConfigProvider) collectDir(parentPath string, folder os.FileInfo) c
 
 	if filepath.Ext(folder.Name()) != dirExt {
 		// the name of this directory isn't in the form `integrationName.d`, skip it
-		log.Debugf("Not a config folder, skipping directory: %s", dirPath)
+		logutil.BgLogger().Debug(fmt.Sprintf("Not a config folder, skipping directory: %s", dirPath))
 		return configPkg{configs, defaultConfigs, otherConfigs}
 	}
 
 	// search for yaml files within this directory
 	subEntries, err := ioutil.ReadDir(dirPath)
 	if err != nil {
-		log.Warnf("Skipping config directory %s: %s", dirPath, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Skipping config directory %s", dirPath), zap.Error(err))
 		return configPkg{configs, defaultConfigs, otherConfigs}
 	}
 
@@ -263,7 +265,7 @@ func GetIntegrationConfigFromFile(name, fpath string) (integration.Config, error
 		if err := yaml.Unmarshal(yamlFile, &cf); err != nil {
 			return config, err
 		}
-		log.Warnf("reading config file %v: %v\n", fpath, strictErr)
+		logutil.BgLogger().Warn(fmt.Sprintf("reading config file %v: %v\n", fpath, strictErr))
 	}
 
 	// If no valid instances were found & this is neither a metrics file, nor a logs file

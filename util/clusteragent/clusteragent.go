@@ -8,6 +8,7 @@ package clusteragent
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -16,7 +17,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/api/security"
 	"github.com/frankhang/doppler/api/util"
@@ -87,7 +88,7 @@ func GetClusterAgentClient() (DCAClientInterface, error) {
 		})
 	}
 	if err := globalClusterAgentClient.initRetry.TriggerRetry(); err != nil {
-		log.Debugf("Cluster Agent init error: %v", err)
+		logutil.BgLogger().Debug("Cluster Agent init error", zap.Error(err))
 		return nil, err
 	}
 	return globalClusterAgentClient, nil
@@ -120,7 +121,7 @@ func (c *DCAClient) init() error {
 	if err != nil {
 		return err
 	}
-	log.Infof("Successfully connected to the Datadog Cluster Agent %s", c.ClusterAgentVersion.String())
+	logutil.BgLogger().Info(fmt.Sprintf("Successfully connected to the Datadog Cluster Agent %s", c.ClusterAgentVersion.String()))
 
 	// Clone the http client in a new client with built-in redirect handler
 	c.leaderClient = newLeaderClient(c.clusterAgentAPIClient, c.clusterAgentAPIEndpoint)
@@ -153,7 +154,7 @@ func getClusterAgentEndpoint() (string, error) {
 			return "", fmt.Errorf("cannot get cluster agent endpoint, not a https scheme: %s", dcaURL)
 		}
 		if strings.Contains(dcaURL, "://") == false {
-			log.Tracef("Adding https scheme to %s: https://%s", dcaURL, dcaURL)
+			logutil.BgLogger().Debug(fmt.Sprintf("Adding https scheme to %s: https://%s", dcaURL, dcaURL))
 			dcaURL = fmt.Sprintf("https://%s", dcaURL)
 		}
 		u, err := url.Parse(dcaURL)
@@ -163,14 +164,14 @@ func getClusterAgentEndpoint() (string, error) {
 		if u.Scheme != "https" {
 			return "", fmt.Errorf("cannot get cluster agent endpoint, not a https scheme: %s", u.Scheme)
 		}
-		log.Debugf("Connecting to the configured URL for the Datadog Cluster Agent: %s", dcaURL)
+		logutil.BgLogger().Debug(fmt.Sprintf("Connecting to the configured URL for the Datadog Cluster Agent: %s", dcaURL))
 		return u.String(), nil
 	}
 
 	// Construct the URL with the Kubernetes service environment variables
 	// *_SERVICE_HOST and *_SERVICE_PORT
 	dcaSvc := config.Datadog.GetString(configDcaSvcName)
-	log.Debugf("Identified service for the Datadog Cluster Agent: %s", dcaSvc)
+	logutil.BgLogger().Debug(fmt.Sprintf("Identified service for the Datadog Cluster Agent: %s", dcaSvc))
 	if dcaSvc == "" {
 		return "", fmt.Errorf("cannot get a cluster agent endpoint, both %s and %s are empty", configDcaURL, configDcaSvcName)
 	}

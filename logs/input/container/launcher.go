@@ -13,8 +13,9 @@ import (
 	"github.com/frankhang/doppler/logs/pipeline"
 	"github.com/frankhang/doppler/logs/restart"
 	"github.com/frankhang/doppler/logs/service"
+	"go.uber.org/zap"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // NewLauncher returns a new container launcher depending on the environment.
@@ -32,40 +33,40 @@ func NewLauncher(collectAll bool, collectFromFiles bool, sources *config.LogSour
 	if collectFromFiles {
 		launcher, err = kubernetes.NewLauncher(sources, services, collectAll)
 		if err == nil {
-			log.Info("Kubernetes launcher initialized")
+			logutil.BgLogger().Info("Kubernetes launcher initialized")
 			return launcher
 		}
-		log.Infof("Could not setup the kubernetes launcher: %v", err)
+		logutil.BgLogger().Info("Could not setup the kubernetes launcher", zap.Error(err))
 
 		launcher, err = docker.NewLauncher(sources, services, pipelineProvider, registry, false)
 		if err == nil {
-			log.Info("Docker launcher initialized")
+			logutil.BgLogger().Info("Docker launcher initialized")
 			return launcher
 		}
-		log.Infof("Could not setup the docker launcher: %v", err)
+		logutil.BgLogger().Info("Could not setup the docker launcher", zap.Error(err))
 	} else {
 		launcher, err = docker.NewLauncher(sources, services, pipelineProvider, registry, false)
 		if err == nil {
-			log.Info("Docker launcher initialized")
+			logutil.BgLogger().Info("Docker launcher initialized")
 			return launcher
 		}
-		log.Infof("Could not setup the docker launcher: %v", err)
+		logutil.BgLogger().Info("Could not setup the docker launcher", zap.Error(err))
 
 		launcher, err = kubernetes.NewLauncher(sources, services, collectAll)
 		if err == nil {
-			log.Info("Kubernetes launcher initialized")
+			logutil.BgLogger().Info("Kubernetes launcher initialized")
 			return launcher
 		}
-		log.Infof("Could not setup the kubernetes launcher: %v", err)
+		logutil.BgLogger().Info("Could not setup the kubernetes launcher", zap.Error(err))
 	}
 
 	launcher, err = docker.NewLauncher(sources, services, pipelineProvider, registry, true)
 	if err != nil {
-		log.Warnf("Could not setup the docker launcher: %v. Will not be able to collect container logs", err)
+		logutil.BgLogger().Warn("Could not setup the docker launcher. Will not be able to collect container logs", zap.Error(err))
 		return nil
 	}
 
-	log.Infof("Container logs won't be collected unless a docker daemon is eventually started")
+	logutil.BgLogger().Info("Container logs won't be collected unless a docker daemon is eventually started")
 
 	return launcher
 }

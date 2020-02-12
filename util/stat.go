@@ -9,7 +9,7 @@ import (
 	"expvar"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // Stat type includes a statted value and its timestamp.
@@ -48,7 +48,7 @@ func (s *Stats) StatEvent(v int64) {
 	case s.incoming <- v:
 		return
 	default:
-		log.Debugf("dropping last second stats, buffer full")
+		logutil.BgLogger().Debug("dropping last second stats, buffer full")
 	}
 }
 
@@ -68,7 +68,7 @@ func (s *Stats) Process() {
 				Ts:  s.last,
 			}:
 			default:
-				log.Debugf("dropping last second stats, buffer full")
+				logutil.BgLogger().Debug("dropping last second stats, buffer full")
 			}
 
 			s.valExpvar.Set(0)

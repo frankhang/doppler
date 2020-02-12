@@ -7,11 +7,13 @@
 package system
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/winutil/pdhutil"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/aggregator"
 )
@@ -32,11 +34,11 @@ func (c *fhCheck) Run() error {
 	}
 	vals, err := c.counter.GetAllValues()
 	if err != nil {
-		log.Warnf("Error getting handle value %v", err)
+		logutil.BgLogger().Warn("Error getting handle value", zap.Error(err))
 		return err
 	}
 	val := vals["_Total"]
-	log.Debugf("Submitting system.fs.file_handles_in_use %v", val)
+	logutil.BgLogger().Debug(fmt.Sprintf("Submitting system.fs.file_handles_in_use %v", val))
 	sender.Gauge("system.fs.file_handles.in_use", float64(val), "", nil)
 	sender.Commit()
 

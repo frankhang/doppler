@@ -8,12 +8,13 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"strconv"
 	"time"
 
 	coreConfig "github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // ContainerCollectAll is the name of the docker integration that collect logs from all containers
@@ -77,7 +78,7 @@ func GlobalProcessingRules() ([]*ProcessingRule, error) {
 // BuildEndpoints returns the endpoints to send logs to.
 func BuildEndpoints() (*Endpoints, error) {
 	if coreConfig.Datadog.GetBool("logs_config.dev_mode_no_ssl") {
-		log.Warnf("Use of illegal configuration parameter, if you need to send your logs to a proxy, please use 'logs_config.logs_dd_url' and 'logs_config.logs_no_ssl' instead")
+		logutil.BgLogger().Warn("Use of illegal configuration parameter, if you need to send your logs to a proxy, please use 'logs_config.logs_dd_url' and 'logs_config.logs_no_ssl' instead")
 	}
 
 	if coreConfig.Datadog.GetBool("logs_config.use_http") {
@@ -125,7 +126,7 @@ func buildTCPEndpoints() (*Endpoints, error) {
 	var additionals []Endpoint
 	err := coreConfig.Datadog.UnmarshalKey("logs_config.additional_endpoints", &additionals)
 	if err != nil {
-		log.Warnf("Could not parse additional_endpoints for logs: %v", err)
+		logutil.BgLogger().Warn("Could not parse additional_endpoints for logs", zap.Error(err))
 	}
 	for i := 0; i < len(additionals); i++ {
 		additionals[i].UseSSL = main.UseSSL
@@ -159,7 +160,7 @@ func buildHTTPEndpoints() (*Endpoints, error) {
 	var additionals []Endpoint
 	err := coreConfig.Datadog.UnmarshalKey("logs_config.additional_endpoints", &additionals)
 	if err != nil {
-		log.Warnf("Could not parse additional_endpoints for logs: %v", err)
+		logutil.BgLogger().Warn("Could not parse additional_endpoints for logs", zap.Error(err))
 	}
 	for i := 0; i < len(additionals); i++ {
 		additionals[i].UseSSL = main.UseSSL
@@ -170,12 +171,12 @@ func buildHTTPEndpoints() (*Endpoints, error) {
 	return NewEndpoints(main, additionals, false, true, batchWait), nil
 }
 
-func isSetAndNotEmpty(config coreConfig.Config, key string) bool {
+func isSetAndNotEmpty(config coreConfig.Config2, key string) bool {
 	return config.IsSet(key) && len(config.GetString(key)) > 0
 }
 
 // getLogsAPIKey provides the dd api key used by the main logs agent sender.
-func getLogsAPIKey(config coreConfig.Config) string {
+func getLogsAPIKey(config coreConfig.Config2) string {
 	if isSetAndNotEmpty(config, "logs_config.api_key") {
 		return config.GetString("logs_config.api_key")
 	}
@@ -195,10 +196,10 @@ func parseAddress(address string) (string, int, error) {
 	return host, port, nil
 }
 
-func batchWait(config coreConfig.Config) time.Duration {
+func batchWait(config coreConfig.Config2) time.Duration {
 	batchWait := coreConfig.Datadog.GetInt("logs_config.batch_wait")
 	if batchWait < 1 || 10 < batchWait {
-		log.Warnf("Invalid batch_wait: %v should be in [1, 10], fallback on %v", batchWait, coreConfig.DefaultBatchWait)
+		logutil.BgLogger().Warn(fmt.Sprintf("Invalid batch_wait: %v should be in [1, 10], fallback on %v", batchWait, coreConfig.DefaultBatchWait))
 		return coreConfig.DefaultBatchWait * time.Second
 	}
 	return (time.Duration(batchWait) * time.Second)

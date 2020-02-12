@@ -6,10 +6,12 @@
 package file
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"sync/atomic"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/auditor"
 	"github.com/frankhang/doppler/logs/config"
@@ -175,7 +177,7 @@ func (s *Scanner) launchTailers(source *config.LogSource) {
 	files, err := s.fileProvider.CollectFiles(source)
 	if err != nil {
 		source.Status.Error(err)
-		log.Warnf("Could not collect files: %v", err)
+		logutil.BgLogger().Warn("Could not collect files", zap.Error(err))
 		return
 	}
 	for _, file := range files {
@@ -203,12 +205,12 @@ func (s *Scanner) startNewTailer(file *File, tailFromBeginning bool) bool {
 
 	offset, whence, err := Position(s.registry, tailer.Identifier(), tailFromBeginning)
 	if err != nil {
-		log.Warnf("Could not recover offset for file with path %v: %v", file.Path, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Could not recover offset for file with path %v", file.Path), zap.Error(err))
 	}
 
 	err = tailer.Start(offset, whence)
 	if err != nil {
-		log.Warn(err)
+		logutil.BgLogger().Warn(err.Error())
 		return false
 	}
 
@@ -225,13 +227,13 @@ func (s *Scanner) stopTailer(tailer *Tailer) {
 // restartTailer safely stops tailer and starts a new one
 // returns true if the new tailer is up and running, false if an error occurred
 func (s *Scanner) restartTailerAfterFileRotation(tailer *Tailer, file *File) bool {
-	log.Info("Log rotation happened to ", tailer.path)
+	logutil.BgLogger().Info(fmt.Sprintf("Log rotation happened to ", tailer.path))
 	tailer.StopAfterFileRotation()
 	tailer = s.createTailer(file, tailer.outputChan)
 	// force reading file from beginning since it has been log-rotated
 	err := tailer.StartFromBeginning()
 	if err != nil {
-		log.Warn(err)
+		logutil.BgLogger().Warn(err.Error())
 		return false
 	}
 	s.tailers[file.Path] = tailer

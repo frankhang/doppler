@@ -9,12 +9,13 @@ package kubelet
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"time"
 
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/containers/metrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // ListContainers lists all non-excluded running containers, and retrieves their performance metrics
@@ -38,7 +39,7 @@ func (ku *KubeUtil) ListContainers() ([]*containers.Container, error) {
 			}
 			container, err := parseContainerInPod(c, pod)
 			if err != nil {
-				log.Debugf("Cannot parse container %s in pod %s: %s", c.ID, pod.Metadata.Name, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Cannot parse container %s in pod %s", c.ID, pod.Metadata.Name), zap.Error(err))
 				continue
 			}
 			if container == nil {
@@ -47,7 +48,7 @@ func (ku *KubeUtil) ListContainers() ([]*containers.Container, error) {
 			}
 			cgroup, ok := cgByContainer[container.ID]
 			if !ok {
-				log.Debugf("No cgroup found for container %s in pod %s, skipping", container.ID, pod.Metadata.Name)
+				logutil.BgLogger().Debug(fmt.Sprintf("No cgroup found for container %s in pod %s, skipping", container.ID, pod.Metadata.Name))
 				continue
 			}
 			container.SetCgroups(cgroup)
@@ -55,7 +56,7 @@ func (ku *KubeUtil) ListContainers() ([]*containers.Container, error) {
 
 			err = container.FillCgroupLimits()
 			if err != nil {
-				log.Debugf("Cannot get limits for container %s: %s, skipping", container.ID, err)
+				logutil.BgLogger().Debug("Cannot get limits for container, skipping", zap.String("id", container.ID), zap.Error(err))
 				continue
 			}
 		}
@@ -70,12 +71,12 @@ func (ku *KubeUtil) UpdateContainerMetrics(ctrList []*containers.Container) erro
 	for _, container := range ctrList {
 		err := container.FillCgroupMetrics()
 		if err != nil {
-			log.Debugf("Cannot get metrics for container %s: %s", container.ID, err)
+			logutil.BgLogger().Debug("Cannot get metrics for container", zap.String("id", container.ID), zap.Error(err))
 			continue
 		}
 		err = container.FillNetworkMetrics(nil)
 		if err != nil {
-			log.Debugf("Cannot get network stats for container %s: %s", container.ID, err)
+			logutil.BgLogger().Debug("Cannot get network stats for container %s: %s", zap.String("id", container.ID), zap.Error(err))
 			continue
 		}
 	}
@@ -98,7 +99,7 @@ func parseContainerInPod(status ContainerStatus, pod *Pod) (*containers.Containe
 	switch {
 	case status.State.Waiting != nil:
 		// We don't display waiting containers
-		log.Tracef("Skipping waiting container %s", c.ID)
+		logutil.BgLogger().Debug("Skipping waiting container", zap.String("id", c.ID))
 		return nil, nil
 	case status.State.Running != nil:
 		c.State = containers.ContainerRunningState
@@ -123,12 +124,12 @@ func parseContainerNetworkAddresses(status ContainerStatus, pod *Pod) []containe
 	addrList := []containers.NetworkAddress{}
 	podIP := net.ParseIP(pod.Status.PodIP)
 	if podIP == nil {
-		log.Warnf("Unable to parse pod IP: %v for pod: %s", pod.Status.PodIP, pod.Metadata.Name)
+		logutil.BgLogger().Warn(fmt.Sprintf("Unable to parse pod IP: %v for pod: %s", pod.Status.PodIP, pod.Metadata.Name))
 		return addrList
 	}
 	hostIP := net.ParseIP(pod.Status.HostIP)
 	if hostIP == nil {
-		log.Warnf("Unable to parse host IP: %v for pod: %s", pod.Status.HostIP, pod.Metadata.Name)
+		logutil.BgLogger().Warn(fmt.Sprintf("Unable to parse host IP: %v for pod: %s", pod.Status.HostIP, pod.Metadata.Name))
 		return addrList
 	}
 	// Look for the ports in container spec

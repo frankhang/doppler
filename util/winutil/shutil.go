@@ -8,10 +8,11 @@ package winutil
 
 import (
 	"C"
+	"fmt"
 	"syscall"
 	"unsafe"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"golang.org/x/sys/windows"
 	"golang.org/x/sys/windows/registry"
 )
@@ -94,13 +95,13 @@ func GetProgramDataDirForProduct(product string) (path string, err error) {
 		registry.ALL_ACCESS)
 	if err != nil {
 		// otherwise, unexpected error
-		log.Warnf("Windows installation key root not found, using default program data dir %s", keyname)
+		logutil.BgLogger().Warn(fmt.Sprintf("Windows installation key root not found, using default program data dir %s", keyname))
 		return getDefaultProgramDataDir()
 	}
 	defer k.Close()
 	val, _, err := k.GetStringValue("ConfigRoot")
 	if err != nil {
-		log.Warnf("Windows installation key config not found, using default program data dir", keyname)
+		logutil.BgLogger().Warn(fmt.Sprintf("Windows installation key config not found, using default program data dir", keyname))
 		return getDefaultProgramDataDir()
 	}
 	path = val

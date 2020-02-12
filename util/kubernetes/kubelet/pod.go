@@ -9,8 +9,10 @@ package kubelet
 
 import (
 	"encoding/json"
+	"fmt"
+	"go.uber.org/zap"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type creatorRef struct {
@@ -38,11 +40,11 @@ func (p *Pod) Owners() []PodOwner {
 
 	// Error handling
 	if err != nil {
-		log.Debugf("Cannot parse created-by field for pod %q: %s", p.Metadata.Name, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot parse created-by field for pod %q", p.Metadata.Name), zap.Error(err))
 		return nil
 	}
 	if ref.Kind != "SerializedReference" {
-		log.Debugf("Cannot parse created-by field for pod %q: unknown kind %q", p.Metadata.Name, ref.Kind)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot parse created-by field for pod %q: unknown kind %q", p.Metadata.Name, ref.Kind))
 		return nil
 	}
 

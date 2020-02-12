@@ -3,11 +3,12 @@ package metadata
 import (
 	"expvar"
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/metadata/inventories"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/serializer"
 	"github.com/frankhang/doppler/util"
@@ -57,10 +58,10 @@ func (c inventoriesCollector) Init() error {
 // SetupInventoriesExpvar init the expvar function for inventories
 func SetupInventoriesExpvar(ac inventories.AutoConfigInterface, coll inventories.CollectorInterface) {
 	expvar.Publish("inventories", expvar.Func(func() interface{} {
-		log.Debugf("Creating inventory payload for expvar")
+		logutil.BgLogger().Debug("Creating inventory payload for expvar")
 		p, err := createPayload(ac, coll)
 		if err != nil {
-			log.Errorf("Could not create inventory payload for expvar: %s", err)
+			logutil.BgLogger().Error("Could not create inventory payload for expvar", zap.Error(err))
 			return &inventories.Payload{}
 		}
 		return p

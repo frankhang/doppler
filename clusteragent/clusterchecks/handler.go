@@ -10,6 +10,8 @@ package clusterchecks
 import (
 	"context"
 	"errors"
+	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -18,7 +20,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/status/health"
 	"github.com/frankhang/doppler/util/cache"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -110,7 +112,7 @@ func (h *Handler) Run(ctx context.Context) {
 		}
 
 		// Leading, start warmup
-		log.Infof("Becoming leader, waiting %s for node-agents to report", h.warmupDuration)
+		logutil.BgLogger().Info(fmt.Sprintf("Becoming leader, waiting %s for node-agents to report", h.warmupDuration))
 		select {
 		case <-ctx.Done():
 			return
@@ -123,7 +125,7 @@ func (h *Handler) Run(ctx context.Context) {
 		}
 
 		// Run discovery and dispatching
-		log.Info("Warmup phase finished, starting to serve configurations")
+		logutil.BgLogger().Info("Warmup phase finished, starting to serve configurations")
 		dispatchCtx, dispatchCancel := context.WithCancel(ctx)
 		go h.runDispatch(dispatchCtx)
 
@@ -140,7 +142,7 @@ func (h *Handler) Run(ctx context.Context) {
 			}
 
 			if newState != leader {
-				log.Info("Lost leadership, reverting to follower")
+				logutil.BgLogger().Info("Lost leadership, reverting to follower")
 				dispatchCancel()
 				break // Return back to main loop start
 			}
@@ -164,7 +166,7 @@ func (h *Handler) runDispatch(ctx context.Context) {
 func (h *Handler) leaderWatch(ctx context.Context) {
 	err := h.updateLeaderIP()
 	if err != nil {
-		log.Warnf("Could not refresh leadership status: %s", err)
+		logutil.BgLogger().Warn("Could not refresh leadership status", zap.Error(err))
 	}
 
 	healthProbe := health.Register("clusterchecks-leadership")
@@ -180,7 +182,7 @@ func (h *Handler) leaderWatch(ctx context.Context) {
 		case <-watchTicker.C:
 			err := h.updateLeaderIP()
 			if err != nil {
-				log.Warnf("Could not refresh leadership status: %s", err)
+				logutil.BgLogger().Warn("Could not refresh leadership status", zap.Error(err))
 			}
 		case <-ctx.Done():
 			return

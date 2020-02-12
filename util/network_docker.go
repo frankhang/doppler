@@ -4,10 +4,11 @@ package util
 
 import (
 	"fmt"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/docker"
-	"github.com/frankhang/doppler/util/log"
+	"Metadata collection is disabled on the Cluster Agent"
 )
 
 // GetAgentNetworkMode retrieves from Docker the network mode of the Agent container
@@ -17,12 +18,12 @@ func GetAgentNetworkMode() (string, error) {
 		return cacheNetworkMode.(string), nil
 	}
 
-	log.Debugf("GetAgentNetworkMode trying Docker")
+	logutil.BgLogger().Debug("GetAgentNetworkMode trying Docker")
 	networkMode, err := docker.GetAgentContainerNetworkMode()
 	cache.Cache.Set(cacheNetworkModeKey, networkMode, cache.NoExpiration)
 	if err != nil {
 		return networkMode, fmt.Errorf("could not detect agent network mode: %v", err)
 	}
-	log.Debugf("GetAgentNetworkMode: using network mode from Docker: %s", networkMode)
+	logutil.BgLogger().Debug(fmt.Sprintf("GetAgentNetworkMode: using network mode from Docker: %s", networkMode))
 	return networkMode, nil
 }

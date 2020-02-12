@@ -6,13 +6,14 @@
 package forwarder
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"sync"
 	"time"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const secondsFloat = float64(time.Second)
@@ -55,19 +56,19 @@ type blockedEndpoints struct {
 func newBlockedEndpoints() *blockedEndpoints {
 	backoffFactor := config.Datadog.GetFloat64("forwarder_backoff_factor")
 	if backoffFactor < 2 {
-		log.Warnf("Configured forwarder_backoff_factor (%v) is less than 2; 2 will be used", backoffFactor)
+		logutil.BgLogger().Warn(fmt.Sprintf("Configured forwarder_backoff_factor (%v) is less than 2; 2 will be used", backoffFactor))
 		backoffFactor = 2
 	}
 
 	backoffBase := config.Datadog.GetFloat64("forwarder_backoff_base")
 	if backoffBase <= 0 {
-		log.Warnf("Configured forwarder_backoff_base (%v) is not positive; 2 will be used", backoffBase)
+		logutil.BgLogger().Warn(fmt.Sprintf("Configured forwarder_backoff_base (%v) is not positive; 2 will be used", backoffBase))
 		backoffBase = 2
 	}
 
 	backoffMax := config.Datadog.GetFloat64("forwarder_backoff_max")
 	if backoffMax <= 0 {
-		log.Warnf("Configured forwarder_backoff_max (%v) is not positive; 64 seconds will be used", backoffMax)
+		logutil.BgLogger().Warn(fmt.Sprintf("Configured forwarder_backoff_max (%v) is not positive; 64 seconds will be used", backoffMax))
 		backoffMax = 64
 	}
 
@@ -75,7 +76,7 @@ func newBlockedEndpoints() *blockedEndpoints {
 
 	recInterval := config.Datadog.GetInt("forwarder_recovery_interval")
 	if recInterval <= 0 {
-		log.Warnf("Configured forwarder_recovery_interval (%v) is not positive; %v will be used", recInterval, config.DefaultForwarderRecoveryInterval)
+		logutil.BgLogger().Warn(fmt.Sprintf("Configured forwarder_recovery_interval (%v) is not positive; %v will be used", recInterval, config.DefaultForwarderRecoveryInterval))
 		recInterval = config.DefaultForwarderRecoveryInterval
 	}
 

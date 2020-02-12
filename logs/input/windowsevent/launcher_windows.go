@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"unsafe"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"golang.org/x/sys/windows"
 )
 
@@ -66,7 +66,7 @@ func evtNextChannel(h evtEnumHandle) (ch string, err error) {
 		uintptr(0),                        //no buffer for now, just getting necessary size
 		uintptr(unsafe.Pointer(&bufUsed))) // filled in with necessary buffer size
 	if err != error(windows.ERROR_INSUFFICIENT_BUFFER) {
-		log.Warnf("Next: %v %v", ret, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Next: %v %v", ret, err))
 		return
 	}
 	bufSize = bufUsed
@@ -76,7 +76,7 @@ func evtNextChannel(h evtEnumHandle) (ch string, err error) {
 		uintptr(unsafe.Pointer(&buf[0])),
 		uintptr(unsafe.Pointer(&bufUsed))) // filled in with necessary buffer size
 	if ret == 0 {
-		log.Warnf("Next: %v %v", ret, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Next: %v %v", ret, err))
 		return
 	}
 	err = nil

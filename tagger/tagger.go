@@ -7,10 +7,11 @@ package tagger
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/DataDog/datadog-agent/cmd/agent/api/response"
 	"github.com/frankhang/doppler/errors"
@@ -92,7 +93,7 @@ func (t *Tagger) run() error {
 			for name, collector := range t.streamers {
 				err := collector.Stop()
 				if err != nil {
-					log.Warnf("error stopping %s: %s", name, err)
+					logutil.BgLogger().Warn(fmt.Sprintf("error stopping %s", name), zap.Error(err))
 				}
 			}
 			t.RUnlock()
@@ -125,7 +126,7 @@ func (t *Tagger) startCollectors() {
 		t.registerCollectors(replies)
 	}
 	if len(t.candidates) == 0 {
-		log.Debugf("candidate list empty, stopping detection")
+		logutil.BgLogger().Debug("candidate list empty, stopping detection")
 		t.retryTicker.Stop()
 	}
 }
@@ -133,7 +134,7 @@ func (t *Tagger) startCollectors() {
 func (t *Tagger) tryCollectors() []collectorReply {
 	t.RLock()
 	if t.candidates == nil {
-		log.Warnf("called with empty candidate map, skipping")
+		logutil.BgLogger().Warn("called with empty candidate map, skipping")
 		t.RUnlock()
 		return nil
 	}
@@ -143,13 +144,13 @@ func (t *Tagger) tryCollectors() []collectorReply {
 		collector := factory()
 		mode, err := collector.Detect(t.infoIn)
 		if retry.IsErrWillRetry(err) {
-			log.Debugf("will retry %s later: %s", name, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("will retry %s later", name), zap.Error(err))
 			continue // don't add it to the modes map as we want to retry later
 		}
 		if err != nil {
-			log.Debugf("%s tag collector cannot start: %s", name, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("%s tag collector cannot start", name), zap.Error(err))
 		} else {
-			log.Infof("%s tag collector successfully started", name)
+			logutil.BgLogger().Info(fmt.Sprintf("%s tag collector successfully started", name))
 		}
 		replies = append(replies, collectorReply{
 			name:     name,
@@ -174,7 +175,7 @@ func (t *Tagger) registerCollectors(replies []collectorReply) {
 				t.pullers[c.name] = pull
 				t.fetchers[c.name] = pull
 			} else {
-				log.Errorf("error initializing collector %s: does not implement pull", c.name)
+				logutil.BgLogger().Error(fmt.Sprintf("error initializing collector %s: does not implement pull", c.name))
 			}
 		case collectors.StreamCollection:
 			stream, ok := c.instance.(collectors.Streamer)
@@ -183,14 +184,14 @@ func (t *Tagger) registerCollectors(replies []collectorReply) {
 				t.fetchers[c.name] = stream
 				go stream.Stream()
 			} else {
-				log.Errorf("error initializing collector %s: does not implement stream", c.name)
+				logutil.BgLogger().Error(fmt.Sprintf("error initializing collector %s: does not implement stream", c.name))
 			}
 		case collectors.FetchOnlyCollection:
 			fetch, ok := c.instance.(collectors.Fetcher)
 			if ok {
 				t.fetchers[c.name] = fetch
 			} else {
-				log.Errorf("error initializing collector %s: does not implement fetch", c.name)
+				logutil.BgLogger().Error(fmt.Sprintf("error initializing collector %s: does not implement fetch", c.name))
 			}
 		}
 	}
@@ -202,7 +203,7 @@ func (t *Tagger) pull() {
 	for _, puller := range t.pullers {
 		err := puller.Pull()
 		if err != nil {
-			log.Warnf("%s", err.Error())
+			logutil.BgLogger().Warn(err.Error())
 		}
 	}
 	t.RUnlock()
@@ -243,15 +244,15 @@ IterCollectors:
 				continue IterCollectors // source was in cache, don't lookup again
 			}
 		}
-		log.Debugf("cache miss for %s, collecting tags for %s", name, entity)
+		logutil.BgLogger().Debug(fmt.Sprintf("cache miss for %s, collecting tags for %s", name, entity))
 		low, orch, high, err := collector.Fetch(entity)
 		cacheMiss := false
 		switch {
 		case errors.IsNotFound(err):
-			log.Debugf("entity %s not found in %s, skipping: %v", entity, name, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("entity %s not found in %s, skipping", entity, name), zap.Error(err))
 			cacheMiss = true
 		case err != nil:
-			log.Warnf("error collecting from %s: %s", name, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("error collecting from %s", name), zap.Error(err))
 			continue // don't store empty tags, retry next time
 		}
 		tagArrays = append(tagArrays, low)

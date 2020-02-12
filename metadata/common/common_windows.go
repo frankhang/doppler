@@ -7,10 +7,12 @@
 package common
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"unsafe"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"golang.org/x/sys/windows"
 )
 
@@ -21,7 +23,7 @@ func GetUUID() string {
 	var h windows.Handle
 	err := windows.RegOpenKeyEx(windows.HKEY_LOCAL_MACHINE, windows.StringToUTF16Ptr(`SOFTWARE\Microsoft\Cryptography`), 0, windows.KEY_READ|windows.KEY_WOW64_64KEY, &h)
 	if err != nil {
-		log.Warnf("Failed to open registry key Cryptography: %v", err)
+		logutil.BgLogger().Warn("Failed to open registry key Cryptography", zap.Error(err))
 		return ""
 	}
 	defer windows.RegCloseKey(h)
@@ -34,14 +36,14 @@ func GetUUID() string {
 	var valType uint32
 	err = windows.RegQueryValueEx(h, windows.StringToUTF16Ptr(`MachineGuid`), nil, &valType, (*byte)(unsafe.Pointer(&regBuf[0])), &bufLen)
 	if err != nil {
-		log.Warnf("Could not find machineguid in the registry %v", err)
+		logutil.BgLogger().Warn("Could not find machineguid in the registry", zap.Error(err))
 		return ""
 	}
 
 	hostID := windows.UTF16ToString(regBuf[:])
 	hostIDLen := len(hostID)
 	if hostIDLen != uuidLen {
-		log.Warnf("the hostid was unexpected length (%d != %d)", hostIDLen, uuidLen)
+		logutil.BgLogger().Warn(fmt.Sprintf("the hostid was unexpected length (%d != %d)", hostIDLen, uuidLen))
 		return ""
 	}
 

@@ -10,6 +10,7 @@ package journald
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"time"
 
@@ -17,7 +18,7 @@ import (
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/message"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // defaultWaitDuration represents the delay before which we try to collect a new log from the journal
@@ -58,14 +59,14 @@ func (t *Tailer) Start(cursor string) error {
 	}
 	t.source.Status.Success()
 	t.source.AddInput(t.journalPath())
-	log.Info("Start tailing journal ", t.journalPath())
+	logutil.BgLogger().Info(fmt.Sprintf("Start tailing journal ", t.journalPath()))
 	go t.tail()
 	return nil
 }
 
 // Stop stops the tailer
 func (t *Tailer) Stop() {
-	log.Info("Stop tailing journal ", t.journalPath())
+	logutil.BgLogger().Info(fmt.Sprintf("Stop tailing journal ", t.journalPath()))
 	t.stop <- struct{}{}
 	t.source.RemoveInput(t.journalPath())
 	<-t.done
@@ -139,7 +140,7 @@ func (t *Tailer) tail() {
 			if err != nil && err != io.EOF {
 				err := fmt.Errorf("cant't tail journal %s: %s", t.journalPath(), err)
 				t.source.Status.Error(err)
-				log.Error(err)
+				logutil.BgLogger().Error(err.Error())
 				return
 			}
 			if n < 1 {
@@ -149,7 +150,7 @@ func (t *Tailer) tail() {
 			}
 			entry, err := t.journal.GetEntry()
 			if err != nil {
-				log.Warnf("Could not retrieve journal entry: %s", err)
+				logutil.BgLogger().Warn("Could not retrieve journal entry", zap.Error(err))
 				continue
 			}
 			if t.shouldDrop(entry) {

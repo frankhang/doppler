@@ -9,11 +9,12 @@ package containers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/metrics"
@@ -48,12 +49,12 @@ func (d *DockerCheck) reportExitCodes(events []*docker.ContainerEvent, sender ag
 		}
 		exitCodeString, codeFound := ev.Attributes["exitCode"]
 		if !codeFound {
-			log.Warnf("skipping event with no exit code: %s", ev)
+			logutil.BgLogger().Warn(fmt.Sprintf("skipping event with no exit code: %s", ev))
 			continue
 		}
 		exitCodeInt, err := strconv.ParseInt(exitCodeString, 10, 32)
 		if err != nil {
-			log.Warnf("skipping event with invalid exit code: %s", err.Error())
+			logutil.BgLogger().Warn("skipping event with invalid exit code", zap.Error(err))
 			continue
 		}
 
@@ -65,7 +66,7 @@ func (d *DockerCheck) reportExitCodes(events []*docker.ContainerEvent, sender ag
 		}
 		tags, err := tagger.Tag(ev.ContainerEntityName(), collectors.HighCardinality)
 		if err != nil {
-			log.Debugf("no tags for %s: %s", ev.ContainerID, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("no tags for %s", ev.ContainerID), zap.Error(err))
 		}
 		sender.ServiceCheck(DockerExit, status, "", tags, message)
 	}
@@ -80,7 +81,7 @@ func (d *DockerCheck) reportEvents(events []*docker.ContainerEvent, sender aggre
 	for _, bundle := range bundles {
 		ev, err := bundle.toDatadogEvent(d.dockerHostname)
 		if err != nil {
-			log.Warnf("can't submit event: %s", err)
+			logutil.BgLogger().Warn("can't submit event", zap.Error(err))
 		} else {
 			sender.Event(ev)
 		}
@@ -109,7 +110,7 @@ func aggregateEvents(events []*docker.ContainerEvent, filteredActions []string) 
 	}
 
 	if len(filteredByType) > 0 {
-		log.Debugf("filtered out the following events: %s", formatStringIntMap(filteredByType))
+		logutil.BgLogger().Debug(fmt.Sprintf("filtered out the following events: %s", formatStringIntMap(filteredByType)))
 	}
 	return eventsByImage
 }

@@ -9,7 +9,7 @@ import (
 	"time"
 
 	. "github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+
 )
 
 const (
@@ -67,7 +67,7 @@ func addCollector(name string, intl time.Duration, sch *Scheduler) error {
 	if err := sch.AddCollector(name, intl); err != nil {
 		return fmt.Errorf("Unable to add '%s' metadata provider: %v", name, err)
 	}
-	log.Infof("Scheduled metadata provider '%v' to run every %v", name, intl)
+	logutil.BgLogger().Info(fmt.Sprintf("Scheduled metadata provider '%v' to run every %v", name, intl))
 	return nil
 }
 
@@ -79,10 +79,10 @@ func addDefaultCollector(name string, sch *Scheduler) error {
 		}
 		err := sch.AddCollector(name, cInfo.interval)
 		if err != nil && cInfo.ignoreError == false {
-			log.Warnf("Could not add metadata provider for %s: %v", name, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Could not add metadata provider for %s", name), zap.Error(err))
 			return err
 		}
-		log.Debugf("Scheduled default metadata provider '%v' to run every %v", name, cInfo.interval)
+		logutil.BgLogger().Debug(fmt.Sprintf("Scheduled default metadata provider '%v' to run every %v", name, cInfo.interval))
 		return nil
 	}
 	return fmt.Errorf("Unknown default metadata provider '%s'", name)

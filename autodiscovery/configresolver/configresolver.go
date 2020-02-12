@@ -9,10 +9,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"strconv"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/autodiscovery/listeners"
@@ -56,7 +57,7 @@ func SubstituteTemplateEnvVars(config *integration.Config) error {
 			if "env" == string(v.Name) {
 				resolvedVar, err := getEnvvar(v.Key)
 				if err != nil {
-					log.Warnf("variable not replaced: %s", err)
+					logutil.BgLogger().Warn("variable not replaced", zap.Error(err))
 					if retErr == nil {
 						retErr = err
 					}
@@ -162,7 +163,7 @@ func getHost(tplVar []byte, svc listeners.Service) ([]byte, error) {
 	if ip, ok := hosts[tplVarStr]; ok {
 		return []byte(ip), nil
 	}
-	log.Debugf("Network %q not found, trying bridge IP instead", tplVarStr)
+	logutil.BgLogger().Debugf(fmt.Sprintf("Network %q not found, trying bridge IP instead", tplVarStr))
 
 	// otherwise use fallback policy
 	ip, err := getFallbackHost(hosts)

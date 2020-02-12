@@ -9,11 +9,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/frankhang/doppler/clusteragent/clusterchecks/types"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -29,7 +30,7 @@ func (c *DCAClient) PostClusterCheckStatus(nodeName string, status types.NodeSta
 
 	result, err := c.doPostClusterCheckStatus(nodeName, status)
 	if err != nil && willRetry {
-		log.Debugf("Got error on leader, retrying via the service: %s", err)
+		logutil.BgLogger().Debug("Got error on leader, retrying via the service", zap.Error(err))
 		c.leaderClient.resetURL()
 		return c.doPostClusterCheckStatus(nodeName, status)
 	}
@@ -77,7 +78,7 @@ func (c *DCAClient) GetClusterCheckConfigs(nodeName string) (types.ConfigRespons
 
 	result, err := c.doGetClusterCheckConfigs(nodeName)
 	if err != nil && willRetry {
-		log.Debugf("Got error on leader, retrying via the service: %s", err)
+		logutil.BgLogger().Debug("Got error on leader, retrying via the service", zap.Error(err))
 		c.leaderClient.resetURL()
 		return c.doGetClusterCheckConfigs(nodeName)
 	}

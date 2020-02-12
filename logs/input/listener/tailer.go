@@ -6,10 +6,11 @@
 package listener
 
 import (
+	"go.uber.org/zap"
 	"io"
 	"net"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/decoder"
@@ -85,7 +86,7 @@ func (t *Tailer) readForever() {
 			}
 			if err != nil {
 				// an error occurred, stop from reading new data
-				log.Warnf("Couldn't read message from connection: %v", err)
+				logutil.BgLogger().Warn("Couldn't read message from connection", zap.Error(err))
 				return
 			}
 			t.decoder.InputChan <- decoder.NewInput(data)

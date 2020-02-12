@@ -16,7 +16,7 @@ import (
 
 	apiv1 "github.com/frankhang/doppler/clusteragent/api/v1"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type serviceMapper apiv1.NamespacesPodsStringsSet
@@ -45,12 +45,12 @@ func (m serviceMapper) MapOnIp(nodeName string, pods []*kubelet.Pod, endpointLis
 		return fmt.Errorf("empty podlist received for nodeName %q", nodeName)
 	}
 	if nodeName == "" {
-		log.Debugf("Service mapper was given an empty node name. Mapping might be incorrect.")
+		logutil.BgLogger().Debug("Service mapper was given an empty node name. Mapping might be incorrect")
 	}
 
 	for _, pod := range pods {
 		if pod.Status.PodIP == "" {
-			log.Debugf("PodIP is empty, ignoring pod %s in namespace %s", pod.Metadata.Name, pod.Metadata.Namespace)
+			logutil.BgLogger().Debug(fmt.Sprintf("PodIP is empty, ignoring pod %s in namespace %s", pod.Metadata.Name, pod.Metadata.Namespace))
 			continue
 		}
 		if _, ok := podToIp[pod.Metadata.Namespace]; !ok {
@@ -61,7 +61,7 @@ func (m serviceMapper) MapOnIp(nodeName string, pods []*kubelet.Pod, endpointLis
 	for _, svc := range endpointList.Items {
 		for _, endpointsSubsets := range svc.Subsets {
 			if endpointsSubsets.Addresses == nil {
-				log.Tracef("A subset of endpoints from %s could not be evaluated", svc.Name)
+				logutil.BgLogger().Debug(fmt.Sprintf("A subset of endpoints from %s could not be evaluated", svc.Name))
 				continue
 			}
 			for _, edpt := range endpointsSubsets.Addresses {
@@ -95,7 +95,7 @@ func (m serviceMapper) MapOnRef(_ string, pods []*kubelet.Pod, endpointList v1.E
 		for _, endpointsSubsets := range svc.Subsets {
 			for _, edpt := range endpointsSubsets.Addresses {
 				if edpt.TargetRef == nil {
-					log.Debugf("Empty TargetRef on endpoint %s of service %s, skipping", edpt.IP, svc.Name)
+					logutil.BgLogger().Debug(fmt.Sprintf("Empty TargetRef on endpoint %s of service %s, skipping", edpt.IP, svc.Name))
 					continue
 				}
 				ref := *edpt.TargetRef
@@ -140,6 +140,6 @@ func (metaBundle *metadataMapperBundle) mapServices(nodeName string, pods []*kub
 	if err != nil {
 		return err
 	}
-	log.Tracef("The services matched %q", fmt.Sprintf("%s", metaBundle.Services))
+	logutil.BgLogger().Debug(fmt.Sprintf("The services matched %q", fmt.Sprintf("%s", metaBundle.Services)))
 	return nil
 }

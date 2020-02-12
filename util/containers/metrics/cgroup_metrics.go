@@ -10,12 +10,13 @@ package metrics
 import (
 	"bufio"
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"os"
 	"strconv"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // NanoToUserHZDivisor holds the divisor to convert cpu.usage to the
@@ -31,7 +32,7 @@ func (c ContainerCgroup) Mem() (*CgroupMemStat, error) {
 
 	f, err := os.Open(statfile)
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s", statfile)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s", statfile))
 		return ret, nil
 	} else if err != nil {
 		return nil, err
@@ -117,8 +118,8 @@ func (c ContainerCgroup) Mem() (*CgroupMemStat, error) {
 func (c ContainerCgroup) MemLimit() (uint64, error) {
 	v, err := c.ParseSingleStat("memory", "memory.limit_in_bytes")
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s",
-			c.cgroupFilePath("memory", "memory.limit_in_bytes"))
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s",
+			c.cgroupFilePath("memory", "memory.limit_in_bytes")))
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -136,8 +137,8 @@ func (c ContainerCgroup) MemLimit() (uint64, error) {
 func (c ContainerCgroup) FailedMemoryCount() (uint64, error) {
 	v, err := c.ParseSingleStat("memory", "memory.failcnt")
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s",
-			c.cgroupFilePath("memory", "memory.failcnt"))
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s",
+			c.cgroupFilePath("memory", "memory.failcnt")))
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -150,8 +151,8 @@ func (c ContainerCgroup) FailedMemoryCount() (uint64, error) {
 func (c ContainerCgroup) KernelMemoryUsage() (uint64, error) {
 	v, err := c.ParseSingleStat("memory", "memory.kmem.usage_in_bytes")
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s",
-			c.cgroupFilePath("memory", "memory.kmem.usage_in_bytes"))
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s",
+			c.cgroupFilePath("memory", "memory.kmem.usage_in_bytes")))
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -164,8 +165,8 @@ func (c ContainerCgroup) KernelMemoryUsage() (uint64, error) {
 func (c ContainerCgroup) SoftMemLimit() (uint64, error) {
 	v, err := c.ParseSingleStat("memory", "memory.soft_limit_in_bytes")
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s",
-			c.cgroupFilePath("memory", "memory.soft_limit_in_bytes"))
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s",
+			c.cgroupFilePath("memory", "memory.soft_limit_in_bytes")))
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -185,7 +186,7 @@ func (c ContainerCgroup) CPU() (*CgroupTimesStat, error) {
 	statfile := c.cgroupFilePath("cpuacct", "cpuacct.stat")
 	f, err := os.Open(statfile)
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s", statfile)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s", statfile))
 		return ret, nil
 	} else if err != nil {
 		return nil, err
@@ -215,14 +216,14 @@ func (c ContainerCgroup) CPU() (*CgroupTimesStat, error) {
 	if err == nil {
 		ret.UsageTotal = float64(usage) / NanoToUserHZDivisor
 	} else {
-		log.Debugf("Missing total cpu usage stat for %s: %s", c.ContainerID, err.Error())
+		logutil.BgLogger().Debug("Missing total cpu usage stat for container", zap.String("id", c.ContainerID), zap.Error(err))
 	}
 
 	shares, err := c.ParseSingleStat("cpu", "cpu.shares")
 	if err == nil {
 		ret.Shares = shares
 	} else {
-		log.Debugf("Missing cpu shares stat for %s: %s", c.ContainerID, err.Error())
+		logutil.BgLogger().Debug("Missing cpu shares stat for container", zap.String("id", c.ContainerID), zap.Error(err))
 	}
 
 	return ret, nil
@@ -235,7 +236,7 @@ func (c ContainerCgroup) CPUNrThrottled() (uint64, error) {
 	statfile := c.cgroupFilePath("cpu", "cpu.stat")
 	f, err := os.Open(statfile)
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s", statfile)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s", statfile))
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -252,7 +253,7 @@ func (c ContainerCgroup) CPUNrThrottled() (uint64, error) {
 			return value, nil
 		}
 	}
-	log.Debugf("Missing nr_throttled line in %s", statfile)
+	logutil.BgLogger().Debug(fmt.Sprintf("Missing nr_throttled line in %s", statfile))
 	return 0, nil
 }
 
@@ -270,14 +271,14 @@ func (c ContainerCgroup) CPULimit() (float64, error) {
 	quotaFile := c.cgroupFilePath("cpu", "cpu.cfs_quota_us")
 	plines, err := readLines(periodFile)
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s", periodFile)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s", periodFile))
 		return 100, nil
 	} else if err != nil {
 		return 0, err
 	}
 	qlines, err := readLines(quotaFile)
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s", quotaFile)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s", quotaFile))
 		return 100, nil
 	} else if err != nil {
 		return 0, err
@@ -323,7 +324,7 @@ func (c ContainerCgroup) IO() (*CgroupIOStat, error) {
 	statfile := c.cgroupFilePath("blkio", "blkio.throttle.io_service_bytes")
 	f, err := os.Open(statfile)
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s", statfile)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s", statfile))
 		return ret, nil
 	} else if err != nil {
 		return nil, err
@@ -334,7 +335,7 @@ func (c ContainerCgroup) IO() (*CgroupIOStat, error) {
 	var devices map[string]string
 	mapping, err := getDiskDeviceMapping()
 	if err != nil {
-		log.Debugf("Cannot get per-device stats: %s", err)
+		logutil.BgLogger().Debug("Cannot get per-device stats", zap.Error(err))
 		// devices will stay nil, lookups are safe in nil maps
 	} else {
 		devices = mapping.idToName
@@ -380,8 +381,8 @@ func (c ContainerCgroup) IO() (*CgroupIOStat, error) {
 func (c ContainerCgroup) ThreadCount() (uint64, error) {
 	v, err := c.ParseSingleStat("pids", "pids.current")
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s",
-			c.cgroupFilePath("pids", "pids.current"))
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s",
+			c.cgroupFilePath("pids", "pids.current")))
 		return 0, nil
 	} else if err != nil {
 		return 0, err
@@ -398,7 +399,7 @@ func (c ContainerCgroup) ThreadLimit() (uint64, error) {
 	statFile := c.cgroupFilePath("pids", "pids.max")
 	lines, err := readLines(statFile)
 	if os.IsNotExist(err) {
-		log.Debugf("Missing cgroup file: %s", statFile)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing cgroup file: %s", statFile))
 		return 0, nil
 	} else if err != nil {
 		return 0, err

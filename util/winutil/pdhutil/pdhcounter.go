@@ -8,8 +8,9 @@ package pdhutil
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // For testing
@@ -64,18 +65,18 @@ func (p *PdhCounterSet) Initialize(className string) error {
 		return err
 	}
 	if ndxlist == nil || len(ndxlist) == 0 {
-		log.Warnf("Didn't find counter index for class %s, attempting english counter", className)
+		logutil.BgLogger().Warn(fmt.Sprintf("Didn't find counter index for class %s, attempting english counter", className))
 		p.className = className
 	} else {
 		if len(ndxlist) > 1 {
-			log.Warnf("Class %s had multiple (%d) indices, using first", className, len(ndxlist))
+			logutil.BgLogger().Warn(fmt.Sprintf("Class %s had multiple (%d) indices, using first", className, len(ndxlist)))
 		}
 		ndx := ndxlist[0]
 		p.className, err = pfnPdhLookupPerfNameByIndex(ndx)
 		if err != nil {
 			return fmt.Errorf("Class name not found: %s", className)
 		}
-		log.Debugf("Found class name for %s %s", className, p.className)
+		logutil.BgLogger().Debug(fmt.Sprintf("Found class name for %s %s", className, p.className))
 	}
 
 	winerror := pfnPdhOpenQuery(uintptr(0), uintptr(0), &p.query)
@@ -99,7 +100,7 @@ func GetSingleInstanceCounter(className, counterName string) (*PdhSingleInstance
 	}
 	path, err := p.MakeCounterPath("", counterName, "", allcounters)
 	if err != nil {
-		log.Warnf("Failed pdhEnumObjectItems %v", err)
+		logutil.BgLogger().Warn("Failed pdhEnumObjectItems", zap.Error(err))
 		return nil, err
 	}
 	winerror := pfnPdhAddCounter(p.query, path, uintptr(0), &p.singleCounter)
@@ -160,7 +161,7 @@ func (p *PdhMultiInstanceCounterSet) MakeInstanceList() error {
 			// ok.  it was requested.  If it's not in our map
 			// of counters, we have to add it
 			if p.countermap[actualInstance] == PDH_HCOUNTER(0) {
-				log.Debugf("Adding requested instance %s", actualInstance)
+				logutil.BgLogger().Debug(fmt.Sprintf("Adding requested instance %s", actualInstance))
 				instToMake = append(instToMake, actualInstance)
 			}
 		} else {
@@ -181,16 +182,16 @@ func (p *PdhMultiInstanceCounterSet) MakeInstanceList() error {
 		}
 		path, err := p.MakeCounterPath("", p.requestedCounterName, inst, allcounters)
 		if err != nil {
-			log.Debugf("Failed tomake counter path %s %s", p.counterName, inst)
+			logutil.BgLogger().Debug(fmt.Sprintf("Failed tomake counter path %s %s", p.counterName, inst))
 			continue
 		}
 		var hc PDH_HCOUNTER
 		winerror := pfnPdhAddCounter(p.query, path, uintptr(0), &hc)
 		if ERROR_SUCCESS != winerror {
-			log.Debugf("Failed to add counter path %s", path)
+			logutil.BgLogger().Debug(fmt.Sprintf("Failed to add counter path %s", path))
 			continue
 		}
-		log.Debugf("Adding missing counter instance %s", inst)
+		logutil.BgLogger().Debugf(fmt.Sprintf("Adding missing counter instance %s", inst))
 		p.countermap[inst] = hc
 		added = true
 	}
@@ -205,11 +206,11 @@ func (p *PdhMultiInstanceCounterSet) MakeInstanceList() error {
 func (p *PdhMultiInstanceCounterSet) RemoveInvalidInstance(badInstance string) {
 	hc := p.countermap[badInstance]
 	if hc != PDH_HCOUNTER(0) {
-		log.Debugf("Removing non-existent counter instance %s", badInstance)
+		logutil.BgLogger().Debug(fmt.Sprintf("Removing non-existent counter instance %s", badInstance))
 		pfnPdhRemoveCounter(hc)
 		delete(p.countermap, badInstance)
 	} else {
-		log.Debugf("Instance handle not found")
+		logutil.BgLogger().Debug("Instance handle not found")
 	}
 }
 
@@ -234,27 +235,27 @@ func (p *PdhCounterSet) MakeCounterPath(machine, counterName, instanceName strin
 	for _, ndx := range idxList {
 		counter, e := pfnPdhLookupPerfNameByIndex(ndx)
 		if e != nil {
-			log.Debugf("Counter index %d not found, skipping", ndx)
+			logutil.BgLogger().Debug(fmt.Sprintf("Counter index %d not found, skipping", ndx))
 			continue
 		}
 		// see if the counter we got back is in the list of counters
 		if !stringInSlice(counter, counters) {
-			log.Debugf("counter %s not in counter list", counter)
+			logutil.BgLogger().Debug(fmt.Sprintf("counter %s not in counter list", counter))
 			continue
 		}
 		// check to see if we can create the counter
 		path, err := pfnPdhMakeCounterPath(machine, p.className, instanceName, counter)
 		if err == nil {
-			log.Debugf("Successfully created counter path %s", path)
+			logutil.BgLogger().Debug(fmt.Sprintf("Successfully created counter path %s", path))
 			p.counterName = counter
 			return path, nil
 		}
 		// else
-		log.Debugf("Unable to create path with %s, trying again", counter)
+		logutil.BgLogger().Debug(fmt.Sprintf("Unable to create path with %s, trying again", counter))
 	}
 	// if we get here, was never able to find a counter path or create a valid
 	// path.  Return failure.
-	log.Warnf("Unable to create counter path for %s %s", counterName, instanceName)
+	logutil.BgLogger().Warn(fmt.Sprintf("Unable to create counter path for %s %s", counterName, instanceName))
 	return "", fmt.Errorf("Unable to create counter path %s %s", counterName, instanceName)
 }
 
@@ -271,11 +272,11 @@ func (p *PdhMultiInstanceCounterSet) GetAllValues() (values map[string]float64, 
 			switch err.(type) {
 			case *ErrPdhInvalidInstance:
 				removeList = append(removeList, inst)
-				log.Debugf("Got invalid instance for %s %s", p.requestedCounterName, inst)
+				logutil.BgLogger().Debug(fmt.Sprintf("Got invalid instance for %s %s", p.requestedCounterName, inst))
 				err = nil
 				continue
 			default:
-				log.Debugf("Other Error getting all values %s %s %v", p.requestedCounterName, inst, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Other Error getting all values %s %s", p.requestedCounterName, inst), zap.Error(err))
 				return
 			}
 		}

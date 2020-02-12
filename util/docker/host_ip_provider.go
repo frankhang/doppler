@@ -9,6 +9,7 @@ package docker
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/ec2"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // GetDockerHostIPs returns the IP address of the host. This is meant to be called
@@ -29,7 +30,7 @@ func GetDockerHostIPs() []string {
 
 	ips := getDockerHostIPsUncached()
 	if len(ips) == 0 {
-		log.Warnf("could not get host IP")
+		logutil.BgLogger().Warn("could not get host IP")
 	}
 	cache.Cache.Set(cacheKey, ips, time.Hour*2)
 	return ips
@@ -52,10 +53,10 @@ func getDockerHostIPsUncached() []string {
 
 func tryProviders(providers []hostIPProvider) []string {
 	for _, attempt := range providers {
-		log.Debugf("attempting to get host ip from source: %s", attempt.name)
+		logutil.BgLogger().Debug(fmt.Sprintf("attempting to get host ip from source: %s", attempt.name))
 		ips, err := attempt.provider()
 		if err != nil {
-			log.Infof("could not deduce host IP from source %s: %s", attempt.name, err)
+			logutil.BgLogger().Info(fmt.Sprintf("could not deduce host IP from source %s", attempt.name), zap.Error(err))
 		} else {
 			return ips
 		}

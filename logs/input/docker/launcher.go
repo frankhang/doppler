@@ -8,6 +8,8 @@
 package docker
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"sync"
 	"time"
@@ -20,7 +22,7 @@ import (
 	"github.com/frankhang/doppler/logs/restart"
 	"github.com/frankhang/doppler/logs/service"
 	"github.com/frankhang/doppler/tagger"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/retry"
 )
 
@@ -149,7 +151,7 @@ func (l *Launcher) run() {
 			// detected a new container running on the host,
 			dockerContainer, err := GetContainer(l.cli, service.Identifier)
 			if err != nil {
-				log.Warnf("Could not find container with id: %v", err)
+				logutil.BgLogger().Warn("Could not find container with id", zap.Error(err))
 				continue
 			}
 			container := NewContainer(dockerContainer, service)
@@ -216,7 +218,7 @@ func (l *Launcher) overrideSource(container *Container, source *config.LogSource
 	shortName, err := container.getShortImageName()
 	if err != nil {
 		containerID := container.service.Identifier
-		log.Warnf("Could not get short image name for container %v: %v", ShortContainerID(containerID), err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Could not get short image name for container %v", ShortContainerID(containerID)), zap.Error(err))
 		return source
 	}
 
@@ -233,7 +235,7 @@ func (l *Launcher) overrideSource(container *Container, source *config.LogSource
 func (l *Launcher) startTailer(container *Container, source *config.LogSource) {
 	containerID := container.service.Identifier
 	if _, isTailed := l.tailers[containerID]; isTailed {
-		log.Warnf("Can't tail twice the same container: %v", ShortContainerID(containerID))
+		logutil.BgLogger().Warn(fmt.Sprintf("Can't tail twice the same container: %v", ShortContainerID(containerID)))
 		return
 	}
 
@@ -244,13 +246,13 @@ func (l *Launcher) startTailer(container *Container, source *config.LogSource) {
 	// compute the offset to prevent from missing or duplicating logs
 	since, err := Since(l.registry, tailer.Identifier(), container.service.CreationTime)
 	if err != nil {
-		log.Warnf("Could not recover tailing from last committed offset %v: %v", ShortContainerID(containerID), err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Could not recover tailing from last committed offset %v", ShortContainerID(containerID)), zap.Error(err))
 	}
 
 	// start the tailer
 	err = tailer.Start(since)
 	if err != nil {
-		log.Warnf("Could not start tailer %s: %v", containerID, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Could not start tailer %s: %v", containerID), zap.Error(err))
 		return
 	}
 	source.AddInput(containerID)
@@ -291,19 +293,19 @@ func (l *Launcher) restartTailer(containerID string) {
 	// compute the offset to prevent from missing or duplicating logs
 	since, err := Since(l.registry, tailer.Identifier(), service.Before)
 	if err != nil {
-		log.Warnf("Could not recover last committed offset for container %v: %v", ShortContainerID(containerID), err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Could not recover last committed offset for container %v", ShortContainerID(containerID)), zap.Error(err))
 	}
 
 	for {
 		if backoffDuration > backoffMaxDuration {
-			log.Warnf("Could not resume tailing container %v", ShortContainerID(containerID))
+			logutil.BgLogger().Warn(fmt.Sprintf("Could not resume tailing container %v", ShortContainerID(containerID)))
 			return
 		}
 
 		// start the tailer
 		err = tailer.Start(since)
 		if err != nil {
-			log.Warnf("Could not start tailer for container %v: %v", ShortContainerID(containerID), err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Could not start tailer for container %v", ShortContainerID(containerID)), zaperr)
 			time.Sleep(backoffDuration)
 			cumulatedBackoff += backoffDuration
 			backoffDuration *= 2

@@ -7,13 +7,15 @@ package split
 
 import (
 	"expvar"
+	"fmt"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/forwarder"
 	"github.com/frankhang/doppler/serializer/marshaler"
 	"github.com/frankhang/doppler/telemetry"
 	"github.com/frankhang/doppler/util/compression"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // the backend accepts payloads up to 3MB, but being conservative is okay
@@ -74,7 +76,7 @@ func Payloads(m marshaler.Marshaler, compress bool, mType MarshalType) (forwarde
 	}
 	// If the payload's size is fine, just return it
 	if nottoobig {
-		log.Debug("The payload was not too big, returning the full payload")
+		logutil.BgLogger().Debug("The payload was not too big, returning the full payload")
 		splitterNotTooBig.Add(1)
 		tlmSplitterNotTooBig.Inc()
 		smallEnoughPayloads = append(smallEnoughPayloads, &payload)
@@ -106,11 +108,11 @@ func Payloads(m marshaler.Marshaler, compress bool, mType MarshalType) (forwarde
 			// This is the same function used in dd-agent
 			compressionRatio := float64(payloadSize) / float64(compressedSize)
 			numChunks := compressedSize/maxPayloadSize + 1 + int(compressionRatio/2)
-			log.Debugf("split the payload into into %d chunks", numChunks)
+			logutil.BgLogger().Debug(fmt.Sprintf("split the payload into into %d chunks", numChunks))
 			chunks, err := toSplit.SplitPayload(numChunks)
-			log.Debugf("payload was split into %d chunks", len(chunks))
+			logutil.BgLogger().Debug(fmt.Sprintf("payload was split into %d chunks", len(chunks)))
 			if err != nil {
-				log.Warnf("Some payloads could not be split, dropping them")
+				logutil.BgLogger().Warn("Some payloads could not be split, dropping them")
 				splitterPayloadDrops.Add(1)
 				tlmSplitterPayloadDrops.Inc()
 				return smallEnoughPayloads, err
@@ -120,30 +122,30 @@ func Payloads(m marshaler.Marshaler, compress bool, mType MarshalType) (forwarde
 				// serialize the payload
 				smallEnough, payload, _, err := CheckSizeAndSerialize(chunk, compress, mType)
 				if err != nil {
-					log.Debugf("Error serializing a chunk: %s", err)
+					logutil.BgLogger().Debug("Error serializing a chunk", zap.Error(err))
 					continue
 				}
 				if smallEnough {
 					// if the payload is small enough, return it straight away
 					smallEnoughPayloads = append(smallEnoughPayloads, &payload)
-					log.Debugf("chunk was small enough: %v, smallEnoughPayloads are of length: %v", len(payload), len(smallEnoughPayloads))
+					logutil.BgLogger().Debug(fmt.Sprintf("chunk was small enough: %v, smallEnoughPayloads are of length: %v", len(payload), len(smallEnoughPayloads)))
 				} else {
 					// if it is not, append it to the list of payloads
 					marshallers = append(marshallers, chunk)
-					log.Debugf("chunk was not small enough: %v, marshallers are of length: %v", len(payload), len(marshallers))
+					logutil.BgLogger().Debug(fmt.Sprintf("chunk was not small enough: %v, marshallers are of length: %v", len(payload), len(marshallers)))
 				}
 			}
 		}
 		if len(marshallers) == 0 {
-			log.Debug("marshallers was empty, breaking out of the loop")
+			logutil.BgLogger().Debug("marshallers was empty, breaking out of the loop")
 			toobig = false
 		} else {
-			log.Debug("marshallers was not empty, running around the loop again")
+			logutil.BgLogger().Debug("marshallers was not empty, running around the loop again")
 			loops++
 		}
 	}
 	if len(marshallers) != 0 {
-		log.Warnf("Some payloads could not be split, dropping them")
+		logutil.BgLogger().Warn("Some payloads could not be split, dropping them")
 		splitterPayloadDrops.Add(1)
 		tlmSplitterPayloadDrops.Inc()
 	}

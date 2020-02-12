@@ -9,12 +9,13 @@ package providers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"path"
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/samuel/go-zookeeper/zk"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
@@ -90,9 +91,9 @@ func (z *ZookeeperConfigProvider) IsUpToDate() (bool, error) {
 
 	if z.cache.NumAdTemplates != len(identifiers) {
 		if z.cache.NumAdTemplates == 0 {
-			log.Infof("Initializing cache for %v", z.String())
+			logutil.BgLogger().Info(fmt.Sprintf("Initializing cache for %v", z.String()))
 		}
-		log.Debugf("List of AD Template was modified, updating cache.")
+		logutil.BgLogger().Debug("List of AD Template was modified, updating cache.")
 		adListUpdated = true
 		z.cache.NumAdTemplates = len(identifiers)
 	}
@@ -113,12 +114,12 @@ func (z *ZookeeperConfigProvider) IsUpToDate() (bool, error) {
 		}
 	}
 	if outdated > z.cache.LatestTemplateIdx || adListUpdated {
-		log.Debugf("Idx was %v and is now %v", z.cache.LatestTemplateIdx, outdated)
+		logutil.BgLogger().Debug(fmt.Sprintf("Idx was %v and is now %v", z.cache.LatestTemplateIdx, outdated))
 		z.cache.LatestTemplateIdx = outdated
-		log.Infof("cache updated for %v", z.String())
+		logutil.BgLogger().Info(fmt.Sprintf("cache updated for %v", z.String()))
 		return false, nil
 	}
-	log.Infof("cache up to date for %v", z.String())
+	logutil.BgLogger().Info(fmt.Sprintf("cache up to date for %v", z.String()))
 	return true, nil
 }
 
@@ -137,7 +138,7 @@ func (z *ZookeeperConfigProvider) getIdentifiers(key string) ([]string, error) {
 		nodePath := path.Join(key, child)
 		nodes, _, err := z.client.Children(nodePath)
 		if err != nil {
-			log.Warnf("could not list keys in '%s': %s", nodePath, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("could not list keys in '%s'", nodePath), zap.Error(err))
 			continue
 		} else if len(nodes) < 3 {
 			continue
@@ -165,25 +166,25 @@ func (z *ZookeeperConfigProvider) getTemplates(key string) []integration.Config 
 
 	rawNames, _, err := z.client.Get(checkNameKey)
 	if err != nil {
-		log.Errorf("Couldn't get check names from key '%s' in zookeeper: %s", key, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Couldn't get check names from key '%s' in zookeeper", key), zap.Error(err))
 		return nil
 	}
 
 	checkNames, err := parseCheckNames(string(rawNames))
 	if err != nil {
-		log.Errorf("Failed to retrieve check names at %s. Error: %s", checkNameKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve check names at %s", checkNameKey), zap.Error(err))
 		return nil
 	}
 
 	initConfigs, err := z.getJSONValue(initKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve init configs at %s. Error: %s", initKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve init configs at %s", initKey), zap.Error(err))
 		return nil
 	}
 
 	instances, err := z.getJSONValue(instanceKey)
 	if err != nil {
-		log.Errorf("Failed to retrieve instances at %s. Error: %s", instanceKey, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Failed to retrieve instances at %s", instanceKey), zap.Error(err))
 		return nil
 	}
 
