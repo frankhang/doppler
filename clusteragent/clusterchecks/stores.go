@@ -14,7 +14,7 @@ import (
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/clusteragent/clusterchecks/types"
 	"github.com/frankhang/doppler/collector/check"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // clusterStore holds the state of cluster-check management.
@@ -60,7 +60,7 @@ func (s *clusterStore) getOrCreateNodeStore(nodeName, clientIP string) *nodeStor
 	node, ok := s.nodes[nodeName]
 	if ok {
 		if node.clientIP != clientIP && clientIP != "" {
-			log.Debugf("Client IP changed for node %s: updating %s to %s", nodeName, node.clientIP, clientIP)
+			logutil.BgLogger().Debug(fmt.Sprintf("Client IP changed for node %s: updating %s to %s", nodeName, node.clientIP, clientIP))
 			node.clientIP = clientIP
 		}
 		return node
@@ -109,7 +109,7 @@ func (s *nodeStore) addConfig(config integration.Config) {
 func (s *nodeStore) removeConfig(digest string) {
 	_, found := s.digestToConfig[digest]
 	if !found {
-		log.Debugf("unknown digest %s, skipping", digest)
+		logutil.BgLogger().Debug(fmt.Sprintf("unknown digest %s, skipping", digest))
 		return
 	}
 	s.lastConfigChange = timestampNow()
@@ -131,7 +131,7 @@ func (s *nodeStore) RemoveRunnerStats(checkID string) {
 	s.Lock()
 	defer s.Unlock()
 	if _, found := s.clcRunnerStats[checkID]; !found {
-		log.Debugf("unknown check ID %s, skipping", checkID)
+		logutil.BgLogger().Debug(fmt.Sprintf("unknown check ID %s, skipping", checkID))
 		return
 	}
 	delete(s.clcRunnerStats, checkID)
@@ -144,7 +144,7 @@ func (s *nodeStore) GetRunnerStats(checkID string) (types.CLCRunnerStats, error)
 	defer s.RUnlock()
 	stats, found := s.clcRunnerStats[checkID]
 	if !found {
-		log.Debugf("unknown check ID %s", checkID)
+		logutil.BgLogger().Debug(fmt.Sprintf("unknown check ID %s", checkID))
 		return stats, fmt.Errorf("check ID not found: %s", checkID)
 	}
 	return stats, nil
@@ -168,7 +168,7 @@ func (s *nodeStore) GetMostWeightedClusterCheck(busynessFunc func(avgExecTime, m
 	s.RLock()
 	defer s.RUnlock()
 	if len(s.clcRunnerStats) == 0 {
-		log.Debugf("Node %s has no check stats", s.name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Node %s has no check stats", s.name))
 		return "", -1, fmt.Errorf("node %s has no check stats", s.name)
 	}
 	firstItr := true
@@ -184,7 +184,7 @@ func (s *nodeStore) GetMostWeightedClusterCheck(busynessFunc func(avgExecTime, m
 		}
 	}
 	if firstItr {
-		log.Debugf("Node %s has no check stats for cluster checks: %v", s.name, s.clcRunnerStats)
+		logutil.BgLogger().Debug(fmt.Sprintf("Node %s has no check stats for cluster checks: %v", s.name, s.clcRunnerStats))
 		return "", -1, fmt.Errorf("no cluster checks found on node %s", s.name)
 	}
 	return checkID, checkWeight, nil

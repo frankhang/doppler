@@ -28,7 +28,7 @@ import (
 	"github.com/frankhang/doppler/api/security"
 	apiv1 "github.com/frankhang/doppler/clusteragent/api/v1"
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type dummyClusterAgent struct {
@@ -95,24 +95,24 @@ func newDummyClusterAgent() (*dummyClusterAgent, error) {
 }
 
 func (d *dummyClusterAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Debugf("dummyDCA received %s on %s", r.Method, r.URL.Path)
+	logutil.BgLogger().Debug(fmt.Sprintf("dummyDCA received %s on %s", r.Method, r.URL.Path))
 	d.requests <- r
 
 	token := r.Header.Get("Authorization")
 	if token == "" {
-		log.Errorf("no token provided")
+		logutil.BgLogger().Error("no token provided")
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 	if token != fmt.Sprintf("Bearer %s", d.token) {
-		log.Errorf("wrong token %s", token)
+		logutil.BgLogger().Error(fmt.Sprintf("wrong token %s", token))
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
 
 	podIP := r.Header.Get(RealIPHeader)
 	if podIP != clcRunnerIP {
-		log.Errorf("wrong clc runner IP: %s", podIP)
+		logutil.BgLogger().Error(fmt.Sprintf("wrong clc runner IP: %s", podIP))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -190,7 +190,7 @@ func (d *dummyClusterAgent) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Errorf("unexpected len for the url != %d", len(s))
+		logutil.BgLogger().Error(fmt.Sprintf("unexpected len for the url != %d", len(s)))
 		return
 	}
 

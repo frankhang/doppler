@@ -20,7 +20,7 @@ import (
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/status"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -57,9 +57,9 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 
 	cm.firstConn.Do(func() {
 		if cm.endpoint.ProxyAddress != "" {
-			log.Infof("Connecting to the backend: %v, via socks5: %v, with SSL: %v", cm.address(), cm.endpoint.ProxyAddress, cm.endpoint.UseSSL)
+			logutil.BgLogger().Info(fmt.Sprintf("Connecting to the backend: %v, via socks5: %v, with SSL: %v", cm.address(), cm.endpoint.ProxyAddress, cm.endpoint.UseSSL))
 		} else {
-			log.Infof("Connecting to the backend: %v, with SSL: %v", cm.address(), cm.endpoint.UseSSL)
+			logutil.BgLogger().Info(fmt.Sprintf("Connecting to the backend: %v, with SSL: %v", cm.address(), cm.endpoint.UseSSL))
 		}
 	})
 
@@ -70,7 +70,7 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			status.AddGlobalWarning(statusConnectionError, fmt.Sprintf("Connection to the log intake cannot be established: %v", err))
 		}
 		if retries > 0 {
-			log.Debugf("Connect attempt #%d", retries)
+			logutil.BgLogger().Debug(fmt.Sprintf("Connect attempt #%d", retries))
 			cm.backoff(ctx, retries)
 		}
 		retries++
@@ -89,7 +89,7 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			var dialer proxy.Dialer
 			dialer, err = proxy.SOCKS5("tcp", cm.endpoint.ProxyAddress, nil, proxy.Direct)
 			if err != nil {
-				log.Warn(err)
+				logutil.BgLogger().Warn(err.Error())
 				continue
 			}
 			// TODO: handle timeouts with ctx.
@@ -101,10 +101,10 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			conn, err = dialer.DialContext(dctx, "tcp", cm.address())
 		}
 		if err != nil {
-			log.Warn(err)
+			logutil.BgLogger().Warn(err.Error())
 			continue
 		}
-		log.Debugf("connected to %v", cm.address())
+		logutil.BgLogger().Debug(fmt.Sprintf("connected to %v", cm.address()))
 
 		if cm.endpoint.UseSSL {
 			sslConn := tls.Client(conn, &tls.Config{
@@ -112,10 +112,10 @@ func (cm *ConnectionManager) NewConnection(ctx context.Context) (net.Conn, error
 			})
 			err = cm.handshakeWithTimeout(sslConn, connectionTimeout)
 			if err != nil {
-				log.Warn(err)
+				logutil.BgLogger().Warn(err.Error())
 				continue
 			}
-			log.Debug("SSL handshake successful")
+			logutil.BgLogger().Debug("SSL handshake successful")
 			conn = sslConn
 		}
 
@@ -131,9 +131,9 @@ func (cm *ConnectionManager) handshakeWithTimeout(conn *tls.Conn, timeout time.D
 		errChannel <- tlsTimeoutError{}
 	})
 	go func() {
-		log.Debug("Start TLS handshake")
+		logutil.BgLogger().Debug("Start TLS handshake")
 		errChannel <- conn.Handshake()
-		log.Debug("TLS handshake ended")
+		logutil.BgLogger().Debug("TLS handshake ended")
 	}()
 	return <-errChannel
 }
@@ -146,7 +146,7 @@ func (cm *ConnectionManager) address() string {
 // CloseConnection closes a connection on the client side
 func (cm *ConnectionManager) CloseConnection(conn net.Conn) {
 	conn.Close()
-	log.Debug("Connection closed")
+	logutil.BgLogger().Debug("Connection closed")
 }
 
 // handleServerClose lets the connection manager detect when a connection
@@ -161,7 +161,7 @@ func (cm *ConnectionManager) handleServerClose(conn net.Conn) {
 			cm.CloseConnection(conn)
 			return
 		} else if err != nil {
-			log.Warn(err)
+			logutil.BgLogger().Warn(err.Error())
 			return
 		}
 	}

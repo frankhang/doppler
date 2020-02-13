@@ -10,11 +10,13 @@ package containers
 import (
 	"context"
 	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
 	ctrUtil "github.com/frankhang/doppler/util/containerd"
-	"github.com/frankhang/doppler/util/log"
+
 	"github.com/containerd/containerd"
 	"github.com/containerd/containerd/api/events"
 	containerdevents "github.com/containerd/containerd/events"
@@ -54,7 +56,7 @@ func CreateEventSubscriber(name string, ns string, f []string) *subscriber {
 func (s *subscriber) CheckEvents(ctrItf ctrUtil.ContainerdItf) {
 	ctx := context.Background()
 	ev := ctrItf.GetEvents()
-	log.Info("Starting routine to collect Containerd events ...")
+	logutil.BgLogger().Info("Starting routine to collect Containerd events ...")
 	ctxNamespace := namespaces.WithNamespace(ctx, s.Namespace)
 	go s.run(ctxNamespace, ev)
 }
@@ -85,7 +87,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				create := &events.ContainerCreate{}
 				err := proto.Unmarshal(message.Event.Value, create)
 				if err != nil {
-					log.Errorf("Could not process create event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process create event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(create.ID, message)
@@ -95,7 +97,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				delete := &events.ContainerDelete{}
 				err := proto.Unmarshal(message.Event.Value, delete)
 				if err != nil {
-					log.Errorf("Could not process delete event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process delete event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(delete.ID, message)
@@ -105,7 +107,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				updated := &events.ContainerUpdate{}
 				err := proto.Unmarshal(message.Event.Value, updated)
 				if err != nil {
-					log.Errorf("Could not process update event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process update event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(updated.ID, message)
@@ -116,7 +118,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				updated := &events.ImageUpdate{}
 				err := proto.Unmarshal(message.Event.Value, updated)
 				if err != nil {
-					log.Errorf("Could not process update event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process update event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(updated.Name, message)
@@ -127,7 +129,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				created := &events.ImageCreate{}
 				err := proto.Unmarshal(message.Event.Value, created)
 				if err != nil {
-					log.Errorf("Could not process create event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process create event from Containerd", zap.Error(err))
 					continue
 				}
 
@@ -139,7 +141,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				deleted := &events.ImageDelete{}
 				err := proto.Unmarshal(message.Event.Value, deleted)
 				if err != nil {
-					log.Errorf("Could not process delete event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process delete event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(deleted.Name, message)
@@ -149,7 +151,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				created := &events.TaskCreate{}
 				err := proto.Unmarshal(message.Event.Value, created)
 				if err != nil {
-					log.Errorf("Could not process create event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process create event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(created.ContainerID, message)
@@ -159,7 +161,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				deleted := &events.TaskDelete{}
 				err := proto.Unmarshal(message.Event.Value, deleted)
 				if err != nil {
-					log.Errorf("Could not process delete event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process delete event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(deleted.ContainerID, message)
@@ -169,7 +171,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				exited := &events.TaskExit{}
 				err := proto.Unmarshal(message.Event.Value, exited)
 				if err != nil {
-					log.Errorf("Could not process exit event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process exit event from Containerd", zap.Error(err))
 					continue
 				}
 
@@ -180,7 +182,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				oomed := &events.TaskOOM{}
 				err := proto.Unmarshal(message.Event.Value, oomed)
 				if err != nil {
-					log.Errorf("Could not process create event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process create event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(oomed.ContainerID, message)
@@ -190,7 +192,7 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				paused := &events.TaskPaused{}
 				err := proto.Unmarshal(message.Event.Value, paused)
 				if err != nil {
-					log.Errorf("Could not process create event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process create event from Containerd", zap.Error(err))
 					continue
 				}
 
@@ -201,14 +203,14 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 				resumed := &events.TaskResumed{}
 				err := proto.Unmarshal(message.Event.Value, resumed)
 				if err != nil {
-					log.Errorf("Could not process create event from Containerd: %v", err)
+					logutil.BgLogger().Error("Could not process create event from Containerd", zap.Error(err))
 					continue
 				}
 				event := processMessage(resumed.ContainerID, message)
 				event.Message = fmt.Sprintf("Task %s was resumed", resumed.ContainerID)
 				s.addEvents(event)
 			default:
-				log.Tracef("Unsupported event type from Containerd: %s ", message.Topic)
+				logutil.BgLogger().Debug(fmt.Sprintf("Unsupported event type from Containerd: %s ", message.Topic))
 			}
 		case e := <-errC:
 			// As we only collect events from one containerd namespace, using this bool is sufficient.
@@ -216,10 +218,10 @@ func (s *subscriber) run(ctx context.Context, ev containerd.EventService) error 
 			s.isRunning = false
 			s.Unlock()
 			if e == context.Canceled {
-				log.Debugf("Context of the event listener routine was canceled")
+				logutil.BgLogger().Debug("Context of the event listener routine was canceled")
 				return nil
 			}
-			log.Errorf("Error while streaming logs from containerd: %s", e.Error())
+			logutil.BgLogger().Error("Error while streaming logs from containerd", zap.Error(e))
 			return fmt.Errorf("stopping Containerd event listener routine...")
 		}
 	}
@@ -243,12 +245,12 @@ func (s *subscriber) Flush(timestamp int64) []containerdEvent {
 	defer s.Mutex.Unlock()
 	delta := s.CollectionTimestamp - timestamp
 	if len(s.Events) == 0 {
-		log.Tracef("No events collected in the last %d seconds", delta)
+		logutil.BgLogger().Debug(fmt.Sprintf("No events collected in the last %d seconds", delta))
 		return nil
 	}
 	s.CollectionTimestamp = timestamp
 	ev := s.Events
-	log.Debugf("Collecting %d events from Containerd", len(ev))
+	logutil.BgLogger().Debug(fmt.Sprintf("Collecting %d events from Containerd", len(ev)))
 	s.Events = nil
 	return ev
 }

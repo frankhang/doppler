@@ -9,6 +9,7 @@ package collectors
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/frankhang/doppler/tagger/utils"
 	"github.com/frankhang/doppler/util/containers"
 	v2 "github.com/frankhang/doppler/util/ecs/metadata/v2"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // parseMetadata parses the task metadata and its container list, and returns a list of TagInfo for the new ones.
@@ -65,7 +66,7 @@ func (c *ECSFargateCollector) parseMetadata(meta *v2.Task, parseAll bool) ([]*Ta
 			tags.AddLow("docker_image", ctr.Image)
 			imageName, shortImage, imageTag, err := containers.SplitImageName(ctr.Image)
 			if err != nil {
-				log.Debugf("Cannot split %s: %s", ctr.Image, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Cannot split %s: %s", ctr.Image), zap.Error(err))
 			} else {
 				tags.AddLow("image_name", imageName)
 				tags.AddLow("short_image", shortImage)

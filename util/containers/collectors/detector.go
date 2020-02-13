@@ -7,9 +7,11 @@ package collectors
 
 import (
 	"errors"
+	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/retry"
 )
 
@@ -81,7 +83,7 @@ func (d *Detector) GetPreferred() (Collector, string, error) {
 	// Pick preferred collector among detected ones
 	preferred := rankCollectors(d.detected, d.preferredName)
 	if preferred != d.preferredName {
-		log.Infof("Using collector %s", preferred)
+		logutil.BgLogger().Info(fmt.Sprintf("Using collector %s", preferred))
 		d.preferredName = preferred
 		d.preferredCollector = d.detected[preferred]
 	}
@@ -111,15 +113,15 @@ func retryCandidates(candidates map[string]Collector) (map[string]Collector, map
 	for name, c := range candidates {
 		err := c.Detect()
 		if retry.IsErrWillRetry(err) {
-			log.Debugf("Will retry collector %s later: %s", name, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Will retry collector %s later", name), zap.Error(err))
 			remaining[name] = c
 			continue
 		}
 		if err != nil {
-			log.Debugf("Collector %s failed to detect: %s", name, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Collector %s failed to detect", name), zap.Error(err))
 			continue
 		}
-		log.Infof("Collector %s successfully detected", name)
+		logutil.BgLogger().Info(fmt.Sprintf("Collector %s successfully detected", name))
 		detected[name] = c
 	}
 	return detected, remaining

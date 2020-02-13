@@ -9,6 +9,7 @@ package leaderelection
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -19,7 +20,7 @@ import (
 	"k8s.io/client-go/tools/record"
 
 	"context"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 func (le *LeaderEngine) getCurrentLeader() (string, *v1.ConfigMap, error) {
@@ -30,7 +31,7 @@ func (le *LeaderEngine) getCurrentLeader() (string, *v1.ConfigMap, error) {
 
 	val, found := configMap.Annotations[rl.LeaderElectionRecordAnnotationKey]
 	if !found {
-		log.Debugf("The configmap/%s in the namespace %s doesn't have the annotation %q: no one is leading yet", le.LeaseName, le.LeaderNamespace, rl.LeaderElectionRecordAnnotationKey)
+		logutil.BgLogger().Debug(fmt.Sprintf("The configmap/%s in the namespace %s doesn't have the annotation %q: no one is leading yet", le.LeaseName, le.LeaderNamespace, rl.LeaderElectionRecordAnnotationKey))
 		return "", configMap, nil
 	}
 
@@ -69,21 +70,21 @@ func (le *LeaderEngine) newElection() (*ld.LeaderElector, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debugf("Current registered leader is %q, building leader elector %q as candidate", currentLeader, le.HolderIdentity)
+	logutil.BgLogger().Debug(fmt.Sprintf("Current registered leader is %q, building leader elector %q as candidate", currentLeader, le.HolderIdentity))
 	callbacks := ld.LeaderCallbacks{
 		OnNewLeader: func(identity string) {
 			le.leaderIdentityMutex.Lock()
 			le.leaderIdentity = identity
 			le.leaderIdentityMutex.Unlock()
 
-			log.Infof("New leader %q", identity)
+			logutil.BgLogger().Info(fmt.Sprintf("New leader %q", identity))
 		},
 		OnStartedLeading: func(ctx context.Context) {
 			le.leaderIdentityMutex.Lock()
 			le.leaderIdentity = le.HolderIdentity
 			le.leaderIdentityMutex.Unlock()
 
-			log.Infof("Started leading as %q...", le.HolderIdentity)
+			logutil.BgLogger().Info(fmt.Sprintf("Started leading as %q...", le.HolderIdentity))
 		},
 		// OnStoppedLeading shouldn't be called unless the election is lost. This could happen if
 		// we lose connection to the apiserver for the duration of the lease.
@@ -92,7 +93,7 @@ func (le *LeaderEngine) newElection() (*ld.LeaderElector, error) {
 			le.leaderIdentity = ""
 			le.leaderIdentityMutex.Unlock()
 
-			log.Infof("Stopped leading %q", le.HolderIdentity)
+			logutil.BgLogger().Info(fmt.Sprintf("Stopped leading %q", le.HolderIdentity))
 		},
 	}
 

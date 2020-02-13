@@ -12,7 +12,7 @@ import (
 	"regexp"
 	"unsafe"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/autodiscovery/integration"
@@ -107,7 +107,7 @@ func (c *IOCheck) Run() error {
 		}
 		for inst, val := range vals {
 			if c.blacklist != nil && c.blacklist.MatchString(inst) {
-				log.Debugf("matched drive %s against blacklist; skipping", inst)
+				logutil.BgLogger().Debug(fmt.Sprintf("matched drive %s against blacklist; skipping", inst))
 				continue
 			}
 			tagbuff.Reset()

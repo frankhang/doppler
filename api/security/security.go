@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -132,7 +132,7 @@ func FetchAuthToken() (string, error) {
 		if e != nil {
 			return "", fmt.Errorf("error creating authentication token: %s", e)
 		}
-		log.Infof("Saved a new authentication token to %s", authTokenFile)
+		logutil.BgLogger().Info(fmt.Sprintf("Saved a new authentication token to %s", authTokenFile))
 	}
 
 	// Read the token
@@ -164,13 +164,13 @@ func DeleteAuthToken() error {
 func GetClusterAgentAuthToken() (string, error) {
 	authToken := config.Datadog.GetString("cluster_agent.auth_token")
 	if authToken != "" {
-		log.Infof("Using configured cluster_agent.auth_token")
+		logutil.BgLogger().Info("Using configured cluster_agent.auth_token")
 		return authToken, validateAuthToken(authToken)
 	}
 
 	// load the cluster agent auth token from filesystem
 	tokenAbsPath := filepath.Join(config.FileUsedDir(), clusterAgentAuthTokenFilename)
-	log.Debugf("Empty cluster_agent.auth_token, loading from %s", tokenAbsPath)
+	logutil.BgLogger().Debug(fmt.Sprintf("Empty cluster_agent.auth_token, loading from %s", tokenAbsPath))
 
 	// Create a new token if it doesn't exist
 	if _, e := os.Stat(tokenAbsPath); os.IsNotExist(e) {
@@ -185,7 +185,7 @@ func GetClusterAgentAuthToken() (string, error) {
 		if e != nil {
 			return "", fmt.Errorf("error creating authentication token: %s", e)
 		}
-		log.Infof("Saved a new authentication token for the Cluster Agent at %s", tokenAbsPath)
+		logutil.BgLogger().Info(fmt.Sprintf("Saved a new authentication token for the Cluster Agent at %s", tokenAbsPath))
 	}
 
 	_, err := os.Stat(tokenAbsPath)
@@ -196,7 +196,7 @@ func GetClusterAgentAuthToken() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("empty cluster_agent.auth_token and cannot read %s: %s", tokenAbsPath, err)
 	}
-	log.Debugf("cluster_agent.auth_token loaded from %s", tokenAbsPath)
+	logutil.BgLogger().Debug(fmt.Sprintf("cluster_agent.auth_token loaded from %s", tokenAbsPath))
 
 	authToken = string(b)
 	return authToken, validateAuthToken(authToken)

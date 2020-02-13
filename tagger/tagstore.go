@@ -2,13 +2,14 @@ package tagger
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"hash/fnv"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/tagger/collectors"
 )
@@ -80,7 +81,7 @@ func (s *tagStore) processTagInfo(info *collectors.TagInfo) error {
 		// check if the source tags is already present for this entry
 		// Only check once since we always write all cardinality tag levels.
 		err := fmt.Errorf("try to overwrite an existing entry with and empty cache-miss entry, info.Source: %s, info.Entity: %s", info.Source, info.Entity)
-		log.Tracef("processTagInfo err: %v", err)
+		logutil.BgLogger().Debug("processTagInfo err", zap.Error(err))
 		return err
 	}
 	storedTags.lowCardTags[info.Source] = info.LowCardTags
@@ -122,7 +123,7 @@ func (s *tagStore) prune() error {
 		delete(s.store, entity)
 	}
 
-	log.Debugf("pruned %d removed entities, %d remaining", len(s.toDelete), len(s.store))
+	logutil.BgLogger().Debug(fmt.Sprintf("pruned %d removed entities, %d remaining", len(s.toDelete), len(s.store)))
 
 	// Start fresh
 	s.toDelete = make(map[string]struct{})
@@ -231,7 +232,7 @@ func (e *entityTags) get(cardinality collectors.TagCardinality) ([]string, []str
 func insertWithPriority(tagPrioMapper map[string][]tagPriority, tags []string, source string, cardinality collectors.TagCardinality) {
 	priority, found := collectors.CollectorPriorities[source]
 	if !found {
-		log.Warnf("Tagger: %s collector has no defined priority, assuming low", source)
+		logutil.BgLogger().Warn(fmt.Sprintf("Tagger: %s collector has no defined priority, assuming low", source))
 		priority = collectors.NodeRuntime
 	}
 

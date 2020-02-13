@@ -10,6 +10,7 @@ package leaderelection
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"sync"
 	"time"
@@ -24,7 +25,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver/common"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/retry"
 )
 
@@ -95,7 +96,7 @@ func GetCustomLeaderEngine(holderIdentity string, ttl time.Duration) (*LeaderEng
 	}
 	err := globalLeaderEngine.initRetry.TriggerRetry()
 	if err != nil {
-		log.Debugf("Leader Election init error: %s", err)
+		logutil.BgLogger().Debug("Leader Election init error", zap.Error(err))
 		return nil, err
 	}
 	return globalLeaderEngine, nil
@@ -107,11 +108,11 @@ func (le *LeaderEngine) init() error {
 	if le.HolderIdentity == "" {
 		le.HolderIdentity, err = os.Hostname()
 		if err != nil {
-			log.Debugf("cannot get hostname: %s", err)
+			logutil.BgLogger().Debug("cannot get hostname", zap.Error(err))
 			return err
 		}
 	}
-	log.Debugf("Init LeaderEngine with HolderIdentity: %q", le.HolderIdentity)
+	logutil.BgLogger().Debug(fmt.Sprintf("Init LeaderEngine with HolderIdentity: %q", le.HolderIdentity))
 
 	leaseDuration := config.Datadog.GetInt("leader_lease_duration")
 	if leaseDuration > 0 {
@@ -119,11 +120,11 @@ func (le *LeaderEngine) init() error {
 	} else {
 		le.LeaseDuration = defaultLeaderLeaseDuration
 	}
-	log.Debugf("LeaderLeaseDuration: %s", le.LeaseDuration.String())
+	logutil.BgLogger().Debug(fmt.Sprintf("LeaderLeaseDuration: %s", le.LeaseDuration.String()))
 
 	apiClient, err := apiserver.GetAPIClient()
 	if err != nil {
-		log.Errorf("Not Able to set up a client for the Leader Election: %s", err)
+		logutil.BgLogger().Error("Not Able to set up a client for the Leader Election", zap.Error(err))
 		return err
 	}
 
@@ -132,16 +133,16 @@ func (le *LeaderEngine) init() error {
 	// check if we can get ConfigMap.
 	_, err = le.coreClient.ConfigMaps(le.LeaderNamespace).Get(defaultLeaseName, metav1.GetOptions{})
 	if err != nil && errors.IsNotFound(err) == false {
-		log.Errorf("Cannot retrieve ConfigMap from the %s namespace: %s", le.LeaderNamespace, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Cannot retrieve ConfigMap from the %s namespace", le.LeaderNamespace), zap.Error(err))
 		return err
 	}
 
 	le.leaderElector, err = le.newElection()
 	if err != nil {
-		log.Errorf("Could not initialize the Leader Election process: %s", err)
+		logutil.BgLogger().Error("Could not initialize the Leader Election process", zap.Error(err))
 		return err
 	}
-	log.Debugf("Leader Engine for %q successfully initialized", le.HolderIdentity)
+	logutil.BgLogger().Debug(fmt.Sprintf("Leader Engine for %q successfully initialized", le.HolderIdentity))
 	return nil
 }
 
@@ -161,7 +162,7 @@ func (le *LeaderEngine) EnsureLeaderElectionRuns() error {
 	defer le.m.Unlock()
 
 	if le.running {
-		log.Debugf("Currently Leader: %t. Leader identity: %q", le.IsLeader(), le.GetLeader())
+		logutil.BgLogger().Debug(fmt.Sprintf("Currently Leader: %t. Leader identity: %q", le.IsLeader(), le.GetLeader()))
 		return nil
 	}
 
@@ -171,12 +172,12 @@ func (le *LeaderEngine) EnsureLeaderElectionRuns() error {
 	tick := time.NewTicker(time.Second)
 	defer tick.Stop()
 	for {
-		log.Tracef("Waiting for new leader identity...")
+		logutil.BgLogger().Debug("Waiting for new leader identity...")
 		select {
 		case <-tick.C:
 			leaderIdentity := le.GetLeader()
 			if leaderIdentity != "" {
-				log.Infof("Leader election running, current leader is %q", leaderIdentity)
+				logutil.BgLogger().Info(fmt.Sprintf("Leader election running, current leader is %q", leaderIdentity))
 				le.running = true
 				return nil
 			}
@@ -188,10 +189,10 @@ func (le *LeaderEngine) EnsureLeaderElectionRuns() error {
 
 func (le *LeaderEngine) runLeaderElection() {
 	for {
-		log.Infof("Starting leader election process for %q...", le.HolderIdentity)
+		logutil.BgLogger().Info(fmt.Sprintf("Starting leader election process for %q...", le.HolderIdentity))
 
 		le.leaderElector.Run(context.Background())
-		log.Info("Leader election lost")
+		logutil.BgLogger().Info("Leader election lost")
 	}
 }
 
@@ -244,7 +245,7 @@ func GetLeaderElectionRecord() (leaderDetails rl.LeaderElectionRecord, err error
 	if err != nil {
 		return led, err
 	}
-	log.Debugf("LeaderElection cm is %#v", leaderElectionCM)
+	logutil.BgLogger().Debug(fmt.Sprintf("LeaderElection cm is %#v", leaderElectionCM))
 	annotation, found := leaderElectionCM.Annotations[rl.LeaderElectionRecordAnnotationKey]
 	if !found {
 		return led, apiserver.ErrNotFound

@@ -10,6 +10,7 @@ package metadata
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"net/http"
 	"os"
 	"strings"
@@ -19,7 +20,7 @@ import (
 	"github.com/frankhang/doppler/util/docker"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	v1 "github.com/frankhang/doppler/util/ecs/metadata/v1"
 	v3 "github.com/frankhang/doppler/util/ecs/metadata/v3"
@@ -36,14 +37,14 @@ func detectAgentV1URL() (string, error) {
 		// List all interfaces for the ecs-agent container
 		agentURLS, err := getAgentV1ContainerURLs()
 		if err != nil {
-			log.Debugf("Could not inspect ecs-agent container: %s", err)
+			logutil.BgLogger().Debug("Could not inspect ecs-agent container", zap.Error(err))
 		} else {
 			urls = append(urls, agentURLS...)
 		}
 		// Try the default gateway
 		gw, err := containers.DefaultGateway()
 		if err != nil {
-			log.Debugf("Could not get docker default gateway: %s", err)
+			logutil.BgLogger().Debug("Could not get docker default gateway", zap.Error(err))
 		}
 		if gw != nil {
 			urls = append(urls, fmt.Sprintf("http://%s:%d/", gw.String(), v1.DefaultAgentPort))
@@ -138,7 +139,7 @@ func getAgentV3URLFromDocker(containerID string) (string, error) {
 	for _, env := range container.Config.Env {
 		substrings := strings.Split(env, "=")
 		if len(substrings) != 2 {
-			log.Tracef("invalid container env format: %s", env)
+			logutil.BgLogger().Debug(fmt.Sprintf("invalid container env format: %s", env))
 		}
 
 		k := substrings[0]

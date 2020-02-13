@@ -10,12 +10,13 @@ package docker
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"regexp"
 	"strconv"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/docker/docker/api/types"
 )
 
@@ -56,7 +57,7 @@ func (s *StorageStats) GetPercentUsed() float64 {
 	total := s.Total
 	if s.Total != nil && s.Used != nil && s.Free != nil {
 		if *s.Total < *s.Used+*s.Free {
-			log.Debugf("total lower than free+used, re-computing total")
+			logutil.BgLogger().Debug("total lower than free+used, re-computing total")
 			totalValue := *s.Used + *s.Free
 			total = &totalValue
 		}
@@ -89,12 +90,12 @@ func parseStorageStatsFromInfo(info types.Info) ([]*StorageStats, error) {
 		valueString := entry[1]
 		fields := strings.Fields(key)
 		if len(fields) != 3 || strings.ToLower(fields[1]) != "space" {
-			log.Debugf("ignoring invalid storage stat: %s", key)
+			logutil.BgLogger().Debug(fmt.Sprintf("ignoring invalid storage stat: %s", key))
 			continue
 		}
 		valueInt, err := parseDiskQuantity(valueString)
 		if err != nil {
-			log.Debugf("ignoring invalid value %s for stat %s: %s", valueString, key, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("ignoring invalid value %s for stat %s", valueString, key), zap.Error(err))
 			continue
 		}
 		storageType := strings.ToLower(fields[0])

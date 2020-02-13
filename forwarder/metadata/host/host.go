@@ -6,6 +6,8 @@
 package host
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"path"
 	"sync"
@@ -16,7 +18,7 @@ import (
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/doppler/util/alibaba"
 	"github.com/frankhang/doppler/util/cache"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/metadata/host/container"
 	"github.com/frankhang/doppler/util/azure"
@@ -89,35 +91,35 @@ func getHostAliases() []string {
 
 	alibabaAlias, err := alibaba.GetHostAlias()
 	if err != nil {
-		log.Debugf("no Alibaba Host Alias: %s", err)
+		logutil.BgLogger().Debug("no Alibaba Host Alias", zap.Error(err))
 	} else if alibabaAlias != "" {
 		aliases = append(aliases, alibabaAlias)
 	}
 
 	azureAlias, err := azure.GetHostAlias()
 	if err != nil {
-		log.Debugf("no Azure Host Alias: %s", err)
+		logutil.BgLogger().Debug("no Azure Host Alias", zap.Error(err))
 	} else if azureAlias != "" {
 		aliases = append(aliases, azureAlias)
 	}
 
 	gceAlias, err := gce.GetHostAlias()
 	if err != nil {
-		log.Debugf("no GCE Host Alias: %s", err)
+		logutil.BgLogger().Debug("no GCE Host Alias", zap.Error(err))
 	} else {
 		aliases = append(aliases, gceAlias)
 	}
 
 	cfAliases, err := cloudfoundry.GetHostAliases()
 	if err != nil {
-		log.Debugf("no Cloud Foundry Host Alias: %s", err)
+		logutil.BgLogger().Debug("no Cloud Foundry Host Alias", zap.Error(err))
 	} else if cfAliases != nil {
 		aliases = append(aliases, cfAliases...)
 	}
 
 	k8sAlias, err := kubelet.GetHostAlias()
 	if err != nil {
-		log.Debugf("no Kubernetes Host Alias (through kubelet API): %s", err)
+		logutil.BgLogger().Debug("no Kubernetes Host Alias (through kubelet API)", zap.Error(err))
 	} else if k8sAlias != "" {
 		aliases = append(aliases, k8sAlias)
 	}
@@ -158,7 +160,7 @@ func getMeta(hostnameData util.HostnameData) *Meta {
 func getNetworkMeta() *NetworkMeta {
 	nid, err := util.GetNetworkID()
 	if err != nil {
-		log.Infof("could not get network metadata: %s", err)
+		logutil.BgLogger().Info("could not get network metadata", zap.Error(err))
 		return nil
 	}
 	return &NetworkMeta{ID: nid}
@@ -176,7 +178,7 @@ func getContainerMeta(timeout time.Duration) map[string]string {
 			defer wg.Done()
 			meta, err := getMeta()
 			if err != nil {
-				log.Debugf("Unable to get %s metadata: %s", provider, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Unable to get %s metadata", provider), zap.Error(err))
 				return
 			}
 			mutex.Lock()

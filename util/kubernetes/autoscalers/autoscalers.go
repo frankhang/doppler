@@ -8,12 +8,13 @@
 package autoscalers
 
 import (
+	"fmt"
 	"reflect"
 
 	autoscalingv2 "k8s.io/api/autoscaling/v2beta1"
 
 	"github.com/frankhang/doppler/clusteragent/custommetrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/DataDog/watermarkpodautoscaler/pkg/apis/datadoghq/v1alpha1"
 )
 
@@ -23,7 +24,7 @@ func InspectHPA(hpa *autoscalingv2.HorizontalPodAutoscaler) (emList []custommetr
 		switch metricSpec.Type {
 		case autoscalingv2.ExternalMetricSourceType:
 			if metricSpec.External == nil {
-				log.Errorf("Missing required \"external\" section in the %s/%s Ref, skipping processing", hpa.Namespace, hpa.Name)
+				logutil.BgLogger().Error(fmt.Sprintf("Missing required \"external\" section in the %s/%s Ref, skipping processing", hpa.Namespace, hpa.Name))
 				continue
 			}
 
@@ -41,7 +42,7 @@ func InspectHPA(hpa *autoscalingv2.HorizontalPodAutoscaler) (emList []custommetr
 			}
 			emList = append(emList, em)
 		default:
-			log.Debugf("Unsupported metric type %s", metricSpec.Type)
+			logutil.BgLogger().Debug(fmt.Sprintf("Unsupported metric type %s", metricSpec.Type))
 		}
 	}
 	return
@@ -53,7 +54,7 @@ func InspectWPA(wpa *v1alpha1.WatermarkPodAutoscaler) (emList []custommetrics.Ex
 		switch metricSpec.Type {
 		case v1alpha1.ExternalMetricSourceType:
 			if metricSpec.External == nil {
-				log.Errorf("Missing required \"external\" section in the %s/%s WPA, skipping processing", wpa.Namespace, wpa.Name)
+				logutil.BgLogger().Errorf(fmt.Sprintf("Missing required \"external\" section in the %s/%s WPA, skipping processing", wpa.Namespace, wpa.Name))
 				continue
 			}
 
@@ -71,7 +72,7 @@ func InspectWPA(wpa *v1alpha1.WatermarkPodAutoscaler) (emList []custommetrics.Ex
 			}
 			emList = append(emList, em)
 		default:
-			log.Debugf("Unsupported metric type %s", metricSpec.Type)
+			logutil.BgLogger().Debug(fmt.Sprintf("Unsupported metric type %s", metricSpec.Type))
 		}
 	}
 	return

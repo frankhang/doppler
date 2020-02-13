@@ -9,11 +9,12 @@ package docker
 
 import (
 	"context"
+	"go.uber.org/zap"
 	"io"
 	"strconv"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 )
@@ -106,10 +107,10 @@ CONNECT: // Outer loop handles re-connecting in case the docker daemon closes th
 			case err := <-errs:
 				if err == io.EOF {
 					// Silently ignore io.EOF that happens on http connection reset
-					log.Debug("Got EOF, re-connecting")
+					logutil.BgLogger().Debug("Got EOF, re-connecting")
 				} else {
 					// Else, let's wait 10 seconds and try reconnecting
-					log.Warnf("Got error from docker, waiting for 10 seconds: %s", err)
+					logutil.BgLogger().Warn("Got error from docker, waiting for 10 seconds", zap.Error(err))
 					time.Sleep(10 * time.Second)
 				}
 				cancelFunc()
@@ -118,7 +119,7 @@ CONNECT: // Outer loop handles re-connecting in case the docker daemon closes th
 				latestTimestamp = msg.Time
 				event, err := d.processContainerEvent(msg)
 				if err != nil {
-					log.Debugf("Skipping event: %s", err)
+					logutil.BgLogger().Debug("Skipping event", zap.Error(err))
 					continue
 				}
 				if event == nil {

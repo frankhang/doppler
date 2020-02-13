@@ -6,9 +6,10 @@
 package cloudfoundry
 
 import (
+	"github.com/frankhang/doppler/config"
 	"os"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/util"
 )
@@ -19,7 +20,7 @@ var getFqdn = util.Fqdn
 // GetHostAliases returns the host aliases from Cloud Foundry
 func GetHostAliases() ([]string, error) {
 	if !config.Datadog.GetBool("cloud_foundry") {
-		log.Debugf("cloud_foundry is not enabled in the conf: no cloudfoudry host alias")
+		logutil.BgLogger().Debug("cloud_foundry is not enabled in the conf: no cloudfoudry host alias")
 		return nil, nil
 	}
 

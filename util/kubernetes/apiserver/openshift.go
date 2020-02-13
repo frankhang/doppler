@@ -8,7 +8,9 @@
 package apiserver
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 // DetectOpenShiftAPILevel looks at known endpoints to detect if OpenShift
@@ -18,17 +20,17 @@ import (
 func (c *APIClient) DetectOpenShiftAPILevel() OpenShiftAPILevel {
 	err := c.Cl.CoreV1().RESTClient().Get().AbsPath("/apis/quota.openshift.io").Do().Error()
 	if err == nil {
-		log.Debugf("Found %s", OpenShiftAPIGroup)
+		logutil.BgLogger().Debug(fmt.Sprintf("Found %s", OpenShiftAPIGroup))
 		return OpenShiftAPIGroup
 	}
-	log.Debugf("Cannot access %s: %s", OpenShiftAPIGroup, err)
+	logutil.BgLogger().Debug(fmt.Sprintf("Cannot access %s", OpenShiftAPIGroup), zap.Error(err))
 
 	err = c.Cl.CoreV1().RESTClient().Get().AbsPath("/oapi").Do().Error()
 	if err == nil {
-		log.Debugf("Found %s", OpenShiftOAPI)
+		logutil.BgLogger().Debug(fmt.Sprintf("Found %s", OpenShiftOAPI))
 		return OpenShiftOAPI
 	}
-	log.Debugf("Cannot access %s: %s", OpenShiftOAPI, err)
+	logutil.BgLogger().Debug(fmt.Sprintf("Cannot access %s", OpenShiftOAPI), zap.Error(err))
 
 	// Fallback to NotOpenShift
 	return NotOpenShift

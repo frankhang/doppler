@@ -6,7 +6,7 @@
 package host
 
 import (
-	"github.com/frankhang/util/logutil"
+	"fmt"
 	"go.uber.org/zap"
 	"os"
 	"path"
@@ -18,7 +18,7 @@ import (
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/doppler/util/alibaba"
 	"github.com/frankhang/doppler/util/cache"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/metadata/host/container"
 	"github.com/frankhang/doppler/util/azure"
@@ -158,7 +158,7 @@ func getMeta(hostnameData util.HostnameData) *Meta {
 func getNetworkMeta() *NetworkMeta {
 	nid, err := util.GetNetworkID()
 	if err != nil {
-		log.Infof("could not get network metadata: %s", err)
+		logutil.BgLogger().Info("could not get network metadata", zap.Error(err))
 		return nil
 	}
 	return &NetworkMeta{ID: nid}
@@ -176,7 +176,7 @@ func getContainerMeta(timeout time.Duration) map[string]string {
 			defer wg.Done()
 			meta, err := getMeta()
 			if err != nil {
-				log.Debugf("Unable to get %s metadata: %s", provider, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Unable to get %s metadata", provider), zap.Error(err))
 				return
 			}
 			mutex.Lock()

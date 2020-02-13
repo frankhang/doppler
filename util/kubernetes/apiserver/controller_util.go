@@ -20,12 +20,12 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 
+	"github.com/DataDog/watermarkpodautoscaler/pkg/apis/datadoghq/v1alpha1"
 	"github.com/frankhang/doppler/clusteragent/custommetrics"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver/common"
 	"github.com/frankhang/doppler/util/kubernetes/autoscalers"
-	"github.com/frankhang/doppler/util/log"
-	"github.com/DataDog/watermarkpodautoscaler/pkg/apis/datadoghq/v1alpha1"
+	"github.com/frankhang/util/logutil"
 	autoscalingv2 "k8s.io/api/autoscaling/v2beta1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -59,7 +59,7 @@ func NewAutoscalersController(client kubernetes.Interface, eventRecorder record.
 	// Setup the client to process the Ref and metrics
 	h.hpaProc, err = autoscalers.NewProcessor(dogCl)
 	if err != nil {
-		log.Errorf("Could not instantiate the Ref Processor: %v", err.Error())
+		logutil.BgLogger().Error("Could not instantiate the Ref Processor", zap.Error(err))
 		return nil, err
 	}
 
@@ -159,7 +159,7 @@ func (h *AutoscalersController) deleteFromLocalStore(toDelete []custommetrics.Ex
 
 func (h *AutoscalersController) handleErr(err error, key interface{}) {
 	if err == nil {
-		log.Tracef("Faithfully dropping key %v", key)
+		logutil.BgLogger().Debug(fmt.Sprintf("Faithfully dropping key %v", key))
 		h.HPAqueue.Forget(key)
 		return
 	}
@@ -177,7 +177,7 @@ func (h *AutoscalersController) updateExternalMetrics() {
 	// Grab what is available in the Global store.
 	emList, err := h.store.ListAllExternalMetricValues()
 	if err != nil {
-		log.Errorf("Error while retrieving external metrics from the store: %s", err)
+		logutil.BgLogger().Error("Error while retrieving external metrics from the store", zap.Error(err))
 		return
 	}
 	if len(emList.Deprecated) != 0 {
@@ -209,14 +209,14 @@ func (h *AutoscalersController) updateExternalMetrics() {
 	h.toStore.m.Unlock()
 
 	if len(globalCache) == 0 {
-		log.Debugf("No External Metrics to evaluate at the moment")
+		logutil.BgLogger().Debug("No External Metrics to evaluate at the moment")
 		return
 	}
 
 	updated := h.hpaProc.UpdateExternalMetrics(globalCache)
 	err = h.store.SetExternalMetricValues(updated)
 	if err != nil {
-		log.Errorf("Not able to store the updated metrics in the Global Store: %v", err)
+		logutil.BgLogger().Error("Not able to store the updated metrics in the Global Store", zap.Error(err))
 	}
 }
 

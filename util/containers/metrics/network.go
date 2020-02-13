@@ -9,10 +9,11 @@ package metrics
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // SumInterfaces sums stats from all interfaces into a single InterfaceNetStats
@@ -35,12 +36,12 @@ func CollectNetworkStats(pid int, networks map[string]string) (ContainerNetStats
 
 	procNetFile := hostProc(strconv.Itoa(int(pid)), "net", "dev")
 	if !pathExists(procNetFile) {
-		log.Debugf("Unable to read %s for pid %d", procNetFile, pid)
+		logutil.BgLogger().Debug(fmt.Sprintf("Unable to read %s for pid %d", procNetFile, pid))
 		return netStats, nil
 	}
 	lines, err := readLines(procNetFile)
 	if err != nil {
-		log.Debugf("Unable to read %s for pid %d", procNetFile, pid)
+		logutil.BgLogger().Debug(fmt.Sprintf("Unable to read %s for pid %d", procNetFile, pid))
 		return netStats, nil
 	}
 	if len(lines) < 2 {
@@ -111,12 +112,12 @@ func DetectNetworkDestinations(pid int) ([]NetworkDestination, error) {
 		}
 		dest, err := strconv.ParseUint(fields[1], 16, 32)
 		if err != nil {
-			log.Debugf("Cannot parse destination %q: %v", fields[1], err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot parse destination %q", fields[1]), zap.Error(err))
 			continue
 		}
 		mask, err := strconv.ParseUint(fields[7], 16, 32)
 		if err != nil {
-			log.Debugf("Cannot parse mask %q: %v", fields[7], err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot parse mask %q", fields[7]), zap.Error(err))
 			continue
 		}
 		d := NetworkDestination{

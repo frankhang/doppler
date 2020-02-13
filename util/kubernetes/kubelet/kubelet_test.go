@@ -13,6 +13,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -32,7 +33,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/errors"
 	"github.com/frankhang/doppler/logs/service"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -72,7 +73,7 @@ func (d *dummyKubelet) loadPodList(podListJSONPath string) error {
 func (d *dummyKubelet) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	d.Lock()
 	defer d.Unlock()
-	log.Debugf("dummyKubelet received %s on %s", r.Method, r.URL.Path)
+	logutil.BgLogger().Debug(fmt.Sprintf("dummyKubelet received %s on %s", r.Method, r.URL.Path))
 	d.Requests <- r
 	switch r.URL.Path {
 	case "/healthz":
@@ -84,7 +85,7 @@ func (d *dummyKubelet) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s, err := w.Write(d.PodsBody)
-		log.Debugf("dummyKubelet wrote %d bytes, err: %v", s, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("dummyKubelet wrote %d bytes", s), zap.Error(err))
 
 	default:
 		w.WriteHeader(http.StatusNotFound)
@@ -100,7 +101,7 @@ func (d *dummyKubelet) parsePort(ts *httptest.Server) (*httptest.Server, int, er
 	if err != nil {
 		return nil, 0, err
 	}
-	log.Debugf("Starting on port %d", kubeletPort)
+	logutil.BgLogger().Debug(fmt.Sprintf("Starting on port %d", kubeletPort))
 	return ts, kubeletPort, nil
 }
 

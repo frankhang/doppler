@@ -7,12 +7,13 @@
 package system
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
 
 	"github.com/frankhang/doppler/aggregator/mocksender"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var (
@@ -22,10 +23,10 @@ var (
 
 func writeSampleFile(f *os.File, content []byte) string {
 	if _, err := f.Write(content); err != nil {
-		log.Debugf("error: %v", err)
+		logutil.BgLogger().Debug(fmt.Sprintf("error: %v", err))
 	}
 	if err := f.Close(); err != nil {
-		log.Debugf("error: %v", err)
+		logutil.BgLogger().Debug(fmt.Sprintf("error: %v", err))
 	}
 	return f.Name()
 }

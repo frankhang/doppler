@@ -9,10 +9,11 @@ package clusterchecks
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sort"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // tolerationMargin is used to lean towards stability when rebalancing cluster level checks
@@ -97,7 +98,7 @@ func (d *dispatcher) pickCheckToMove(nodeName string) (string, int, error) {
 	d.store.RUnlock()
 
 	if !found {
-		log.Debugf("Node %s not found in store. Won't consider moving check", nodeName)
+		logutil.BgLogger().Debug(fmt.Sprintf("Node %s not found in store. Won't consider moving check", nodeName))
 		return "", -1, fmt.Errorf("node %s not found in store", nodeName)
 	}
 
@@ -128,7 +129,7 @@ func pickNode(diffMap map[string]int, sourceNode string) string {
 
 // moveCheck moves a check by its ID from a node to another
 func (d *dispatcher) moveCheck(src, dest, checkID string) error {
-	log.Debugf("Moving %s from %s to %s", checkID, src, dest)
+	logutil.BgLogger().Debug(fmt.Sprintf("Moving %s from %s to %s", checkID, src, dest))
 
 	d.store.RLock()
 	destNode, destFound := d.store.getNodeStore(dest)
@@ -136,13 +137,13 @@ func (d *dispatcher) moveCheck(src, dest, checkID string) error {
 	d.store.RUnlock()
 
 	if !destFound || !srcFound {
-		log.Debugf("Nodes not found in store: %s, %s. Check %s will not move", src, dest, checkID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Nodes not found in store: %s, %s. Check %s will not move", src, dest, checkID))
 		return fmt.Errorf("node %s not found", src)
 	}
 
 	runnerStats, err := sourceNode.GetRunnerStats(checkID)
 	if err != nil {
-		log.Debugf("Cannot get runner stats on node %s, check %s will not move", src, checkID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot get runner stats on node %s, check %s will not move", src, checkID))
 		return err
 	}
 
@@ -150,12 +151,12 @@ func (d *dispatcher) moveCheck(src, dest, checkID string) error {
 	sourceNode.RemoveRunnerStats(checkID)
 
 	config, digest := d.getConfigAndDigest(checkID)
-	log.Tracef("Moving check %s with digest %s and config %s from %s to %s", checkID, digest, config.String(), src, dest)
+	logutil.BgLogger().Debug(fmt.Sprintf("Moving check %s with digest %s and config %s from %s to %s", checkID, digest, config.String(), src, dest))
 
 	d.removeConfig(digest)
 	d.addConfig(config, dest)
 
-	log.Debugf("Check %s moved from %s to %s", checkID, src, dest)
+	logutil.BgLogger().Debug(fmt.Sprintf("Check %s moved from %s to %s", checkID, src, dest))
 
 	return nil
 }
@@ -168,10 +169,10 @@ func (d *dispatcher) rebalance() {
 		rebalancingDuration.Set(time.Since(start).Seconds())
 	}()
 
-	log.Trace("Trying to rebalance cluster checks distribution if needed")
+	logutil.BgLogger().Debug("Trying to rebalance cluster checks distribution if needed")
 	totalAvg, err := d.calculateAvg()
 	if err != nil {
-		log.Debugf("Cannot rebalance checks: %v", err)
+		logutil.BgLogger().Debug("Cannot rebalance checks", zap.Error(err))
 		return
 	}
 	diffMap, weights := d.getDiffAndWeights(totalAvg)
@@ -182,7 +183,7 @@ func (d *dispatcher) rebalance() {
 			sourceNodeName := nodeWeight.nodeName
 			checkID, checkWeight, err := d.pickCheckToMove(sourceNodeName)
 			if err != nil {
-				log.Debugf("Cannot pick a check to move from node %s: %v", sourceNodeName, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Cannot pick a check to move from node %s", sourceNodeName), zap.Error(err))
 				break
 			}
 
@@ -194,12 +195,12 @@ func (d *dispatcher) rebalance() {
 				rebalancingDecisions.Inc()
 				err = d.moveCheck(sourceNodeName, pickedNodeName, checkID)
 				if err != nil {
-					log.Debugf("Cannot move check %s: %v", checkID, err)
+					logutil.BgLogger().Debug(fmt.Sprintf("Cannot move check %s", checkID), zap.Error(err))
 					continue
 				}
 
 				successfulRebalancing.Inc()
-				log.Tracef("Check %s with weight %d moved, total avg: %d, source diff: %d, dest diff: %d", checkID, checkWeight, totalAvg, diffMap[sourceNodeName], diffMap[pickedNodeName])
+				logutil.BgLogger().Debug(fmt.Sprintf("Check %s with weight %d moved, total avg: %d, source diff: %d, dest diff: %d", checkID, checkWeight, totalAvg, diffMap[sourceNodeName], diffMap[pickedNodeName]))
 
 				// diffMap needs to be updated on every check moved
 				diffMap = d.updateDiff(totalAvg)

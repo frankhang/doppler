@@ -12,7 +12,7 @@ import (
 
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/status/health"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type jobBucket struct {
@@ -146,7 +146,7 @@ func (jq *jobQueue) stats() map[string]interface{} {
 func (jq *jobQueue) run(s *Scheduler) {
 
 	go func() {
-		log.Debugf("Job queue is running...")
+		logutil.BgLogger().Debug("Job queue is running...")
 		for jq.process(s) {
 			// empty
 		}
@@ -163,10 +163,10 @@ func (jq *jobQueue) process(s *Scheduler) bool {
 		jq.health.Deregister()
 		return false
 	case t := <-jq.bucketTicker.C:
-		log.Tracef("Bucket ticked... current index: %v", jq.currentBucketIdx)
+		logutil.BgLogger().Debug(fmt.Sprintf("Bucket ticked... current index: %v", jq.currentBucketIdx))
 		jq.mu.Lock()
 		if !jq.lastTick.Equal(time.Time{}) && t.After(jq.lastTick.Add(2*time.Second)) {
-			log.Debugf("Previous bucket took over %v to schedule. Next checks will be running behind the schedule.", t.Sub(jq.lastTick))
+			logutil.BgLogger().Debug(fmt.Sprintf("Previous bucket took over %v to schedule. Next checks will be running behind the schedule.", t.Sub(jq.lastTick)))
 		}
 		jq.lastTick = t
 		bucket := jq.buckets[jq.currentBucketIdx]
@@ -179,7 +179,7 @@ func (jq *jobQueue) process(s *Scheduler) bool {
 		jobs = append(jobs, bucket.jobs...)
 		bucket.mu.RUnlock()
 
-		log.Tracef("Jobs in bucket: %v", jobs)
+		logutil.BgLogger().Debug(fmt.Sprintf("Jobs in bucket: %v", jobs))
 
 		for _, check := range jobs {
 			if !s.IsCheckScheduled(check.ID()) {

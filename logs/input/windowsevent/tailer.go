@@ -9,13 +9,14 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/message"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/clbanning/mxj"
 )
 
@@ -81,7 +82,7 @@ func (t *Tailer) Identifier() string {
 // toMessage converts an XML message into json
 func (t *Tailer) toMessage(re *richEvent) (*message.Message, error) {
 	event := re.xmlEvent
-	log.Debug("Rendered XML:", event)
+	logutil.BgLogger().Debug(fmt.Sprintf("Rendered XML:", event))
 	mxj.PrependAttrWithHyphen(false)
 	mv, err := mxj.NewMapXml([]byte(event))
 	if err != nil {
@@ -91,22 +92,22 @@ func (t *Tailer) toMessage(re *richEvent) (*message.Message, error) {
 	// extract then modify the Event.EventData.Data field to have a key value mapping
 	dataField, err := extractDataField(mv)
 	if err != nil {
-		log.Debugf("Error extracting data field: %s", err)
+		logutil.BgLogger().Debug("Error extracting data field", zap.Error(err))
 	} else {
 		err = mv.SetValueForPath(dataField, dataPath)
 		if err != nil {
-			log.Debugf("Error formatting %s: %s", dataPath, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Error formatting %s", dataPath), zap.Error(err))
 		}
 	}
 
 	// extract, parse then modify the Event.EventData.Binary data field
 	binaryData, err := extractParsedBinaryData(mv)
 	if err != nil {
-		log.Debugf("Error extracting binary data: %s", err)
+		logutil.BgLogger().Debug("Error extracting binary data", zap.Error(err))
 	} else {
 		_, err = mv.UpdateValuesForPath("Binary:"+string(binaryData), binaryPath)
 		if err != nil {
-			log.Debugf("Error formatting %s: %s", binaryPath, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Error formatting %s", binaryPath), zap.Error(err))
 		}
 	}
 
@@ -130,7 +131,7 @@ func (t *Tailer) toMessage(re *richEvent) (*message.Message, error) {
 		return &message.Message{}, err
 	}
 	jsonEvent = replaceTextKeyToValue(jsonEvent)
-	log.Debug("Sending JSON:", string(jsonEvent))
+	logutil.BgLogger().Debug(fmt.Sprintf("Sending JSON:", string(jsonEvent)))
 	return message.NewMessageWithSource(jsonEvent, message.StatusInfo, t.source), nil
 }
 

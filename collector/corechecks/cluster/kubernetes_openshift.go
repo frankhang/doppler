@@ -17,7 +17,7 @@ import (
 
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -89,7 +89,7 @@ func computeQuotaRemaining(used, limit v1.ResourceList) v1.ResourceList {
 	for res, qty := range used {
 		ptr := remaining[res]
 		if ptr == nil {
-			log.Debugf("Resource %s: has a usage but no limit, skipping remaining computation", res)
+			logutil.BgLogger().Debug("Resource %s: has a usage but no limit, skipping remaining computation", res)
 			continue
 		}
 		ptr.Sub(qty)

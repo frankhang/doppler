@@ -8,11 +8,12 @@
 package metadata
 
 import (
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
 	"github.com/frankhang/doppler/util/retry"
+	"github.com/frankhang/util/logutil"
 
 	v1 "github.com/frankhang/doppler/util/ecs/metadata/v1"
 	v2 "github.com/frankhang/doppler/util/ecs/metadata/v2"
@@ -47,7 +48,7 @@ func V1() (*v1.Client, error) {
 		})
 	})
 	if err := globalUtil.initRetryV1.TriggerRetry(); err != nil {
-		log.Debugf("ECS metadata v1 client init error: %s", err)
+		logutil.BgLogger().Debug("ECS metadata v1 client init error", zap.Error(err))
 		return nil, err
 	}
 	return globalUtil.v1, nil
@@ -83,7 +84,7 @@ func V3FromCurrentTask() (*v3.Client, error) {
 		})
 	})
 	if err := globalUtil.initRetryV3.TriggerRetry(); err != nil {
-		log.Debugf("ECS metadata v3 client init error: %s", err)
+		logutil.BgLogger().Debug("ECS metadata v3 client init error", zap.Error(err))
 		return nil, err
 	}
 	return globalUtil.v3, nil

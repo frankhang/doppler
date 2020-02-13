@@ -10,13 +10,14 @@ package custommetrics
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -72,16 +73,16 @@ func NewConfigMapStore(client kubernetes.Interface, ns, name string) (Store, err
 	}
 	err := store.getConfigMap()
 	if err == nil {
-		log.Infof("Retrieved the configmap %s", name)
+		logutil.BgLogger().Info(fmt.Sprintf("Retrieved the configmap %s", name))
 		return store, nil
 	}
 
 	if !errors.IsNotFound(err) {
-		log.Infof("Error while attempting to fetch the configmap %s: %v", name, err)
+		logutil.BgLogger().Info(fmt.Sprintf("Error while attempting to fetch the configmap %s", name), zap.Error(err))
 		return nil, err
 	}
 
-	log.Infof("The configmap %s does not exist, trying to create it", name)
+	logutil.BgLogger().Info(fmt.Sprintf("The configmap %s does not exist, trying to create it", name))
 	cm := &v1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -117,7 +118,7 @@ func (c *configMapStore) SetExternalMetricValues(added map[string]ExternalMetric
 	for key, m := range added {
 		toStore, err := json.Marshal(m)
 		if err != nil {
-			log.Debugf("Could not marshal the external metric %v: %v", m, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Could not marshal the external metric %v", m), zap.Error(err))
 			continue
 		}
 		c.cm.Data[key] = string(toStore)
@@ -140,12 +141,12 @@ func (c *configMapStore) DeleteExternalMetricValues(deleted *MetricsBundle) erro
 	for _, m := range deleted.External {
 		key := ExternalMetricValueKeyFunc(m)
 		delete(c.cm.Data, key)
-		log.Debugf("Deleted metric %s for Autoscaler %s/%s from the configmap %s", m.MetricName, m.Ref.Namespace, m.Ref.Name, c.name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Deleted metric %s for Autoscaler %s/%s from the configmap %s", m.MetricName, m.Ref.Namespace, m.Ref.Name, c.name))
 	}
 	for _, m := range deleted.Deprecated {
 		key := DeprecatedExternalMetricValueKeyFunc(m)
 		delete(c.cm.Data, key)
-		log.Debugf("Deleted key %s deprecated metric %s for HPA %s/%s from the configmap %s", key, m.MetricName, m.HPA.Namespace, m.HPA.Name, c.name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Deleted key %s deprecated metric %s for HPA %s/%s from the configmap %s", key, m.MetricName, m.HPA.Namespace, m.HPA.Name, c.name))
 	}
 	return c.updateConfigMap()
 }
@@ -177,14 +178,14 @@ func (c *configMapStore) doGetMetrics() (*MetricsBundle, error) {
 		}
 		m := ExternalMetricValue{}
 		if err := json.Unmarshal([]byte(v), &m); err != nil {
-			log.Debugf("Could not unmarshal the external metric for key %s: %v", k, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Could not unmarshal the external metric for key %s", k), zap.Error(err))
 			continue
 		}
 		if m.Ref.Type == "" {
 			// We are processing a deprecated format, invalidate for now.
 			deprecated := DeprecatedExternalMetricValue{}
 			if err := json.Unmarshal([]byte(v), &deprecated); err != nil {
-				log.Debugf("Could not unmarshal the external metric for key %s: %v", k, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Could not unmarshal the external metric for key %s", k), zap.Error(err))
 				continue
 			}
 			deprecated.Valid = false
@@ -200,7 +201,7 @@ func (c *configMapStore) getConfigMap() error {
 	var err error
 	c.cm, err = c.client.ConfigMaps(c.namespace).Get(c.name, metav1.GetOptions{})
 	if err != nil {
-		log.Infof("Could not get the configmap %s: %v", c.name, err)
+		logutil.BgLogger().Info(fmt.Sprintf("Could not get the configmap %s", c.name), zap.Error(err))
 		return err
 	}
 	return nil
@@ -211,7 +212,7 @@ func (c *configMapStore) updateConfigMap() error {
 	var err error
 	c.cm, err = c.client.ConfigMaps(c.namespace).Update(c.cm)
 	if err != nil {
-		log.Infof("Could not update the configmap %s: %v", c.name, err)
+		logutil.BgLogger().Info(fmt.Sprintf("Could not update the configmap %s", c.name), zap.Error(err))
 		return err
 	}
 	setStoreStats(c)

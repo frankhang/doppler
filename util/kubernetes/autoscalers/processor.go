@@ -9,6 +9,7 @@ package autoscalers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"math"
 	"sort"
 	"strings"
@@ -22,7 +23,7 @@ import (
 
 	"github.com/frankhang/doppler/clusteragent/custommetrics"
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/DataDog/watermarkpodautoscaler/pkg/apis/datadoghq/v1alpha1"
 )
 
@@ -72,7 +73,7 @@ func (p *Processor) UpdateExternalMetrics(emList map[string]custommetrics.Extern
 	updated = make(map[string]custommetrics.ExternalMetricValue)
 	metrics, err := p.queryExternalMetric(emList)
 	if len(metrics) == 0 && err != nil {
-		log.Errorf("Error getting metrics from Datadog: %v", err.Error())
+		logutil.BgLogger().Error("Error getting metrics from Datadog", zap.Error(err))
 		// If no metrics can be retrieved from Datadog in a given list, we need to invalidate them
 		// To avoid undesirable autoscaling behaviors
 		return invalidate(emList)
@@ -95,7 +96,7 @@ func (p *Processor) UpdateExternalMetrics(emList map[string]custommetrics.Extern
 		em.Valid = true
 		em.Value = metric.value
 		em.Timestamp = metric.timestamp
-		log.Debugf("Updated the external metric %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Updated the external metric %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name))
 		updated[id] = em
 	}
 	return updated
@@ -108,7 +109,7 @@ func (p *Processor) ProcessEMList(emList []custommetrics.ExternalMetricValue) ma
 		em.Value = 0
 		em.Timestamp = time.Now().Unix()
 		em.Valid = false
-		log.Tracef("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name))
 		id := custommetrics.ExternalMetricValueKeyFunc(em)
 		externalMetrics[id] = em
 	}
@@ -123,7 +124,7 @@ func (p *Processor) ProcessHPAs(hpa *autoscalingv2.HorizontalPodAutoscaler) map[
 		em.Value = 0
 		em.Timestamp = time.Now().Unix()
 		em.Valid = false
-		log.Tracef("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name))
 		id := custommetrics.ExternalMetricValueKeyFunc(em)
 		externalMetrics[id] = em
 	}
@@ -138,7 +139,7 @@ func (p *Processor) ProcessWPAs(wpa *v1alpha1.WatermarkPodAutoscaler) map[string
 		em.Value = 0
 		em.Timestamp = time.Now().Unix()
 		em.Valid = false
-		log.Tracef("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Created a boilerplate for the external metrics %s{%v} for %s %s/%s", em.MetricName, em.Labels, em.Ref.Type, em.Ref.Namespace, em.Ref.Name))
 		id := custommetrics.ExternalMetricValueKeyFunc(em)
 		externalMetrics[id] = em
 	}
@@ -165,7 +166,7 @@ func (p *Processor) queryExternalMetric(emList map[string]custommetrics.External
 		batch = append(batch, q)
 	}
 	chunks := makeChunks(batch)
-	log.Tracef("List of batches %v", chunks)
+	logutil.BgLogger().Debug(fmt.Sprintf("List of batches %v", chunks))
 
 	// we have a number of chunks with `chunkSize` metrics.
 	responses := make(chan queryResponse, len(batch))
@@ -191,7 +192,7 @@ func (p *Processor) queryExternalMetric(emList map[string]custommetrics.External
 			errors = append(errors, elem.err)
 		}
 	}
-	log.Debugf("Processed %d chunks", len(chunks))
+	logutil.BgLogger().Debug(fmt.Sprintf("Processed %d chunks", len(chunks)))
 
 	if err := p.updateRateLimitingMetrics(); err != nil {
 		errors = append(errors, err)

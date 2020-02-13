@@ -10,6 +10,7 @@ package autoscalers
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
 	httputils "github.com/frankhang/doppler/util/http"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var (
@@ -56,7 +57,7 @@ const (
 // It returns the last value for a bucket of 5 minutes,
 func (p *Processor) queryDatadogExternal(metricNames []string) (map[string]Point, error) {
 	if metricNames == nil {
-		log.Tracef("No processed external metrics to query")
+		logutil.BgLogger().Debug("No processed external metrics to query")
 		return nil, nil
 	}
 	// TODO move viper parameters to the Processor struct
@@ -74,7 +75,8 @@ func (p *Processor) queryDatadogExternal(metricNames []string) (map[string]Point
 	seriesSlice, err := p.datadogClient.QueryMetrics(time.Now().Unix()-bucketSize, time.Now().Unix(), query)
 	if err != nil {
 		ddRequests.Inc("error")
-		return nil, log.Errorf("Error while executing metric query %s: %s", query, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Error while executing metric query %s", query), zap.Error(err))
+		return nil, err
 	}
 	ddRequests.Inc("success")
 
@@ -89,12 +91,14 @@ func (p *Processor) queryDatadogExternal(metricNames []string) (map[string]Point
 
 	// Go through processedMetrics output, extract last value and timestamp - If no series found return invalid metrics.
 	if len(seriesSlice) == 0 {
-		return processedMetrics, log.Errorf("Returned series slice empty")
+		err := errors.New("Returned series slice empty")
+		logutil.BgLogger().Error(err.Error())
+		return processedMetrics, err
 	}
 
 	for _, serie := range seriesSlice {
 		if serie.Metric == nil {
-			log.Infof("Could not collect values for all processedMetrics in the query %s", query)
+			logutil.BgLogger().Info(fmt.Sprintf("Could not collect values for all processedMetrics in the query %s", query))
 			continue
 		}
 
@@ -126,7 +130,7 @@ func (p *Processor) queryDatadogExternal(metricNames []string) (map[string]Point
 			precision := time.Now().Unix() - point.timestamp
 			metricsDelay.Set(float64(precision), m)
 
-			log.Debugf("Validated %s | Value:%v at %d after %d/%d buckets", m, point.value, point.timestamp, i+1, len(serie.Points))
+			logutil.BgLogger().Debug(fmt.Sprintf("Validated %s | Value:%v at %d after %d/%d buckets", m, point.value, point.timestamp, i+1, len(serie.Points)))
 			break
 		}
 	}
@@ -165,7 +169,7 @@ func NewDatadogClient() (*datadog.Client, error) {
 		return nil, errors.New("missing the api/app key pair to query Datadog")
 	}
 
-	log.Infof("Initialized the Datadog Client for HPA")
+	logutil.BgLogger().Info("Initialized the Datadog Client for HPA")
 
 	client := datadog.NewClient(apiKey, appKey)
 	client.HttpClient.Transport = httputils.CreateHTTPTransport()

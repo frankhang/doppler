@@ -6,6 +6,8 @@
 package providers
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
@@ -14,7 +16,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/doppler/util/clusteragent"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const defaultGraceDuration = 60 * time.Second
@@ -84,7 +86,7 @@ func (c *ClusterChecksConfigProvider) IsUpToDate() (bool, error) {
 	if err != nil {
 		if c.withinGracePeriod() {
 			// Return true to keep the configs during the grace period
-			log.Debugf("Catching error during grace period: %s", err)
+			logutil.BgLogger().Debug("Catching error during grace period", zap.Error(err))
 			return true, nil
 		}
 		// Return false, the next Collect will flush the configs
@@ -93,9 +95,9 @@ func (c *ClusterChecksConfigProvider) IsUpToDate() (bool, error) {
 
 	c.heartbeat = time.Now()
 	if reply.IsUpToDate {
-		log.Tracef("Up to date with change %d", c.lastChange)
+		logutil.BgLogger().Debug(fmt.Sprintf("Up to date with change %d", c.lastChange))
 	} else {
-		log.Tracef("Not up to date with change %d", c.lastChange)
+		logutil.BgLogger().Debug(fmt.Sprintf("Not up to date with change %d", c.lastChange))
 	}
 	return reply.IsUpToDate, nil
 }
@@ -122,7 +124,7 @@ func (c *ClusterChecksConfigProvider) Collect() ([]integration.Config, error) {
 
 	c.flushedConfigs = false
 	c.lastChange = reply.LastChange
-	log.Tracef("Storing last change %d", c.lastChange)
+	logutil.BgLogger().Debug(fmt.Sprintf("Storing last change %d", c.lastChange))
 	return reply.Configs, nil
 }
 

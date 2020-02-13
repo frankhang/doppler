@@ -10,6 +10,7 @@ package custommetrics
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 	"k8s.io/metrics/pkg/apis/external_metrics"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const EXTERNAL_METRICS_MAX_BACKOFF = 32 * time.Second
@@ -76,7 +77,7 @@ func createTimer(period time.Duration) *timer {
 }
 
 func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
-	log.Infof("Starting async loop to collect External Metrics")
+	logutil.BgLogger().Info("Starting async loop to collect External Metrics")
 	ctxCancel, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -87,9 +88,9 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 		rawMetrics, err := p.store.ListAllExternalMetricValues()
 		if err != nil {
 			if k8serrors.IsNotFound(err) {
-				log.Errorf("ConfigMap for external metrics not found: %s", err.Error())
+				logutil.BgLogger().Error("ConfigMap for external metrics not found", zap.Error(err))
 			} else {
-				log.Errorf("Could not list the external metrics in the store: %s", err.Error())
+				logutil.BgLogger().Error("Could not list the external metrics in the store", zap.Error(err))
 			}
 			p.isServing = false
 		} else {
@@ -105,7 +106,7 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 				// Avoid overflowing when trying to get a 10^3 precision
 				q, err := resource.ParseQuantity(fmt.Sprintf("%v", metric.Value))
 				if err != nil {
-					log.Errorf("Could not parse the metric value: %v into the exponential format", metric.Value)
+					logutil.BgLogger().Error(fmt.Sprintf("Could not parse the metric value: %v into the exponential format", metric.Value))
 					continue
 				}
 				extMetric.value = external_metrics.ExternalMetricValue{
@@ -121,7 +122,7 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 		}
 		select {
 		case <-ctxCancel.Done():
-			log.Infof("Received instruction to terminate collection of External Metrics, stopping async loop")
+			logutil.BgLogger().Info("Received instruction to terminate collection of External Metrics, stopping async loop")
 			return
 		default:
 			if p.isServing == true {
@@ -131,7 +132,7 @@ func (p *datadogProvider) externalMetricsSetter(ctx context.Context) {
 				if currentBackoff > EXTERNAL_METRICS_MAX_BACKOFF {
 					currentBackoff = EXTERNAL_METRICS_MAX_BACKOFF
 				}
-				log.Infof("Retrying externalMetricsSetter with backoff %.0f seconds", currentBackoff.Seconds())
+				logutil.BgLogger().Info(fmt.Sprintf("Retrying externalMetricsSetter with backoff %.0f seconds", currentBackoff.Seconds()))
 			}
 			time.Sleep(currentBackoff)
 			continue
@@ -161,7 +162,7 @@ func (p *datadogProvider) ListAllExternalMetrics() []provider.ExternalMetricInfo
 		return nil
 	}
 	var externalMetricsInfoList []provider.ExternalMetricInfo
-	log.Tracef("Listing available metrics as of %s", time.Unix(p.timestamp, 0).Format(time.RFC850))
+	logutil.BgLogger().Debug(fmt.Sprintf("Listing available metrics as of %s", time.Unix(p.timestamp, 0).Format(time.RFC850)))
 	for _, metric := range p.externalMetrics {
 		externalMetricsInfoList = append(externalMetricsInfoList, metric.info)
 	}
@@ -193,7 +194,7 @@ func (p *datadogProvider) GetExternalMetric(namespace string, metricSelector lab
 			matchingMetrics = append(matchingMetrics, metricValue)
 		}
 	}
-	log.Debugf("External metrics returned: %#v", matchingMetrics)
+	logutil.BgLogger().Debug(fmt.Sprintf("External metrics returned: %#v", matchingMetrics))
 	return &external_metrics.ExternalMetricValueList{
 		Items: matchingMetrics,
 	}, nil

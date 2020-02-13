@@ -9,13 +9,14 @@ package collectors
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	"github.com/docker/docker/api/types"
 
 	"github.com/frankhang/doppler/tagger/utils"
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // Allows to pass the dockerutil resolving method to
@@ -55,13 +56,13 @@ func dockerExtractImage(tags *utils.TagList, co types.ContainerJSON, resolve res
 	// Resolve sha to image repotag for orchestrators that pin the image by sha
 	dockerImage, err := resolve(co.Image)
 	if err != nil {
-		log.Debugf("Error resolving image %s: %s", co.Image, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Error resolving image %s", co.Image), zap.Error(err))
 		return
 	}
 	tags.AddLow("docker_image", dockerImage)
 	imageName, shortImage, imageTag, err := containers.SplitImageName(dockerImage)
 	if err != nil {
-		log.Debugf("Cannot split %s: %s", dockerImage, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot split %s", dockerImage), zap.Error(err))
 		return
 	}
 	tags.AddLow("image_name", imageName)

@@ -10,13 +10,14 @@ package cri
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"sync"
 	"time"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
 	"github.com/frankhang/doppler/util/retry"
+	"github.com/frankhang/util/logutil"
 	"google.golang.org/grpc"
 	pb "k8s.io/cri-api/pkg/apis/runtime/v1alpha2"
 )
@@ -68,7 +69,7 @@ func (c *CRIUtil) init() error {
 	}
 	c.Runtime = r.RuntimeName
 	c.RuntimeVersion = r.RuntimeVersion
-	log.Debugf("Successfully connected to CRI %s %s", c.Runtime, c.RuntimeVersion)
+	logutil.BgLogger().Debug(fmt.Sprintf("Successfully connected to CRI %s %s", c.Runtime, c.RuntimeVersion))
 
 	return nil
 }
@@ -91,7 +92,7 @@ func GetUtil() (*CRIUtil, error) {
 	})
 
 	if err := globalCRIUtil.initRetry.TriggerRetry(); err != nil {
-		log.Debugf("CRI init error: %s", err)
+		logutil.BgLogger().Debug("CRI init error", zap.Error(err))
 		return nil, err
 	}
 	return globalCRIUtil, nil

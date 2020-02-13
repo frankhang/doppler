@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/collector/check"
 )
@@ -80,7 +80,7 @@ func (s *Scheduler) Enter(check check.Check) error {
 		return fmt.Errorf("Schedule interval must be greater than %v or 0", minAllowedInterval)
 	}
 
-	log.Infof("Scheduling check %v with an interval of %v", check, check.Interval())
+	logutil.BgLogger().Info(fmt.Sprintf("Scheduling check %v with an interval of %v", check, check.Interval()))
 
 	// sync when accessing `jobQueues` and `check2queue`
 	s.mu.Lock()
@@ -112,7 +112,7 @@ func (s *Scheduler) Cancel(id check.ID) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	log.Infof("Unscheduling check %s", string(id))
+	logutil.BgLogger().Info(fmt.Sprintf("Unscheduling check %s", string(id)))
 
 	if _, ok := s.checkToQueue[id]; !ok {
 		return nil
@@ -135,12 +135,12 @@ func (s *Scheduler) Cancel(id check.ID) error {
 func (s *Scheduler) Run() {
 	// Invoking Run does nothing if the Scheduler is already running
 	if atomic.LoadUint32(&s.running) != 0 {
-		log.Debug("Scheduler is already running")
+		logutil.BgLogger().Debug("Scheduler is already running")
 		return
 	}
 
 	go func() {
-		log.Debug("Starting scheduler loop...")
+		logutil.BgLogger().Debug("Starting scheduler loop...")
 
 		s.startQueues()
 
@@ -155,7 +155,7 @@ func (s *Scheduler) Run() {
 
 		// someone asked to stop
 		atomic.StoreUint32(&s.running, 0)
-		log.Debug("Exited Scheduler loop, shutting down queues...")
+		logutil.BgLogger().Debug("Exited Scheduler loop, shutting down queues...")
 		s.stopQueues()
 
 		// notify we're done
@@ -170,7 +170,7 @@ func (s *Scheduler) Run() {
 func (s *Scheduler) Stop() error {
 	// Stopping when the Scheduler is not running is a noop.
 	if atomic.LoadUint32(&s.running) == 0 {
-		log.Debug("Scheduler is already stopped")
+		logutil.BgLogger().Debug("Scheduler is already stopped")
 		return nil
 	}
 
@@ -182,7 +182,7 @@ func (s *Scheduler) Stop() error {
 	close(s.cancelOneTime)
 	s.wgOneTime.Wait()
 
-	log.Debugf("Waiting for the scheduler to shutdown")
+	logutil.BgLogger().Debug("Waiting for the scheduler to shutdown")
 
 	select {
 	case <-s.halted:
@@ -205,14 +205,14 @@ func (s *Scheduler) stopQueues() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	log.Debugf("Stopping %v queue(s)", len(s.jobQueues))
+	logutil.BgLogger().Debug(fmt.Sprintf("Stopping %v queue(s)", len(s.jobQueues)))
 	for _, q := range s.jobQueues {
 		// check that the queue is actually running or this blocks
 		// while posting to the channel
 		if q.running {
 			q.stop <- true
 			<-q.stopped
-			log.Debugf("Stopped queue %v", q.interval)
+			logutil.BgLogger().Debug(fmt.Sprintf("Stopped queue %v", q.interval))
 			q.running = false
 		}
 	}
@@ -241,7 +241,7 @@ func (s *Scheduler) startQueue(q *jobQueue) {
 // Do not block, in case the runner has not started yet.
 // The queuing can be cancelled by closing the `cancelOneTime` channel.
 func (s *Scheduler) enqueueOnce(check check.Check) {
-	log.Infof("Scheduling check %v for one-time execution", check)
+	logutil.BgLogger().Info(fmt.Sprintf("Scheduling check %v for one-time execution", check))
 	s.wgOneTime.Add(1)
 
 	go func(cancelOneTime <-chan bool) {

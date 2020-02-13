@@ -9,6 +9,8 @@ package python
 
 import (
 	"expvar"
+	"fmt"
+
 	// "log"
 	"runtime/debug"
 	"sync"
@@ -16,7 +18,7 @@ import (
 
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	_ "github.com/benesch/cgosymbolizer"
 	"github.com/cihub/seelog"
 )
@@ -72,7 +74,7 @@ func init() {
 //export MemoryTracker
 func MemoryTracker(ptr unsafe.Pointer, sz C.size_t, op C.rtloader_mem_ops_t) {
 	// run sync for reliability reasons
-	log.Tracef("Memory Tracker - ptr: %v, sz: %v, op: %v", ptr, sz, op)
+	logutil.BgLogger().Debug(fmt.Sprintf("Memory Tracker - ptr: %v, sz: %v, op: %v", ptr, sz, op))
 	switch op {
 	case C.DATADOG_AGENT_RTLOADER_ALLOCATION:
 		pointerCache.Store(ptr, sz)
@@ -86,7 +88,7 @@ func MemoryTracker(ptr unsafe.Pointer, sz C.size_t, op C.rtloader_mem_ops_t) {
 	case C.DATADOG_AGENT_RTLOADER_FREE:
 		bytes, ok := pointerCache.Load(ptr)
 		if !ok {
-			log.Debugf("untracked memory was attempted to be freed - set trace level for details")
+			logutil.BgLogger().Debug("untracked memory was attempted to be freed - set trace level for details")
 			lvl, err := log.GetLogLevel()
 			if err == nil && lvl == seelog.TraceLvl {
 				stack := string(debug.Stack())

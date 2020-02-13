@@ -14,7 +14,7 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/frankhang/doppler/util/common"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var (
@@ -142,7 +142,7 @@ func Decrypt(data []byte, origin string) ([]byte, error) {
 			haveSecret = true
 			// Check if we already know this secret
 			if secret, ok := secretCache[handle]; ok {
-				log.Debugf("Secret '%s' was retrieved from cache", handle)
+				logutil.BgLogger().Debug(fmt.Sprintf("Secret '%s' was retrieved from cache", handle))
 				// keep track of place where a handle was found
 				secretOrigin[handle].Add(origin)
 				return secret, nil
@@ -171,7 +171,7 @@ func Decrypt(data []byte, origin string) ([]byte, error) {
 		err = walk(&config, func(str string) (string, error) {
 			if ok, handle := isEnc(str); ok {
 				if secret, ok := secrets[handle]; ok {
-					log.Debugf("Secret '%s' was retrieved from executable", handle)
+					logutil.BgLogger().Debug(fmt.Sprintf("Secret '%s' was retrieved from executable", handle))
 					return secret, nil
 				}
 				// This should never happen since fetchSecret will return an error

@@ -8,6 +8,8 @@
 package listeners
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -15,7 +17,7 @@ import (
 	"github.com/frankhang/doppler/status/health"
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	ecsmeta "github.com/frankhang/doppler/util/ecs/metadata"
 	v2 "github.com/frankhang/doppler/util/ecs/metadata/v2"
@@ -104,10 +106,10 @@ func (l *ECSListener) Stop() {
 func (l *ECSListener) refreshServices(firstRun bool) {
 	meta, err := ecsmeta.V2().GetTask()
 	if err != nil {
-		log.Errorf("failed to get task metadata, not refreshing services - %s", err)
+		logutil.BgLogger().Error("failed to get task metadata, not refreshing services", zap.Error(err))
 		return
 	} else if meta.KnownStatus != "RUNNING" {
-		log.Debugf("task %s is not in RUNNING state yet, not refreshing services", meta.Family)
+		logutil.BgLogger().Debug(fmt.Sprintf("task %s is not in RUNNING state yet, not refreshing services", meta.Family))
 		return
 	}
 	l.task = meta
@@ -125,16 +127,16 @@ func (l *ECSListener) refreshServices(firstRun bool) {
 			continue
 		}
 		if c.KnownStatus != "RUNNING" {
-			log.Debugf("container %s is in status %s - skipping", c.DockerID, c.KnownStatus)
+			logutil.BgLogger().Debug(fmt.Sprintf("container %s is in status %s - skipping", c.DockerID, c.KnownStatus))
 			continue
 		}
 		if l.filter.IsExcluded(c.DockerName, c.Image) {
-			log.Debugf("container %s filtered out: name %q image %q", c.DockerID[:12], c.DockerName, c.Image)
+			logutil.BgLogger().Debug(fmt.Sprintf("container %s filtered out: name %q image %q", c.DockerID[:12], c.DockerName, c.Image))
 			continue
 		}
 		s, err := l.createService(c, firstRun)
 		if err != nil {
-			log.Errorf("couldn't create a service out of container %s - Auto Discovery will ignore it", c.DockerID)
+			logutil.BgLogger().Error(fmt.Sprintf("couldn't create a service out of container %s - Auto Discovery will ignore it", c.DockerID), zap.Error(err))
 			continue
 		}
 		l.m.Lock()
@@ -177,7 +179,7 @@ func (l *ECSListener) createService(c v2.Container, firstRun bool) (ECSService, 
 	var err error
 	svc.checkNames, err = getCheckNamesFromLabels(labels)
 	if err != nil {
-		log.Errorf("Error getting check names from docker labels on container %s: %v", c.DockerID, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Error getting check names from docker labels on container %s", c.DockerID), zap.Error(err))
 	}
 
 	// Host
@@ -193,7 +195,7 @@ func (l *ECSListener) createService(c v2.Container, firstRun bool) (ECSService, 
 	// Tags
 	tags, err := tagger.Tag(svc.GetTaggerEntity(), tagger.ChecksCardinality)
 	if err != nil {
-		log.Errorf("Failed to extract tags for container %s - %s", c.DockerID[:12], err)
+		logutil.BgLogger().Error("Failed to extract tags for container", zap.String("id", c.DockerID[:12]), zap.Error(err))
 	}
 	svc.tags = tags
 

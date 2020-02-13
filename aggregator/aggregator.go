@@ -16,7 +16,7 @@ import (
 	"github.com/frankhang/doppler/serializer/split"
 	"github.com/frankhang/doppler/telemetry"
 	"github.com/frankhang/doppler/util"
-	"github.com/frankhang/doppler/util/log"
+
 	"github.com/frankhang/doppler/version"
 
 	"github.com/frankhang/doppler/collector/check"
@@ -321,7 +321,7 @@ func (agg *BufferedAggregator) handleSenderSample(ss senderMetricSample) {
 			checkSampler.addSample(ss.metricSample)
 		}
 	} else {
-		log.Debugf("CheckSampler with ID '%s' doesn't exist, can't handle senderMetricSample", ss.id)
+		logutil.BgLogger().Debug(fmt.Sprintf("CheckSampler with ID '%s' doesn't exist, can't handle senderMetricSample", ss.id))
 	}
 }
 

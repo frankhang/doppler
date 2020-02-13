@@ -11,7 +11,7 @@ package apiserver
 import (
 	a "github.com/frankhang/doppler/util/kubernetes/apiserver"
 	"github.com/frankhang/doppler/util/kubernetes/clustername"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 func HostnameProvider() (string, error) {
@@ -22,7 +22,7 @@ func HostnameProvider() (string, error) {
 
 	clusterName := clustername.GetClusterName()
 	if clusterName == "" {
-		log.Debugf("Now using plain kubernetes nodename as an alias: no cluster name was set and none could be autodiscovered")
+		logutil.BgLogger().Debug("Now using plain kubernetes nodename as an alias: no cluster name was set and none could be autodiscovered")
 		return nodeName, nil
 	} else {
 		return (nodeName + "-" + clusterName), nil

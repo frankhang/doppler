@@ -8,10 +8,11 @@
 package collectors
 
 import (
+	"go.uber.org/zap"
 	"io"
 
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/errors"
 	"github.com/frankhang/doppler/status/health"
@@ -73,7 +74,7 @@ func (c *DockerCollector) Stream() error {
 			c.processEvent(msg)
 		case err := <-errs:
 			if err != nil && err != io.EOF {
-				log.Errorf("stopping collection: %s", err)
+				logutil.BgLogger().Error("stopping collection", zap.Error(err))
 				return err
 			}
 			return nil
@@ -121,7 +122,7 @@ func (c *DockerCollector) fetchForDockerID(cID string) ([]string, []string, []st
 	co, err := c.dockerUtil.Inspect(cID, false)
 	if err != nil {
 		if !errors.IsNotFound(err) {
-			log.Debugf("Failed to inspect container %s - %s", cID, err)
+			logutil.BgLogger().Debug("Failed to inspect container", zap.String("id", cID), zap.Error(err))
 		}
 		return nil, nil, nil, err
 	}

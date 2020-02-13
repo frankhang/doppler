@@ -24,8 +24,8 @@ import (
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/containers/metrics"
-	"github.com/frankhang/doppler/util/log"
 	"github.com/frankhang/doppler/util/retry"
+	"github.com/frankhang/util/logutil"
 )
 
 // DockerUtil wraps interactions with a local docker API.
@@ -98,14 +98,14 @@ func connectToDocker(ctx context.Context) (*client.Client, error) {
 	serverVersion := v.APIVersion
 
 	if versions.LessThan(serverVersion, clientVersion) {
-		log.Debugf("Docker server APIVersion ('%s') is lower than the client ('%s'): using version from the server",
-			serverVersion, clientVersion)
+		logutil.BgLogger().Debug(fmt.Sprintf("Docker server APIVersion ('%s') is lower than the client ('%s'): using version from the server",
+			serverVersion, clientVersion))
 		cli.UpdateClientVersion(serverVersion)
 	} else {
 		cli.UpdateClientVersion(clientVersion)
 	}
 
-	log.Debugf("Successfully connected to Docker server version %s", v.Version)
+	logutil.BgLogger().Debug(fmt.Sprintf("Successfully connected to Docker server version %s", v.Version))
 
 	return cli, nil
 }
@@ -222,7 +222,7 @@ func (d *DockerUtil) Inspect(id string, withSize bool) (types.ContainerJSON, err
 	if hit {
 		container, ok := cached.(types.ContainerJSON)
 		if !ok {
-			log.Errorf("Invalid inspect cache format, forcing a cache miss")
+			logutil.BgLogger().Error("Invalid inspect cache format, forcing a cache miss")
 		} else {
 			return container, nil
 		}

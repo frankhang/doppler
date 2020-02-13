@@ -9,16 +9,17 @@ package systemd
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 
+	"github.com/coreos/go-systemd/dbus"
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/metrics"
-	"github.com/frankhang/doppler/util/log"
-	"github.com/coreos/go-systemd/dbus"
+	"github.com/frankhang/util/logutil"
 	"gopkg.in/yaml.v2"
 
 	core "github.com/frankhang/doppler/collector/corechecks"
@@ -245,7 +246,7 @@ func (c *SystemdCheck) getDbusConnection() (*dbus.Conn, error) {
 func (c *SystemdCheck) getPrivateSocketConnection(privateSocket string) (*dbus.Conn, error) {
 	conn, err := c.stats.PrivateSocketConnection(privateSocket)
 	if err != nil {
-		log.Debugf("Error getting new connection using private socket %s: %v", privateSocket, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Error getting new connection using private socket %s", privateSocket), zap.Error(err))
 	}
 	return conn, err
 }
@@ -253,7 +254,7 @@ func (c *SystemdCheck) getPrivateSocketConnection(privateSocket string) (*dbus.C
 func (c *SystemdCheck) getSystemBusSocketConnection() (*dbus.Conn, error) {
 	conn, err := c.stats.SystemBusSocketConnection()
 	if err != nil {
-		log.Debugf("Error getting new connection using system bus socket: %v", err)
+		logutil.BgLogger().Debug("Error getting new connection using system bus socket", zap.Error(err))
 	}
 	return conn, err
 }
@@ -304,12 +305,12 @@ func (c *SystemdCheck) submitBasicUnitMetrics(sender aggregator.Sender, conn *db
 
 	unitProperties, err := c.stats.GetUnitTypeProperties(conn, unit.Name, dbusTypeMap[typeUnit])
 	if err != nil {
-		log.Warnf("Error getting unit unitProperties: %s", unit.Name)
+		logutil.BgLogger().Warn(fmt.Sprintf("Error getting unit unitProperties: %s", unit.Name))
 		return
 	}
 	activeEnterTimestamp, err := getPropertyUint64(unitProperties, "ActiveEnterTimestamp")
 	if err != nil {
-		log.Warnf("Error getting property ActiveEnterTimestamp: %v", err)
+		logutil.BgLogger().Warn("Error getting property ActiveEnterTimestamp", zap.Error(err))
 		return
 	}
 	sender.Gauge("systemd.unit.uptime", float64(computeUptime(unit.ActiveState, activeEnterTimestamp, c.stats.UnixNow())), "", tags)
@@ -339,7 +340,7 @@ func (c *SystemdCheck) submitPropertyMetricsAsGauge(sender aggregator.Sender, co
 		}
 		serviceProperties, err := c.stats.GetUnitTypeProperties(conn, unit.Name, dbusTypeMap[unitType])
 		if err != nil {
-			log.Warnf("Error getting detailed properties for unit %s", unit.Name)
+			logutil.BgLogger().Warn(fmt.Sprintf("Error getting detailed properties for unit %s", unit.Name))
 			return
 		}
 		for _, service := range metricConfigs[unitType] {
@@ -347,9 +348,9 @@ func (c *SystemdCheck) submitPropertyMetricsAsGauge(sender aggregator.Sender, co
 			if err != nil {
 				msg := fmt.Sprintf("Cannot send property '%s' for unit '%s': %v", service.propertyName, unit.Name, err)
 				if service.optional {
-					log.Debugf(msg)
+					logutil.BgLogger().Debugf(msg)
 				} else {
-					log.Warnf(msg)
+					logutil.BgLogger().Warn(msg)
 				}
 			}
 		}
@@ -363,7 +364,7 @@ func sendServicePropertyAsGauge(sender aggregator.Sender, properties map[string]
 			return err
 		}
 		if !accounting {
-			log.Debugf("Skip sending metric due to disabled accounting. PropertyName=%s, AccountingProperty=%s, tags: %v", service.propertyName, service.accountingProperty, tags)
+			logutil.BgLogger().Debug(fmt.Sprintf("Skip sending metric due to disabled accounting. PropertyName=%s, AccountingProperty=%s, tags: %v", service.propertyName, service.accountingProperty, tags))
 			return nil
 		}
 	}

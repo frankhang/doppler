@@ -9,13 +9,14 @@ package collectors
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	apiv1 "github.com/frankhang/doppler/clusteragent/api/v1"
 	"github.com/frankhang/doppler/tagger/utils"
 	"github.com/frankhang/doppler/util/kubernetes/apiserver"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
@@ -25,12 +26,12 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 		var nodeName string
 		nodeName, err = c.kubeUtil.GetNodename()
 		if err != nil {
-			log.Errorf("Could not retrieve the Nodename, err: %v", err)
+			logutil.BgLogger().Error("Could not retrieve the Nodename", zap.Error(err))
 			return nil
 		}
 		metadataByNsPods, err = c.dcaClient.GetPodsMetadataForNode(nodeName)
 		if err != nil {
-			log.Debugf("Could not pull the metadata map of pods on node %s from the Datadog Cluster Agent: %s", nodeName, err.Error())
+			logutil.BgLogger().Debug(fmt.Sprintf("Could not pull the metadata map of pods on node %s from the Datadog Cluster Agent", nodeName), zap.Error(err))
 			return nil
 		}
 	}
@@ -39,7 +40,7 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 	var tag []string
 	for _, po := range pods {
 		if kubelet.IsPodReady(po) == false {
-			log.Debugf("pod %q is not ready, skipping", po.Metadata.Name)
+			logutil.BgLogger().Debug(fmt.Sprintf("pod %q is not ready, skipping", po.Metadata.Name))
 			continue
 		}
 
@@ -48,7 +49,7 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 			for _, container := range po.Status.Containers {
 				entityID, err := kubelet.KubeContainerIDToTaggerEntityID(container.ID)
 				if err != nil {
-					log.Warnf("Unable to parse container: %s", err)
+					logutil.BgLogger().Warn("Unable to parse container", zap.Error(err))
 					continue
 				}
 				info := &TagInfo{
@@ -66,10 +67,10 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 		tagList := utils.NewTagList()
 		metadataNames, err = c.getMetadaNames(apiserver.GetPodMetadataNames, metadataByNsPods, po)
 		if err != nil {
-			log.Errorf("Could not fetch tags, %v", err)
+			logutil.BgLogger().Error("Could not fetch tags", zap.Error(err))
 		}
 		for _, tagDCA := range metadataNames {
-			log.Tracef("Tagging %s with %s", po.Metadata.Name, tagDCA)
+			logutil.BgLogger().Debug(fmt.Sprintf("Tagging %s with %s", po.Metadata.Name, tagDCA))
 			tag = strings.Split(tagDCA, ":")
 			switch len(tag) {
 			case 1:
@@ -99,7 +100,7 @@ func (c *KubeMetadataCollector) getTagInfos(pods []*kubelet.Pod) []*TagInfo {
 		for _, container := range po.Status.Containers {
 			entityID, err := kubelet.KubeContainerIDToTaggerEntityID(container.ID)
 			if err != nil {
-				log.Warnf("Unable to parse container: %s", err)
+				logutil.BgLogger().Warn("Unable to parse container", zap.Error(err))
 				continue
 			}
 			info := &TagInfo{
@@ -141,7 +142,7 @@ func (c *KubeMetadataCollector) getMetadaNames(getPodMetaDataFromApiServerFunc f
 // addToCacheMetadataMapping is acting like the DCA at the node level.
 func (c *KubeMetadataCollector) addToCacheMetadataMapping(kubeletPodList []*kubelet.Pod) error {
 	if len(kubeletPodList) == 0 {
-		log.Debugf("Empty kubelet pod list")
+		logutil.BgLogger().Debug("Empty kubelet pod list")
 		return nil
 	}
 

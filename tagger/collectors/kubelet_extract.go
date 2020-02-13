@@ -10,10 +10,11 @@ package collectors
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"path/filepath"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/tagger/utils"
 	"github.com/frankhang/doppler/util/containers"
@@ -113,7 +114,7 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 					tags.AddLow("kube_replica_set", owner.Name)
 				}
 			default:
-				log.Debugf("unknown owner kind %s for pod %s", owner.Kind, pod.Metadata.Name)
+				logutil.BgLogger().Debug(fmt.Sprintf("unknown owner kind %s for pod %s", owner.Kind, pod.Metadata.Name))
 			}
 		}
 
@@ -143,7 +144,7 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 				if containerSpec.Name == container.Name {
 					imageName, shortImage, imageTag, err := containers.SplitImageName(containerSpec.Image)
 					if err != nil {
-						log.Debugf("Cannot split %s: %s", containerSpec.Image, err)
+						logutil.BgLogger().Debug(fmt.Sprintf("Cannot split %s", containerSpec.Image), zap.Error(err))
 						break
 					}
 					cTags.AddLow("image_name", imageName)
@@ -171,7 +172,7 @@ func (c *KubeletCollector) parsePods(pods []*kubelet.Pod) ([]*TagInfo, error) {
 			cLow, cOrch, cHigh := cTags.Compute()
 			entityID, err := kubelet.KubeContainerIDToTaggerEntityID(container.ID)
 			if err != nil {
-				log.Warnf("Unable to parse container pName: %s / cName: %s / cId: %s / err: %s", pod.Metadata.Name, container.Name, container.ID, err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Unable to parse container pName: %s / cName: %s / cId: %s", pod.Metadata.Name, container.Name, container.ID), zap.Error(err))
 				continue
 			}
 			info := &TagInfo{
@@ -243,7 +244,7 @@ func extractTagsFromMap(key string, input map[string]string) (map[string]string,
 
 	tags, err := parseJSONValue(jsonTags)
 	if err != nil {
-		log.Errorf("can't parse value for annotation %s: %s", key, err)
+		logutil.BgLogger().Error(fmt.Sprintf("can't parse value for annotation %s", key), zap.Error(err))
 		return nil, false
 	}
 

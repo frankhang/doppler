@@ -8,10 +8,11 @@
 package containers
 
 import (
+	"fmt"
 	"sort"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/util/cache"
@@ -81,7 +82,7 @@ func (s *cappedSender) Rate(metric string, value float64, hostname string, tags 
 		return
 	}
 	// Over cap, store but don't transmit
-	log.Debugf("Dropped latest value %.0f (raw sample: %.0f) of metric %s as it was above the cap for this metric.", rate, value, metric)
+	logutil.BgLogger().Debug(fmt.Sprintf("Dropped latest value %.0f (raw sample: %.0f) of metric %s as it was above the cap for this metric.", rate, value, metric))
 	s.storePoint(cacheKey, value, s.timestamp)
 	return
 }

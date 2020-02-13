@@ -6,8 +6,9 @@
 package common
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // AutoAddListeners checks if the listener auto is selected and
@@ -38,13 +39,13 @@ func AutoAddListeners(listeners []config.Listeners) []config.Listeners {
 
 	// Adding listeners
 	listeners = addListener(listeners, "docker")
-	log.Debugf("returning %d listeners", len(listeners))
+	logutil.BgLogger().Debug(fmt.Sprintf("returning %d listeners", len(listeners)))
 	return listeners
 }
 
 func addListener(listeners []config.Listeners, name string) []config.Listeners {
 	newListener := config.Listeners{Name: name}
-	log.Infof("auto adding %q listener", newListener.Name)
+	logutil.BgLogger().Info(fmt.Sprintf("auto adding %q listener", newListener.Name))
 	return append(listeners, newListener)
 }
 

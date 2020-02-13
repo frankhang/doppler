@@ -11,6 +11,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 	"sort"
 	"strings"
@@ -20,7 +21,7 @@ import (
 
 	"github.com/frankhang/doppler/util/containers"
 	"github.com/frankhang/doppler/util/containers/metrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	v3 "github.com/frankhang/doppler/util/ecs/metadata/v3"
 )
@@ -53,14 +54,14 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 	// Check the known network modes that require specific handling.
 	// Other network modes will look at the docker NetworkSettings.
 	if netMode == containers.HostNetworkMode {
-		log.Debugf("Container %s is in network host mode, its network metrics are for the whole host", containerID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Container %s is in network host mode, its network metrics are for the whole host", containerID))
 		return []dockerNetwork{hostNetwork}
 	} else if netMode == containers.NoneNetworkMode {
-		log.Debugf("Container %s is in network mode 'none', we will collect metrics for the whole host", containerID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Container %s is in network mode 'none', we will collect metrics for the whole host", containerID))
 		return []dockerNetwork{hostNetwork}
 	} else if strings.HasPrefix(netMode, "container:") {
 		netContainerID := strings.TrimPrefix(netMode, "container:")
-		log.Debugf("Container %s uses the network namespace of container:%s", containerID, netContainerID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Container %s uses the network namespace of container:%s", containerID, netContainerID))
 		return []dockerNetwork{{routingContainerID: netContainerID}}
 	}
 
@@ -68,7 +69,7 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 	// not provide the network settings in container inspect.
 	netSettings := container.NetworkSettings
 	if netSettings == nil || netSettings.Networks == nil || len(netSettings.Networks) == 0 {
-		log.Debugf("No network settings available from docker, defaulting to host network")
+		logutil.BgLogger().Debug("No network settings available from docker, defaulting to host network")
 		return []dockerNetwork{hostNetwork}
 	}
 
@@ -76,7 +77,7 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 	interfaces := make(map[string]uint64)
 	for netName, netConf := range netSettings.Networks {
 		if netName == "host" {
-			log.Debugf("Container %s is in network host mode, its network metrics are for the whole host", containerID)
+			logutil.BgLogger().Debug(fmt.Sprintf("Container %s is in network host mode, its network metrics are for the whole host", containerID))
 			return []dockerNetwork{hostNetwork}
 		}
 
@@ -86,13 +87,13 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 		if strings.Contains(ipString, "/") {
 			ip, _, err = net.ParseCIDR(ipString)
 			if err != nil {
-				log.Warnf("Malformed IP %s for container id %s: %s, skipping", ipString, containerID, err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Malformed IP %s for container id %s, skipping", ipString, containerID), zap.Error(err))
 				continue
 			}
 		} else {
 			ip = net.ParseIP(ipString)
 			if ip == nil {
-				log.Warnf("Malformed IP %s for container id %s: %s, skipping", ipString, containerID, err)
+				logutil.BgLogger().Warn(fmt.Sprintf("Malformed IP %s for container id %s, skipping", ipString, containerID), zap.Error(err))
 				continue
 			}
 		}
@@ -103,7 +104,7 @@ func findDockerNetworks(containerID string, pid int, container types.Container) 
 
 	destinations, err := metrics.DetectNetworkDestinations(pid)
 	if err != nil {
-		log.Warnf("Cannot list interfaces for container id %s: %s, skipping", containerID, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Cannot list interfaces for container id %s, skipping", containerID), zap.Error(err))
 		return nil
 	}
 
@@ -133,7 +134,7 @@ func resolveDockerNetworks(containerNetworks map[string][]dockerNetwork) {
 			if cnw, ok := containerNetworks[nw.routingContainerID]; ok {
 				containerNetworks[cid] = cnw
 			} else {
-				log.Debugf("Unable to resolve network for c:%s that uses namespace of c:%s", cid, nw.routingContainerID)
+				logutil.BgLogger().Debug(fmt.Sprintf("Unable to resolve network for c:%s that uses namespace of c:%s", cid, nw.routingContainerID))
 				containerNetworks[cid] = nil
 			}
 		}
@@ -195,14 +196,14 @@ func GetContainerNetworkMode(cid string) (string, error) {
 func parseContainerNetworkAddresses(ports []v3.Port, networks []v3.Network, container string) []containers.NetworkAddress {
 	addrList := []containers.NetworkAddress{}
 	if networks == nil {
-		log.Debugf("No network settings available in ECS metadata")
+		logutil.BgLogger().Debug("No network settings available in ECS metadata")
 		return addrList
 	}
 	for _, network := range networks {
 		for _, addr := range network.IPv4Addresses { // one-element list
 			IP := net.ParseIP(addr)
 			if IP == nil {
-				log.Warnf("Unable to parse IP: %v for container: %s", addr, container)
+				logutil.BgLogger().Warn(fmt.Sprintf("Unable to parse IP: %v for container: %s", addr, container))
 				continue
 			}
 			if len(ports) > 0 {

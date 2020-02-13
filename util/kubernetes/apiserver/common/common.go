@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // GetResourcesNamespace is used to fetch the namespace of the resources used by the Kubernetes check (e.g. Leader Election, Event collection).
@@ -20,7 +20,7 @@ func GetResourcesNamespace() string {
 	if namespace != "" {
 		return namespace
 	}
-	log.Debugf("No configured namespace for the resource, fetching from the current context")
+	logutil.BgLogger().Debug("No configured namespace for the resource, fetching from the current context")
 	return GetMyNamespace()
 }
 
@@ -31,6 +31,6 @@ func GetMyNamespace() string {
 	if e == nil && val != nil {
 		return string(val)
 	}
-	log.Warnf("There was an error fetching the namespace from the context, using default")
+	logutil.BgLogger().Warn("There was an error fetching the namespace from the context, using default")
 	return "default"
 }

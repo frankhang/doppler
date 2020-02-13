@@ -9,9 +9,10 @@ package collectors
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/errors"
@@ -40,7 +41,7 @@ type KubeMetadataCollector struct {
 // Detect tries to connect to the kubelet and the API Server if the DCA is not used or the DCA.
 func (c *KubeMetadataCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error) {
 	if config.Datadog.GetBool("kubernetes_collect_metadata_tags") == false {
-		log.Infof("The metadata mapper was configured to be disabled, not collecting metadata for the pods from the API Server")
+		logutil.BgLogger().Info("The metadata mapper was configured to be disabled, not collecting metadata for the pods from the API Server")
 		return NoCollection, fmt.Errorf("collection disabled by the configuration")
 	}
 
@@ -54,7 +55,7 @@ func (c *KubeMetadataCollector) Detect(out chan<- []*TagInfo) (CollectionMode, e
 		c.clusterAgentEnabled = false
 		c.dcaClient, errDCA = clusteragent.GetClusterAgentClient()
 		if errDCA != nil {
-			log.Errorf("Could not initialise the communication with the cluster agent: %s", errDCA.Error())
+			logutil.BgLogger().Error("Could not initialise the communication with the cluster agent", zap.Error(errDCA))
 			// continue to retry while we can
 			if retry.IsErrWillRetry(errDCA) {
 				return NoCollection, errDCA
@@ -63,7 +64,7 @@ func (c *KubeMetadataCollector) Detect(out chan<- []*TagInfo) (CollectionMode, e
 			if retry.IsErrPermaFail(errDCA) && !config.Datadog.GetBool("cluster_agent.tagging_fallback") {
 				return NoCollection, errDCA
 			}
-			log.Errorf("Permanent failure in communication with the cluster agent, will fallback to local service mapper")
+			logutil.BgLogger().Error("Permanent failure in communication with the cluster agent, will fallback to local service mapper")
 		} else {
 			c.clusterAgentEnabled = true
 		}
@@ -85,7 +86,7 @@ func (c *KubeMetadataCollector) Pull() error {
 	// Time constraints, get the delta in seconds to display it in the logs:
 	timeDelta := c.lastUpdate.Add(c.updateFreq).Unix() - time.Now().Unix()
 	if timeDelta > 0 {
-		log.Tracef("skipping, next effective Pull will be in %d seconds", timeDelta)
+		logutil.BgLogger().Debug(fmt.Sprintf("skipping, next effective Pull will be in %d seconds", timeDelta))
 		return nil
 	}
 
@@ -97,7 +98,7 @@ func (c *KubeMetadataCollector) Pull() error {
 		// If the DCA is not used, each agent stores a local cache of the MetadataMap.
 		err = c.addToCacheMetadataMapping(pods)
 		if err != nil {
-			log.Debugf("Cannot add the metadataMapping to cache: %s", err)
+			logutil.BgLogger().Debug("Cannot add the metadataMapping to cache", zap.Error(err))
 		}
 	}
 	c.infoOut <- c.getTagInfos(pods)
@@ -124,7 +125,7 @@ func (c *KubeMetadataCollector) Fetch(entity string) ([]string, []string, []stri
 		// If the DCA is not used, each agent stores a local cache of the MetadataMap.
 		err = c.addToCacheMetadataMapping(pods)
 		if err != nil {
-			log.Debugf("Cannot add the metadataMapping to cache: %s", err)
+			logutil.BgLogger().Debug("Cannot add the metadataMapping to cache", zap.Error(err))
 		}
 	}
 

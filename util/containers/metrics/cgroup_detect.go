@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"os"
 	"path"
@@ -20,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var (
@@ -50,12 +51,12 @@ func (c ContainerCgroup) ContainerStartTime() (int64, error) {
 func (c ContainerCgroup) cgroupFilePath(target, file string) string {
 	mount, ok := c.Mounts[target]
 	if !ok {
-		log.Debugf("Missing target %s from mounts", target)
+		logutil.BgLogger().Debug(fmt.Sprintf("Missing target %s from mounts", target))
 		return ""
 	}
 	targetPath, ok := c.Paths[target]
 	if !ok {
-		log.Errorf("Missing target %s from paths", target)
+		logutil.BgLogger().Error(fmt.Sprintf("Missing target %s from paths", target))
 		return ""
 	}
 	// sometimes the container is running inside a "dind container" instead of directly on the host,
@@ -123,7 +124,7 @@ func parseCgroupMountPoints(r io.Reader) map[string]string {
 		}
 	}
 	if len(mountPoints) == 0 {
-		log.Warnf("No mountPoints were detected, current cgroup root is: %s", cgroupRoot)
+		logutil.BgLogger().Warn(fmt.Sprintf("No mountPoints were detected, current cgroup root is: %s", cgroupRoot))
 	}
 	return mountPoints
 }
@@ -163,7 +164,7 @@ func ScrapeAllCgroups() (map[string]*ContainerCgroup, error) {
 			continue
 		}
 		if err != nil {
-			log.Debugf("error reading cgroup paths %s: %s", cgPath, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("error reading cgroup paths %s", cgPath), zap.Error(err))
 			continue
 		}
 		if cg, ok := cgs[containerID]; ok {
@@ -199,10 +200,10 @@ func ContainerIDForPID(pid int) (string, error) {
 func ReadCgroupsForPath(pidCgroupPath, prefix string) (string, map[string]string, error) {
 	f, err := os.Open(pidCgroupPath)
 	if os.IsNotExist(err) {
-		log.Debugf("cgroup path '%s' could not be read: %s", pidCgroupPath, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("cgroup path '%s' could not be read", pidCgroupPath), zap.Error(err))
 		return "", nil, nil
 	} else if err != nil {
-		log.Debugf("cgroup path '%s' could not be read: %s", pidCgroupPath, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("cgroup path '%s' could not be read", pidCgroupPath), zap.Error(err))
 		return "", nil, err
 	}
 	defer f.Close()
@@ -228,7 +229,7 @@ func parseCgroupPaths(r io.Reader, prefix string) (string, map[string]string, er
 		l := scanner.Text()
 		cID, ok := containerIDFromCgroup(l, prefix)
 		if !ok {
-			log.Tracef("could not parse container id from path '%s'", l)
+			logutil.BgLogger().Debug(fmt.Sprintf("could not parse container id from path '%s'", l))
 			continue
 		}
 		if containerID == "" {

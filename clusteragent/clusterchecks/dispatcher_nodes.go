@@ -9,12 +9,13 @@ package clusterchecks
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/clusteragent/clusterchecks/types"
 	"github.com/frankhang/doppler/collector/check"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const defaultBusynessValue int = -1
@@ -117,11 +118,11 @@ func (d *dispatcher) expireNodes() {
 		if node.heartbeat < cutoffTimestamp {
 			if name != "" {
 				// Don't report on the dummy "" host for unscheduled configs
-				log.Infof("Expiring out node %s, last status report %d seconds ago", name, timestampNow()-node.heartbeat)
+				logutil.BgLogger().Info(fmt.Sprintf("Expiring out node %s, last status report %d seconds ago", name, timestampNow()-node.heartbeat))
 			}
 			for digest, config := range node.digestToConfig {
 				delete(d.store.digestToNode, digest)
-				log.Debugf("Adding %s:%s as a dangling Cluster Check config", config.Name, digest)
+				logutil.BgLogger().Debug(fmt.Sprintf("Adding %s:%s as a dangling Cluster Check config", config.Name, digest))
 				d.store.danglingConfigs[digest] = config
 				danglingConfigs.Inc()
 			}
@@ -136,7 +137,7 @@ func (d *dispatcher) expireNodes() {
 	}
 
 	if initialNodeCount != 0 && len(d.store.nodes) == 0 {
-		log.Warn("No nodes reporting, cluster checks will not run")
+		logutil.BgLogger().Warn("No nodes reporting, cluster checks will not run")
 	}
 }
 
@@ -144,7 +145,7 @@ func (d *dispatcher) expireNodes() {
 // Cluster Level Check runners and updates the stats cache
 func (d *dispatcher) updateRunnersStats() {
 	if d.clcRunnersClient == nil {
-		log.Debug("Cluster Level Check runner client was not correctly initialised")
+		logutil.BgLogger().Debug("Cluster Level Check runner client was not correctly initialised")
 		return
 	}
 
@@ -162,7 +163,7 @@ func (d *dispatcher) updateRunnersStats() {
 
 		stats, err := d.clcRunnersClient.GetRunnerStats(ip)
 		if err != nil {
-			log.Debugf("Cannot get CLC Runner stats with IP %s on node %s: %v", node.clientIP, name, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot get CLC Runner stats with IP %s on node %s", node.clientIP, name), zap.Error(err))
 			statsCollectionFails.Inc(name)
 			continue
 		}
@@ -173,15 +174,15 @@ func (d *dispatcher) updateRunnersStats() {
 			// so they can be included in calculating node Agent busyness and excluded from rebalancing decisions.
 			if _, found := d.store.idToDigest[check.ID(id)]; found {
 				// Cluster check detected (exists in the Cluster Agent checks store)
-				log.Tracef("Check %s running on node %s is a cluster check", id, node.name)
+				logutil.BgLogger().Debug(fmt.Sprintf("Check %s running on node %s is a cluster check", id, node.name))
 				checkStats.IsClusterCheck = true
 				stats[id] = checkStats
 			}
 		}
 		node.clcRunnerStats = stats
-		log.Tracef("Updated CLC Runner stats on node: %s, node IP: %s, stats: %v", name, node.clientIP, stats)
+		logutil.BgLogger().Debug(fmt.Sprintf("Updated CLC Runner stats on node: %s, node IP: %s, stats: %v", name, node.clientIP, stats))
 		node.busyness = calculateBusyness(stats)
-		log.Debugf("Updated busyness on node: %s, node IP: %s, busyness value: %d", name, node.clientIP, node.busyness)
+		logutil.BgLogger().Debug(fmt.Sprintf("Updated busyness on node: %s, node IP: %s, busyness value: %d", name, node.clientIP, node.busyness))
 		node.Unlock()
 	}
 }

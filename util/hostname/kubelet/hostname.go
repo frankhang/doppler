@@ -12,7 +12,7 @@ import (
 
 	"github.com/frankhang/doppler/util/kubernetes/clustername"
 	k "github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type kubeUtilGetter func() (k.KubeUtilInterface, error)
@@ -32,7 +32,7 @@ func HostnameProvider() (string, error) {
 
 	clusterName := clustername.GetClusterName()
 	if clusterName == "" {
-		log.Debugf("Now using plain kubernetes nodename as an alias: no cluster name was set and none could be autodiscovered")
+		logutil.BgLogger().Debug(fmt.Sprintf("Now using plain kubernetes nodename as an alias: no cluster name was set and none could be autodiscovered"))
 		return nodeName, nil
 	}
 	return (nodeName + "-" + clusterName), nil

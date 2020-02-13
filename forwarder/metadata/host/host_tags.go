@@ -2,6 +2,7 @@ package host
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	"github.com/frankhang/doppler/config"
@@ -10,7 +11,7 @@ import (
 	"github.com/frankhang/doppler/util/gce"
 	"github.com/frankhang/doppler/util/kubernetes/clustername"
 	k8s "github.com/frankhang/doppler/util/kubernetes/hostinfo"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // this is a "low-tech" version of tagger/utils/taglist.go
@@ -56,7 +57,7 @@ func getHostTags() *tags {
 	if config.Datadog.GetBool("collect_ec2_tags") {
 		ec2Tags, err := ec2.GetTags()
 		if err != nil {
-			log.Debugf("No EC2 host tags %v", err)
+			logutil.BgLogger().Debug("No EC2 host tags", zap.Error(err))
 		} else {
 			hostTags = appendToHostTags(hostTags, ec2Tags)
 		}
@@ -69,14 +70,14 @@ func getHostTags() *tags {
 
 	k8sTags, err := k8s.GetTags()
 	if err != nil {
-		log.Debugf("No Kubernetes host tags %v", err)
+		logutil.BgLogger().Debug("No Kubernetes host tags", zap.Error(err))
 	} else {
 		hostTags = appendToHostTags(hostTags, k8sTags)
 	}
 
 	dockerTags, err := docker.GetTags()
 	if err != nil {
-		log.Debugf("No Docker host tags %v", err)
+		logutil.BgLogger().Debug("No Docker host tags", zap.Error(err))
 	} else {
 		hostTags = appendToHostTags(hostTags, dockerTags)
 	}
@@ -85,7 +86,7 @@ func getHostTags() *tags {
 	if config.Datadog.GetBool("collect_gce_tags") {
 		rawGceTags, err := gce.GetTags()
 		if err != nil {
-			log.Debugf("No GCE host tags %v", err)
+			logutil.BgLogger().Debug("No GCE host tags", zap.Error(err))
 		} else {
 			gceTags = appendToHostTags(gceTags, rawGceTags)
 		}

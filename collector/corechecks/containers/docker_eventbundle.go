@@ -10,10 +10,11 @@ package containers
 import (
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/tagger"
@@ -82,7 +83,7 @@ func (b *dockerEventBundle) toDatadogEvent(hostname string) (metrics.Event, erro
 	for cid := range seenContainers {
 		tags, err := tagger.Tag(docker.ContainerIDToTaggerEntityName(cid), collectors.HighCardinality)
 		if err != nil {
-			log.Debugf("no tags for %s: %s", cid, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("no tags for %s", cid), zap.Error(err))
 		} else {
 			output.Tags = append(output.Tags, tags...)
 		}

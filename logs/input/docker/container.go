@@ -8,12 +8,14 @@
 package docker
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"regexp"
 	"strings"
 
 	"github.com/frankhang/doppler/util/containers"
 	dockerUtil "github.com/frankhang/doppler/util/docker"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/docker/docker/api/types"
 
 	"github.com/frankhang/doppler/logs/config"
@@ -70,18 +72,18 @@ func (c *Container) getShortImageName() (string, error) {
 
 	du, err := dockerUtil.GetDockerUtil()
 	if err != nil {
-		log.Debugf("Cannot get DockerUtil: %v", err)
+		logutil.BgLogger().Debug("Cannot get DockerUtil", zap.Error(err))
 		return shortName, err
 	}
 	imageName := c.container.ImageID
 	imageName, err = du.ResolveImageName(imageName)
 	if err != nil {
-		log.Debugf("Could not resolve image name %s: %s", imageName, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Could not resolve image name %s", imageName), zap.Error(err))
 		return shortName, err
 	}
 	_, shortName, _, err = containers.SplitImageName(imageName)
 	if err != nil {
-		log.Debugf("Cannot parse image name: %v", err)
+		logutil.BgLogger().Debug("Cannot parse image name", zap.Error(err))
 	}
 	return shortName, err
 }
@@ -154,7 +156,7 @@ func (c *Container) isImageMatch(imageFilter string) bool {
 func (c *Container) isNameMatch(nameFilter string) bool {
 	re, err := regexp.Compile(nameFilter)
 	if err != nil {
-		log.Warn("used invalid name to filter containers: ", nameFilter)
+		logutil.BgLogger().Warn(fmt.Sprintf("used invalid name to filter containers: ", nameFilter))
 		return false
 	}
 	for _, name := range c.container.Names {
