@@ -17,7 +17,7 @@ import (
 
 	"github.com/frankhang/doppler/metadata/inventories"
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+
 
 	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/cache"
@@ -82,7 +82,7 @@ func isOSHostnameUsable() (osHostnameUsable bool) {
 	// Check UTS namespace from docker
 	utsMode, err := GetAgentUTSMode()
 	if err == nil && (utsMode != containers.HostUTSMode && utsMode != containers.UnknownUTSMode) {
-		log.Debug("Agent is running in a docker container without host UTS mode: OS-provided hostnames cannot be used for hostname resolution.")
+		logutil.BgLogger().Debug("Agent is running in a docker container without host UTS mode: OS-provided hostnames cannot be used for hostname resolution.")
 		return false
 	}
 

@@ -8,6 +8,7 @@ package system
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 
 	"github.com/shirou/gopsutil/load"
 
@@ -15,7 +16,7 @@ import (
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const loadCheckName = "load"
@@ -38,7 +39,7 @@ func (c *LoadCheck) Run() error {
 
 	avg, err := loadAvg()
 	if err != nil {
-		log.Errorf("system.LoadCheck: could not retrieve load stats: %s", err)
+		logutil.BgLogger().Error("system.LoadCheck: could not retrieve load stats", zap.Error(err))
 		return err
 	}
 

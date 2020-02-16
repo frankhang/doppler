@@ -8,10 +8,11 @@
 package providers
 
 import (
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/autodiscovery/providers/names"
@@ -103,7 +104,7 @@ CONNECT:
 	for {
 		eventChan, errChan, err := d.dockerUtil.SubscribeToContainerEvents(d.String())
 		if err != nil {
-			log.Warnf("error subscribing to docker events: %s", err)
+			logutil.BgLogger().Warn("error subscribing to docker events", zap.Error(err))
 			break CONNECT // We disable streaming and revert to always-pull behaviour
 		}
 
@@ -118,7 +119,7 @@ CONNECT:
 				if ev.Action == "start" {
 					container, err := d.dockerUtil.Inspect(ev.ContainerID, false)
 					if err != nil {
-						log.Warnf("Error inspecting container: %s", err)
+						logutil.BgLogger().Warn("Error inspecting container", zap.Error(err))
 					} else {
 						d.Lock()
 						d.labelCache[ev.ContainerID] = container.Config.Labels
@@ -135,7 +136,7 @@ CONNECT:
 					})
 				}
 			case err := <-errChan:
-				log.Warnf("Error getting docker events: %s", err)
+				logutil.BgLogger().Warn("Error getting docker events", zap.Error(err))
 				d.Lock()
 				d.upToDate = false
 				d.Unlock()
@@ -165,7 +166,7 @@ func parseDockerLabels(containers map[string]map[string]string) ([]integration.C
 		c, errors := extractTemplatesFromMap(dockerEntityName, labels, dockerADLabelPrefix)
 
 		for _, err := range errors {
-			log.Errorf("Can't parse template for container %s: %s", cID, err)
+			logutil.BgLogger().Error("Can't parse template for container", zap.String("id", cID), zap.Error(err))
 		}
 
 		for idx := range c {

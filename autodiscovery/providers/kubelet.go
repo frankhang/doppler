@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/autodiscovery/providers/names"
@@ -86,8 +86,8 @@ func parseKubeletPodlist(podlist []*kubelet.Pod) ([]integration.Config, error) {
 			continue
 		}
 		if adExtractFormat == legacyPodAnnotationFormat {
-			log.Warnf("found legacy annotations %s for %s, please use the new prefix %s",
-				legacyPodAnnotationPrefix, pod.Metadata.Name, newPodAnnotationPrefix)
+			logutil.BgLogger().Warn(fmt.Sprintf("found legacy annotations %s for %s, please use the new prefix %s",
+				legacyPodAnnotationPrefix, pod.Metadata.Name, newPodAnnotationPrefix))
 		}
 
 		for _, container := range pod.Status.GetAllContainers() {
@@ -95,7 +95,7 @@ func parseKubeletPodlist(podlist []*kubelet.Pod) ([]integration.Config, error) {
 				fmt.Sprintf(adExtractFormat, container.Name))
 
 			for _, err := range errors {
-				log.Errorf("Can't parse template for pod %s: %s", pod.Metadata.Name, err)
+				logutil.BgLogger().Error(fmt.Sprintf("Can't parse template for pod %s", pod.Metadata.Name), err)
 			}
 
 			for idx := range c {

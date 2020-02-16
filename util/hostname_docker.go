@@ -13,7 +13,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/hostname"
 	"github.com/frankhang/doppler/util/hostname/validate"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 func getContainerHostname() (bool, string) {
@@ -21,7 +21,7 @@ func getContainerHostname() (bool, string) {
 
 	// Cluster-agent logic: Kube apiserver
 	if getKubeHostname, found := hostname.ProviderCatalog["kube_apiserver"]; found {
-		log.Debug("GetHostname trying Kubernetes trough API server...")
+		logutil.BgLogger().Debug("GetHostname trying Kubernetes trough API server...")
 		name, err := getKubeHostname()
 		if err == nil && validate.ValidHostname(name) == nil {
 			return true, name
@@ -35,7 +35,7 @@ func getContainerHostname() (bool, string) {
 	// Node-agent logic: docker or kubelet
 
 	// Docker
-	log.Debug("GetHostname trying Docker API...")
+	logutil.BgLogger().Debug("GetHostname trying Docker API...")
 	if getDockerHostname, found := hostname.ProviderCatalog["docker"]; found {
 		name, err := getDockerHostname()
 		if err == nil && validate.ValidHostname(name) == nil {
@@ -48,7 +48,7 @@ func getContainerHostname() (bool, string) {
 	}
 	// Kubelet
 	if getKubeletHostname, found := hostname.ProviderCatalog["kubelet"]; found {
-		log.Debug("GetHostname trying Kubernetes trough kubelet API...")
+		logutil.BgLogger().Debug("GetHostname trying Kubernetes trough kubelet API...")
 		name, err := getKubeletHostname()
 		if err == nil && validate.ValidHostname(name) == nil {
 			return true, name

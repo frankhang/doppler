@@ -9,9 +9,10 @@ package system
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"runtime"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/shirou/gopsutil/mem"
 
 	"github.com/frankhang/doppler/aggregator"
@@ -58,7 +59,7 @@ func (c *MemoryCheck) Run() error {
 			}
 		}
 	} else {
-		log.Errorf("system.MemoryCheck: could not retrieve virtual memory stats: %s", errVirt)
+		logutil.BgLogger().Error("system.MemoryCheck: could not retrieve virtual memory stats", zap.Error(errVirt))
 	}
 
 	s, errSwap := swapMemory()
@@ -68,7 +69,7 @@ func (c *MemoryCheck) Run() error {
 		sender.Gauge("system.swap.used", float64(s.Used)/mbSize, "", nil)
 		sender.Gauge("system.swap.pct_free", float64(100-s.UsedPercent)/100, "", nil)
 	} else {
-		log.Errorf("system.MemoryCheck: could not retrieve swap memory stats: %s", errSwap)
+		logutil.BgLogger().Error("system.MemoryCheck: could not retrieve swap memory stats", zap.Error(errSwap))
 	}
 
 	if errVirt != nil && errSwap != nil {

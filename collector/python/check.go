@@ -70,7 +70,7 @@ func (c *PythonCheck) runCheck(commitMetrics bool) error {
 	gstate := newStickyLock()
 	defer gstate.unlock()
 
-	log.Debugf("Running python check %s %s", c.ModuleName, c.id)
+	logutil.BgLogger().Debug(fmt.Sprintf("Running python check %s %s", c.ModuleName, c.id))
 
 	cResult := C.run_check(rtloader, c.instance)
 	if cResult == nil {
@@ -148,7 +148,7 @@ func (c *PythonCheck) getPythonWarnings(gstate *stickyLock) []error {
 	pyWarnings := C.get_checks_warnings(rtloader, c.instance)
 	if pyWarnings == nil {
 		if err := getRtLoaderError(); err != nil {
-			log.Errorf("error while collecting python check's warnings: %s", err)
+			logutil.BgLogger().Error("error while collecting python check's warnings", zap.Error(err))
 		}
 		return nil
 	}
@@ -209,8 +209,8 @@ func (c *PythonCheck) Configure(data integration.Data, initConfig integration.Da
 	var rtLoaderError error
 	if res == 0 {
 		rtLoaderError = getRtLoaderError()
-		log.Warnf("could not get a '%s' check instance with the new api: %s", c.ModuleName, rtLoaderError)
-		log.Warn("trying to instantiate the check with the old api, passing agentConfig to the constructor")
+		logutil.BgLogger().Warn(fmt.Sprintf("could not get a '%s' check instance with the new api", c.ModuleName), zap.Error(rtLoaderError))
+		logutil.BgLogger().Warn(fmt.Sprintf("trying to instantiate the check with the old api, passing agentConfig to the constructor"))
 
 		allSettings := config.Datadog.AllSettings()
 		agentConfig, err := yaml.Marshal(allSettings)
@@ -228,12 +228,12 @@ func (c *PythonCheck) Configure(data integration.Data, initConfig integration.Da
 			}
 			return fmt.Errorf("could not invoke '%s' python check constructor: %s", c.ModuleName, getRtLoaderError())
 		}
-		log.Warnf("passing `agentConfig` to the constructor is deprecated, please use the `get_config` function from the 'datadog_agent' package (%s).", c.ModuleName)
+		logutil.BgLogger().Warn(fmt.Sprintf("passing `agentConfig` to the constructor is deprecated, please use the `get_config` function from the 'datadog_agent' package (%s).", c.ModuleName))
 	}
 	c.instance = check
 	c.source = source
 
-	log.Debugf("python check configure done %s", c.ModuleName)
+	logutil.BgLogger().Debug(fmt.Sprintf("python check configure done %s", c.ModuleName))
 	return nil
 }
 

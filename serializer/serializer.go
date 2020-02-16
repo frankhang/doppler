@@ -20,7 +20,7 @@ import (
 	"github.com/frankhang/doppler/serializer/marshaler"
 	"github.com/frankhang/doppler/serializer/split"
 	"github.com/frankhang/doppler/util/compression"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -139,19 +139,19 @@ func NewSerializer(forwarder forwarder.Forwarder) *Serializer {
 	}
 
 	if !s.enableEvents {
-		log.Warn("event payloads are disabled: all events will be dropped")
+		logutil.BgLogger().Warn("event payloads are disabled: all events will be dropped")
 	}
 	if !s.enableSeries {
-		log.Warn("series payloads are disabled: all series will be dropped")
+		logutil.BgLogger().Warn("series payloads are disabled: all series will be dropped")
 	}
 	if !s.enableServiceChecks {
-		log.Warn("service_checks payloads are disabled: all service_checks will be dropped")
+		logutil.BgLogger().Warn("service_checks payloads are disabled: all service_checks will be dropped")
 	}
 	if !s.enableSketches {
-		log.Warn("sketches payloads are disabled: all sketches will be dropped")
+		logutil.BgLogger().Warn("sketches payloads are disabled: all sketches will be dropped")
 	}
 	if !s.enableJSONToV1Intake {
-		log.Warn("JSON to V1 intake is disabled: all payloads to that endpoint will be dropped")
+		logutil.BgLogger().Warn("JSON to V1 intake is disabled: all payloads to that endpoint will be dropped")
 	}
 
 	return s
@@ -230,7 +230,7 @@ func (s Serializer) serializeEventsStreamJSONMarshalerPayload(
 // SendEvents serializes a list of event and sends the payload to the forwarder
 func (s *Serializer) SendEvents(e EventsStreamJSONMarshaler) error {
 	if !s.enableEvents {
-		log.Debug("events payloads are disabled: dropping it")
+		logutil.BgLogger().Debug("events payloads are disabled: dropping it")
 		return nil
 	}
 
@@ -257,7 +257,7 @@ func (s *Serializer) SendEvents(e EventsStreamJSONMarshaler) error {
 // SendServiceChecks serializes a list of serviceChecks and sends the payload to the forwarder
 func (s *Serializer) SendServiceChecks(sc marshaler.StreamJSONMarshaler) error {
 	if !s.enableServiceChecks {
-		log.Debug("service_checks payloads are disabled: dropping it")
+		logutil.BgLogger().Debug("service_checks payloads are disabled: dropping it")
 		return nil
 	}
 
@@ -285,7 +285,7 @@ func (s *Serializer) SendServiceChecks(sc marshaler.StreamJSONMarshaler) error {
 // SendSeries serializes a list of serviceChecks and sends the payload to the forwarder
 func (s *Serializer) SendSeries(series marshaler.StreamJSONMarshaler) error {
 	if !s.enableSeries {
-		log.Debug("series payloads are disabled: dropping it")
+		logutil.BgLogger().Debug("series payloads are disabled: dropping it")
 		return nil
 	}
 
@@ -314,7 +314,7 @@ func (s *Serializer) SendSeries(series marshaler.StreamJSONMarshaler) error {
 // SendSketch serializes a list of SketSeriesList and sends the payload to the forwarder
 func (s *Serializer) SendSketch(sketches marshaler.Marshaler) error {
 	if !s.enableSketches {
-		log.Debug("sketches payloads are disabled: dropping it")
+		logutil.BgLogger().Debug("sketches payloads are disabled: dropping it")
 		return nil
 	}
 

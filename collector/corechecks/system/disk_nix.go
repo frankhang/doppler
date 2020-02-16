@@ -9,13 +9,14 @@ package system
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 
 	"github.com/shirou/gopsutil/disk"
 
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // for testing
@@ -64,7 +65,7 @@ func (c *DiskCheck) collectPartitionMetrics(sender aggregator.Sender) error {
 		// Get disk metrics here to be able to exclude on total usage
 		usage, err := diskUsage(partition.Mountpoint)
 		if err != nil {
-			log.Warnf("Unable to get disk metrics of %s mount point: %s", partition.Mountpoint, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Unable to get disk metrics of %s mount point", partition.Mountpoint), zap.Error(err))
 			continue
 		}
 

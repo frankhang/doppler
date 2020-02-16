@@ -7,9 +7,10 @@ package check
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // RetryableError is the error type that Retry interprets as a request to retry the callback
@@ -55,6 +56,6 @@ func Retry(retryDuration time.Duration, retries int, callback func() error, frie
 			return fmt.Errorf("bail out from %s, max retries reached, last error: %v", friendlyName, err)
 		}
 
-		log.Warnf("retrying %s, got the error: %v", friendlyName, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("retrying %s, got the error: %v", friendlyName), zap.Error(err))
 	}
 }

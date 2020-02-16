@@ -5,7 +5,10 @@
 
 package container
 
-import "github.com/frankhang/doppler/util/log"
+import (
+	"fmt"
+	"github.com/frankhang/util/logutil"
+)
 
 // Catalog holds available metadata providers
 type Catalog map[string]MetadataProvider
@@ -16,7 +19,7 @@ var DefaultCatalog = make(Catalog)
 // RegisterMetadataProvider a container metadata provider
 func RegisterMetadataProvider(name string, m MetadataProvider) {
 	if _, ok := DefaultCatalog[name]; ok {
-		log.Warnf("Container metadata provider %s already registered, overriding it", name)
+		logutil.BgLogger().Warn(fmt.Sprintf("Container metadata provider %s already registered, overriding it", name))
 	}
 	DefaultCatalog[name] = m
 }

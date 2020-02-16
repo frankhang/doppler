@@ -522,15 +522,15 @@ func (ku *KubeUtil) setupKubeletApiEndpoint() error {
 	_, code, httpsUrlErr := ku.QueryKubelet(kubeletPodPath)
 	if httpsUrlErr == nil {
 		if code == http.StatusOK {
-			log.Debugf("Kubelet endpoint is: %s", ku.kubeletApiEndpoint)
+			logutil.BgLogger().Debug(fmt.Sprintf("Kubelet endpoint is: %s", ku.kubeletApiEndpoint))
 			return nil
 		}
 		if code >= 500 {
 			return fmt.Errorf("unexpected status code %d on endpoint %s%s", code, ku.kubeletApiEndpoint, kubeletPodPath)
 		}
-		log.Warnf("Failed to securely reach the kubelet over HTTPS, received a status %d. Trying a non secure connection over HTTP. We highly recommend configuring TLS to access the kubelet", code)
+		logutil.BgLogger().Warn(fmt.Sprintf("Failed to securely reach the kubelet over HTTPS, received a status %d. Trying a non secure connection over HTTP. We highly recommend configuring TLS to access the kubelet", code))
 	}
-	log.Debugf("Cannot query %s%s: %s", ku.kubeletApiEndpoint, kubeletPodPath, httpsUrlErr)
+	logutil.BgLogger().Debug(fmt.Sprintf("Cannot query %s%s", ku.kubeletApiEndpoint, kubeletPodPath), zap.Error(httpsUrlErr))
 
 	// We don't want to carry the token in open http communication
 	ku.resetCredentials()
@@ -540,12 +540,12 @@ func (ku *KubeUtil) setupKubeletApiEndpoint() error {
 	_, code, httpUrlErr := ku.QueryKubelet(kubeletPodPath)
 	if httpUrlErr == nil {
 		if code == http.StatusOK {
-			log.Debugf("Kubelet endpoint is: %s", ku.kubeletApiEndpoint)
+			logutil.BgLogger().Debug(fmt.Sprintf("Kubelet endpoint is: %s", ku.kubeletApiEndpoint))
 			return nil
 		}
 		return fmt.Errorf("unexpected status code %d on endpoint %s%s", code, ku.kubeletApiEndpoint, kubeletPodPath)
 	}
-	log.Debugf("Cannot query %s%s: %s", ku.kubeletApiEndpoint, kubeletPodPath, httpUrlErr)
+	logutil.BgLogger().Debug(fmt.Sprintf("Cannot query %s%s", ku.kubeletApiEndpoint, kubeletPodPath), zap.Error(httpUrlErr))
 
 	return fmt.Errorf("cannot connect: https: %q, http: %q", httpsUrlErr, httpUrlErr)
 }
@@ -597,13 +597,13 @@ func getPotentialKubeletHosts(kubeletHost string) *connectionInfo {
 		configIps, configHostnames := getKubeletHostFromConfig(kubeletHost, ctx)
 		hosts.ips = append(hosts.ips, configIps...)
 		hosts.hostnames = append(hosts.hostnames, configHostnames...)
-		log.Debugf("Got potential kubelet connection info from config, ips: %v, hostnames: %v", configIps, configHostnames)
+		logutil.BgLogger().Debug(fmt.Sprintf("Got potential kubelet connection info from config, ips: %v, hostnames: %v", configIps, configHostnames))
 	}
 
 	dockerIps, dockerHostnames := getKubeletHostFromDocker(ctx)
 	hosts.ips = append(hosts.ips, dockerIps...)
 	hosts.hostnames = append(hosts.hostnames, dockerHostnames...)
-	log.Debugf("Got potential kubelet connection info from docker, ips: %v, hostnames: %v", dockerIps, dockerHostnames)
+	logutil.BgLogger().Debug(fmt.Sprintf("Got potential kubelet connection info from docker, ips: %v, hostnames: %v", dockerIps, dockerHostnames))
 
 	return &hosts
 }
@@ -612,32 +612,32 @@ func getKubeletHostFromConfig(kubeletHost string, ctx context.Context) ([]string
 	var ips []string
 	var hostnames []string
 	if kubeletHost == "" {
-		log.Debug("kubernetes_kubelet_host is not set")
+		logutil.BgLogger().Debug("kubernetes_kubelet_host is not set")
 		return ips, hostnames
 	}
 
-	log.Debugf("Trying to parse kubernetes_kubelet_host: %s", kubeletHost)
+	logutil.BgLogger().Debug(fmt.Sprintf("Trying to parse kubernetes_kubelet_host: %s", kubeletHost))
 	kubeletIp := net.ParseIP(kubeletHost)
 	if kubeletIp == nil {
-		log.Debugf("Parsing kubernetes_kubelet_host: %s is a hostname, cached, trying to resolve it to ip...", kubeletHost)
+		logutil.BgLogger().Debug(fmt.Sprintf("Parsing kubernetes_kubelet_host: %s is a hostname, cached, trying to resolve it to ip...", kubeletHost))
 		hostnames = append(hostnames, kubeletHost)
 		ipAddrs, err := net.DefaultResolver.LookupIPAddr(ctx, kubeletHost)
 		if err != nil {
-			log.Debugf("Cannot LookupIP hostname %s: %v", kubeletHost, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot LookupIP hostname %s", kubeletHost), zap.Error(err))
 		} else {
-			log.Debugf("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, ipAddrs)
+			logutil.BgLogger().Debug(fmt.Sprintf("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, ipAddrs))
 			for _, ipAddr := range ipAddrs {
 				ips = append(ips, ipAddr.IP.String())
 			}
 		}
 	} else {
-		log.Debugf("Parsed kubernetes_kubelet_host: %s is an address: %v, cached, trying to resolve it to hostname", kubeletHost, kubeletIp)
+		logutil.BgLogger().Debug(fmt.Sprintf("Parsed kubernetes_kubelet_host: %s is an address: %v, cached, trying to resolve it to hostname", kubeletHost, kubeletIp))
 		ips = append(ips, kubeletIp.String())
 		addrs, err := net.DefaultResolver.LookupAddr(ctx, kubeletHost)
 		if err != nil {
-			log.Debugf("Cannot LookupHost ip %s: %v", kubeletHost, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot LookupHost ip %s", kubeletHost), zap.Error(err))
 		} else {
-			log.Debugf("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, addrs)
+			logutil.BgLogger().Debug(fmt.Sprintf("kubernetes_kubelet_host: %s is resolved to: %v", kubeletHost, addrs))
 			for _, addr := range addrs {
 				hostnames = append(hostnames, addr)
 			}
@@ -652,17 +652,17 @@ func getKubeletHostFromDocker(ctx context.Context) ([]string, []string) {
 	var hostnames []string
 	dockerHost, err := docker.HostnameProvider()
 	if err != nil {
-		log.Debugf("unable to get hostname from docker, make sure to set the kubernetes_kubelet_host option: %s", err)
+		logutil.BgLogger().Debug("unable to get hostname from docker, make sure to set the kubernetes_kubelet_host option", zap.Error(err))
 		return ips, hostnames
 	}
 
-	log.Debugf("Trying to resolve host name %s provided by docker to ip...", dockerHost)
+	logutil.BgLogger().Debug(fmt.Sprintf("Trying to resolve host name %s provided by docker to ip...", dockerHost))
 	hostnames = append(hostnames, dockerHost)
 	ipAddrs, err := net.DefaultResolver.LookupIPAddr(ctx, dockerHost)
 	if err != nil {
-		log.Debugf("Cannot resolve host name %s, cached, provided by docker to ip: %s", dockerHost, err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot resolve host name %s, cached, provided by docker to ip", dockerHost), zap.Error(err))
 	} else {
-		log.Debugf("Resolved host name %s provided by docker to %v", dockerHost, ipAddrs)
+		logutil.BgLogger().Debugf(fmt.Sprintf("Resolved host name %s provided by docker to %v", dockerHost, ipAddrs))
 		for _, ipAddr := range ipAddrs {
 			ips = append(ips, ipAddr.IP.String())
 		}
@@ -698,15 +698,15 @@ func dedupeConnectionInfo(hosts *connectionInfo) {
 // the method check HTTPS connections first and prioritize ips over hostnames
 func (ku *KubeUtil) setKubeletHost(hosts *connectionInfo, httpsPort, httpPort int) error {
 	var connectionErrors []error
-	log.Debugf("Trying several connection methods to locate the kubelet...")
+	logutil.BgLogger().Debug("Trying several connection methods to locate the kubelet...")
 	if ku.kubeletProxyEnabled && config.Datadog.Get("kubernetes_kubelet_nodename") != "" {
 		ku.kubeletApiEndpoint = fmt.Sprintf("https://%s:%s/api/v1/nodes/%s/proxy/", os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT"), config.Datadog.Get("kubernetes_kubelet_nodename"))
-		log.Infof("EKS on Fargate mode detected, will proxy calls to the Kubelet through the APIServer at %s", ku.kubeletApiEndpoint)
+		logutil.BgLogger().Info(fmt.Sprintf("EKS on Fargate mode detected, will proxy calls to the Kubelet through the APIServer at %s", ku.kubeletApiEndpoint))
 		return nil
 	}
 	kubeletHost, errors := selectFromPotentialHostsHTTPS(ku, hosts.ips, httpsPort)
 	if kubeletHost != "" && errors == nil {
-		log.Infof("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost)
+		logutil.BgLogger().Info(fmt.Sprintf("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost))
 		return nil
 	} else {
 		connectionErrors = append(connectionErrors, errors...)
@@ -714,7 +714,7 @@ func (ku *KubeUtil) setKubeletHost(hosts *connectionInfo, httpsPort, httpPort in
 
 	kubeletHost, errors = selectFromPotentialHostsHTTPS(ku, hosts.hostnames, httpsPort)
 	if kubeletHost != "" && errors == nil {
-		log.Infof("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost)
+		logutil.BgLogger().Info(fmt.Sprintf("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost))
 		return nil
 	} else {
 		connectionErrors = append(connectionErrors, errors...)
@@ -723,7 +723,7 @@ func (ku *KubeUtil) setKubeletHost(hosts *connectionInfo, httpsPort, httpPort in
 	kubeletHost, errors = selectFromPotentialHostsHTTP(hosts.ips, httpPort)
 	if kubeletHost != "" && errors == nil {
 		ku.kubeletHost = kubeletHost
-		log.Infof("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost)
+		logutil.BgLogger().Info(fmt.Sprintf("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost))
 		return nil
 	} else {
 		connectionErrors = append(connectionErrors, errors...)
@@ -732,34 +732,34 @@ func (ku *KubeUtil) setKubeletHost(hosts *connectionInfo, httpsPort, httpPort in
 	kubeletHost, errors = selectFromPotentialHostsHTTP(hosts.hostnames, httpPort)
 	if kubeletHost != "" && errors == nil {
 		ku.kubeletHost = kubeletHost
-		log.Infof("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost)
+		logutil.BgLogger().Info(fmt.Sprintf("Connection to the kubelet succeeded! %s is set as kubelet host", kubeletHost))
 		return nil
 	} else {
 		connectionErrors = append(connectionErrors, errors...)
 	}
 
-	log.Debug("All connection attempts to the Kubelet failed.")
+	logutil.BgLogger().Debug("All connection attempts to the Kubelet failed.")
 	return fmt.Errorf("cannot set a valid kubelet host: cannot connect to kubelet using any of the given hosts: %v %v, Errors: %v", hosts.ips, hosts.hostnames, connectionErrors)
 }
 
 func selectFromPotentialHostsHTTPS(ku *KubeUtil, hosts []string, httpsPort int) (string, []error) {
 	var connectionErrors []error
 	for _, host := range hosts {
-		log.Debugf("Trying to use host %s with HTTPS", host)
+		logutil.BgLogger().Debug(fmt.Sprintf("Trying to use host %s with HTTPS", host))
 		ku.kubeletHost = host
 		err := ku.setupKubeletApiClient()
 		if err != nil {
-			log.Debugf("Cannot setup https kubelet api client for %s: %v", host, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot setup https kubelet api client for %s", host), zap.Error(err))
 			connectionErrors = append(connectionErrors, err)
 			continue
 		}
 
 		err = checkKubeletHTTPSConnection(ku, httpsPort)
 		if err == nil {
-			log.Debugf("Can connect to kubelet using %s and HTTPS", host)
+			logutil.BgLogger().Debug(fmt.Sprintf("Can connect to kubelet using %s and HTTPS", host))
 			return host, nil
 		} else {
-			log.Debugf("Cannot connect to kubelet using %s and https: %v", host, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot connect to kubelet using %s and https", host), zap.Error(err))
 			connectionErrors = append(connectionErrors, err)
 		}
 	}
@@ -770,13 +770,13 @@ func selectFromPotentialHostsHTTPS(ku *KubeUtil, hosts []string, httpsPort int) 
 func selectFromPotentialHostsHTTP(hosts []string, httpPort int) (string, []error) {
 	var connectionErrors []error
 	for _, host := range hosts {
-		log.Debugf("Trying to use host %s with HTTP", host)
+		logutil.BgLogger().Debug(fmt.Sprintf("Trying to use host %s with HTTP", host))
 		err := checkKubeletHTTPConnection(host, httpPort)
 		if err == nil {
-			log.Debugf("Can connect to kubelet using %s and HTTP", host)
+			logutil.BgLogger().Debug(fmt.Sprintf("Can connect to kubelet using %s and HTTP", host))
 			return host, nil
 		} else {
-			log.Debugf("Cannot connect to kubelet using %s and http: %v", host, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot connect to kubelet using %s and http", host), zap.Error(err))
 			connectionErrors = append(connectionErrors, err)
 		}
 	}
@@ -787,34 +787,34 @@ func selectFromPotentialHostsHTTP(hosts []string, httpPort int) (string, []error
 func checkKubeletHTTPSConnection(ku *KubeUtil, httpsPort int) error {
 	c := http.Client{Timeout: time.Second}
 	c.Transport = &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-	log.Debugf("Trying to query the kubelet endpoint %s ...", ku.kubeletApiEndpoint)
+	logutil.DefaultLogFormat.Debug(fmt.Sprintf("Trying to query the kubelet endpoint %s ...", ku.kubeletApiEndpoint))
 	ku.kubeletApiEndpoint = fmt.Sprintf("https://%s:%d", ku.kubeletHost, httpsPort)
 	response, err := c.Get(ku.kubeletApiEndpoint + "/")
 	if err == nil {
-		log.Infof("Successfully queried %s without any security settings, adding security transport settings to query %s%s", response.Request.URL, ku.kubeletApiEndpoint, kubeletPodPath)
+		logutil.BgLogger().Info(fmt.Sprintf("Successfully queried %s without any security settings, adding security transport settings to query %s%s", response.Request.URL, ku.kubeletApiEndpoint, kubeletPodPath))
 
 		response, err := ku.doKubeletRequest(kubeletPodPath)
 		if err == nil {
-			log.Infof("Successfully connected securely to kubelet endpoint %s", response.Request.URL)
+			logutil.BgLogger().Infof(fmt.Sprintf("Successfully connected securely to kubelet endpoint %s", response.Request.URL))
 			switch {
 			case response.StatusCode == http.StatusOK:
-				log.Infof("Successfully authorized to query the kubelet on %s: 200, using %s as kubelet endpoint", response.Request.URL, ku.kubeletApiEndpoint)
+				logutil.BgLogger().Info(fmt.Sprintf("Successfully authorized to query the kubelet on %s: 200, using %s as kubelet endpoint", response.Request.URL, ku.kubeletApiEndpoint))
 				ku.resetCredentials()
 				return nil
 
 			case response.StatusCode >= http.StatusInternalServerError:
-				log.Infof("Unexpected return code on request %s on kubelet endpoint %s", response.Request.URL, ku.kubeletApiEndpoint)
+				logutil.BgLogger().Info(fmt.Sprintf("Unexpected return code on request %s on kubelet endpoint %s", response.Request.URL, ku.kubeletApiEndpoint))
 
 			case response.StatusCode == http.StatusUnauthorized:
-				log.Debugf("Unauthorized to request %s on kubelet endpoint %s, check the kubelet authentication/authorization settings", response.Request.URL, ku.kubeletApiEndpoint)
+				logutil.BgLogger().Debug(fmt.Sprintf("Unauthorized to request %s on kubelet endpoint %s, check the kubelet authentication/authorization settings", response.Request.URL, ku.kubeletApiEndpoint))
 
 			default:
-				log.Debugf("Unexpected http code %d on kubelet endpoint %s", response.StatusCode, ku.kubeletApiEndpoint)
+				logutil.BgLogger().Debug(fmt.Sprintf("Unexpected http code %d on kubelet endpoint %s", response.StatusCode, ku.kubeletApiEndpoint))
 			}
 
 			// err != nil
 		} else if strings.Contains(err.Error(), "x509: certificate is valid for") {
-			log.Debugf(`Invalid x509 settings, the kubelet server certificate is not valid for this subject alternative name: %s, %v, Please check the SAN of the kubelet server certificate with "openssl x509 -in ${KUBELET_CERTIFICATE} -text -noout". `, ku.kubeletHost, err)
+			logutil.BgLogger().Debug(fmt.Sprintf(`Invalid x509 settings, the kubelet server certificate is not valid for this subject alternative name: %s, Please check the SAN of the kubelet server certificate with "openssl x509 -in ${KUBELET_CERTIFICATE} -text -noout". `, ku.kubeletHost), zap.Error(err))
 			return err
 
 		} else if strings.Contains(err.Error(), "x509: certificate signed by unknown authority") {
@@ -824,15 +824,15 @@ func checkKubeletHTTPSConnection(ku *KubeUtil, httpsPort int) error {
 			if !ok {
 				certString = "<not-set>"
 			}
-			log.Debugf(`The kubelet server certificate is signed by unknown authority, the current cacert is %s. Is the kubelet issuing self-signed certificates? Please validate the kubelet certificate with "openssl verify -CAfile %s ${KUBELET_CERTIFICATE}" to avoid this error: %v`, certString, certString, err)
+			logutil.BgLogger().Debug(fmt.Sprintf(`The kubelet server certificate is signed by unknown authority, the current cacert is %s. Is the kubelet issuing self-signed certificates? Please validate the kubelet certificate with "openssl verify -CAfile %s ${KUBELET_CERTIFICATE}" to avoid this error`, certString, certString), zap.Error(err))
 			return err
 
 		} else {
-			log.Debugf("Cannot query %s on kubelet endpoint %s: %v", kubeletPodPath, ku.kubeletApiEndpoint, err)
+			logutil.BgLogger().Debug(fmt.Sprintf("Cannot query %s on kubelet endpoint %s", kubeletPodPath, ku.kubeletApiEndpoint), zap.Error(err))
 			return err
 		}
 	} else {
-		log.Debugf("Cannot use the HTTPS endpoint: %s", ku.kubeletApiEndpoint)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot use the HTTPS endpoint: %s", ku.kubeletApiEndpoint))
 	}
 
 	ku.resetCredentials()
@@ -845,13 +845,13 @@ func (ku *KubeUtil) doKubeletRequest(path string) (*http.Response, error) {
 	req.Header = *ku.kubeletApiRequestHeaders
 	req.URL, err = url.Parse(ku.kubeletApiEndpoint + path)
 	if err != nil {
-		log.Debugf("Failed creating the kubelet request: %s", err)
+		logutil.BgLogger().Debug("Failed creating the kubelet request", zap.Error(err))
 		return nil, err
 	}
 
 	response, err := ku.kubeletApiClient.Do(req)
 	if err != nil {
-		log.Debugf("Cannot request %s: %s", req.URL.String(), err)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot request %s", req.URL.String()), zap.Error(err))
 		return nil, err
 	}
 
@@ -864,7 +864,7 @@ func checkKubeletHTTPConnection(kubeletHost string, httpPort int) error {
 
 	// HTTP check
 	if _, errHTTP := c.Get(fmt.Sprintf("http://%s:%d/", kubeletHost, httpPort)); errHTTP != nil {
-		log.Debugf("Cannot connect through HTTP: %s", errHTTP)
+		logutil.BgLogger().Debug(fmt.Sprintf("Cannot connect through HTTP: %s", errHTTP))
 		return fmt.Errorf("cannot connect: http: %q", errHTTP)
 	}
 

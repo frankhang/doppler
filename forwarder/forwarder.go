@@ -17,7 +17,7 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/telemetry"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/config"
 	. "github.com/frankhang/doppler/config"
@@ -141,7 +141,7 @@ func NewDefaultForwarder(keysPerDomains map[string][]string) *DefaultForwarder {
 	for domain, keys := range keysPerDomains {
 		domain, _ := config.AddAgentVersionToDomain(domain, "app")
 		if keys == nil || len(keys) == 0 {
-			log.Errorf("No API keys for domain '%s', dropping domain ", domain)
+			logutil.BgLogger().Error(fmt.Sprintf("No API keys for domain '%s', dropping domain ", domain))
 		} else {
 			f.keysPerDomains[domain] = keys
 			f.domainForwarders[domain] = newDomainForwarder(domain, numWorkers, retryQueueMaxSize)
@@ -182,7 +182,7 @@ func (f *DefaultForwarder) Start() error {
 
 // Stop all the component of a forwarder and free resources
 func (f *DefaultForwarder) Stop() {
-	log.Infof("stopping the Forwarder")
+	logutil.BgLogger().Info("stopping the Forwarder")
 	// Lock so we can't start a Forwarder while is stopping
 	f.m.Lock()
 	defer f.m.Unlock()

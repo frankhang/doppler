@@ -274,7 +274,7 @@ func reportPy3Warnings(checkName string, checkFilePath string) {
 			status = a7TagNotReady
 			logutil.BgLogger().Warn(fmt.Sprintf("The Python 3 linter returned warnings for check '%s'. For more details, check the output of the 'status' command or the status page of the Agent GUI).", checkName))
 			for _, warning := range warnings {
-				log.Debug(warning)
+				logutil.BgLogger().Debug(warning)
 				py3Warnings[checkName] = append(py3Warnings[checkName], warning)
 			}
 		}

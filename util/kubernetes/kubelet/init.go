@@ -10,7 +10,7 @@ package kubelet
 import (
 	"crypto/tls"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/kubernetes"
@@ -31,13 +31,13 @@ func isConfiguredTLSVerify() bool {
 func buildTLSConfig(verifyTLS bool, caPath string) (*tls.Config, error) {
 	tlsConfig := &tls.Config{}
 	if verifyTLS == false {
-		log.Info("Skipping TLS verification")
+		logutil.BgLogger().Info("Skipping TLS verification")
 		tlsConfig.InsecureSkipVerify = true
 		return tlsConfig, nil
 	}
 
 	if caPath == "" {
-		log.Debug("kubelet_client_ca isn't configured: certificate authority must be trusted")
+		logutil.BgLogger().Debug("kubelet_client_ca isn't configured: certificate authority must be trusted")
 		return nil, nil
 	}
 

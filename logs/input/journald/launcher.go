@@ -12,7 +12,8 @@ import (
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/pipeline"
 	"github.com/frankhang/doppler/logs/restart"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 // Launcher is in charge of starting and stopping new journald tailers
@@ -52,7 +53,7 @@ func (l *Launcher) run() {
 			}
 			tailer, err := l.setupTailer(source)
 			if err != nil {
-				log.Warn("Could not set up journald tailer: ", err)
+				logutil.BgLogger().Warn("Could not set up journald tailer", zap.Error(err))
 			} else {
 				l.tailers[identifier] = tailer
 			}

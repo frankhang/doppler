@@ -8,15 +8,15 @@
 package status
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 func getLeaderElectionDetails() map[string]string {
-	log.Info("Not implemented")
+	logutil.BgLogger().Info("Not implemented")
 	return nil
 }
 
 func getDCAStatus() map[string]string {
-	log.Info("Not implemented")
+	logutil.BgLogger().Info("Not implemented")
 	return nil
 }

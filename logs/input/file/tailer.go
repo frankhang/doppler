@@ -8,7 +8,6 @@ package file
 import (
 	"context"
 	"fmt"
-	"github.com/frankhang/util/logutil"
 	"go.uber.org/zap"
 	"io"
 	"os"
@@ -18,7 +17,7 @@ import (
 	"time"
 
 	lineParser "github.com/frankhang/doppler/logs/parser"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/decoder"
@@ -131,7 +130,7 @@ func (t *Tailer) setup(offset int64, whence int) error {
 	// adds metadata to enable users to filter logs by filename
 	t.tags = t.buildTailerTags()
 
-	log.Info("Opening ", t.path)
+	logutil.BgLogger().Info(fmt.Sprintf("Opening %s", t.path))
 	f, err := openFile(fullpath)
 	if err != nil {
 		return err
@@ -217,7 +216,7 @@ func (t *Tailer) startStopTimer() {
 
 // onStop finishes to stop the tailer
 func (t *Tailer) onStop() {
-	log.Info("Closing ", t.path)
+	logutil.BgLogger().Info(fmt.Sprintf("Closing ", t.path))
 	t.file.Close()
 	t.decoder.Stop()
 }

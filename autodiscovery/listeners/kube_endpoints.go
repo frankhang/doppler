@@ -104,7 +104,7 @@ func (l *KubeEndpointsListener) Stop() {
 func (l *KubeEndpointsListener) added(obj interface{}) {
 	castedObj, ok := obj.(*v1.Endpoints)
 	if !ok {
-		log.Errorf("Expected an Endpoints type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an Endpoints type, got: %v", obj))
 		return
 	}
 	l.createService(castedObj, false)
@@ -123,13 +123,13 @@ func (l *KubeEndpointsListener) updated(old, obj interface{}) {
 	// Cast the updated object or return on failure
 	castedObj, ok := obj.(*v1.Endpoints)
 	if !ok {
-		log.Errorf("Expected an Endpoints type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an Endpoints type, got: %v", obj))
 		return
 	}
 	// Cast the old object, consider it an add on cast failure
 	castedOld, ok := old.(*v1.Endpoints)
 	if !ok {
-		log.Errorf("Expected an Endpoints type, got: %v", old)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected an Endpoints type, got: %v", old))
 		l.createService(castedObj, false)
 		return
 	}
@@ -166,7 +166,7 @@ func subsetsDiffer(first, second *v1.Endpoints) bool {
 func (l *KubeEndpointsListener) isEndpointsAnnotated(kep *v1.Endpoints) bool {
 	ksvc, err := l.serviceLister.Services(kep.Namespace).Get(kep.Name)
 	if err != nil {
-		log.Tracef("Cannot get Kubernetes service: %s", err)
+		logutil.BgLogger().Debug("Cannot get Kubernetes service", zap.Error(err))
 	}
 	if ksvc != nil {
 		if _, found := ksvc.Annotations[kubeEndpointsAnnotationFormat]; found {
@@ -192,7 +192,7 @@ func (l *KubeEndpointsListener) createService(kep *v1.Endpoints, firstRun bool) 
 	l.m.Unlock()
 
 	for _, ep := range eps {
-		log.Debugf("Creating a new AD service: %s", ep.entity)
+		logutil.BgLogger().Debug(fmt.Sprintf("Creating a new AD service: %s", ep.entity))
 		l.newService <- ep
 	}
 }
@@ -242,11 +242,11 @@ func (l *KubeEndpointsListener) removeService(kep *v1.Endpoints) {
 		delete(l.endpoints, kep.UID)
 		l.m.Unlock()
 		for _, ep := range eps {
-			log.Debugf("Deleting AD service: %s", ep.entity)
+			logutil.BgLogger().Debug(fmt.Sprintf("Deleting AD service: %s", ep.entity))
 			l.delService <- ep
 		}
 	} else {
-		log.Debugf("Entity %s not found, not removing", kep.UID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Entity %s not found, not removing", kep.UID))
 	}
 }
 

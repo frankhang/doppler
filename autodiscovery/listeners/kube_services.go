@@ -10,6 +10,7 @@ package listeners
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sort"
 	"sync"
 
@@ -82,7 +83,7 @@ func (l *KubeServiceListener) Listen(newSvc chan<- Service, delSvc chan<- Servic
 	// Initial fill
 	services, err := l.informer.Lister().List(labels.Everything())
 	if err != nil {
-		log.Errorf("Cannot list Kubernetes services: %s", err)
+		logutil.BgLogger().Error("Cannot list Kubernetes services", zap.Error(err))
 	}
 	for _, s := range services {
 		l.createService(s, true)
@@ -97,7 +98,7 @@ func (l *KubeServiceListener) Stop() {
 func (l *KubeServiceListener) added(obj interface{}) {
 	castedObj, ok := obj.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %v", obj))
 		return
 	}
 	l.createService(castedObj, false)
@@ -106,7 +107,7 @@ func (l *KubeServiceListener) added(obj interface{}) {
 func (l *KubeServiceListener) deleted(obj interface{}) {
 	castedObj, ok := obj.(*v1.Service)
 	if !ok {
-		log.Errorf("Expected a Service type, got: %v", obj)
+		logutil.BgLogger().Error(fmt.Sprintf("Expected a Service type, got: %v", obj))
 		return
 	}
 	l.removeService(castedObj)
@@ -211,7 +212,7 @@ func processService(ksvc *v1.Service, firstRun bool) *KubeServiceService {
 	svc.ports = ports
 	if len(svc.ports) == 0 {
 		// Port might not be specified in pod spec
-		log.Debugf("No ports found for service %s", ksvc.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("No ports found for service %s", ksvc.Name))
 	}
 
 	return svc
@@ -232,7 +233,7 @@ func (l *KubeServiceListener) removeService(ksvc *v1.Service) {
 
 		l.delService <- svc
 	} else {
-		log.Debugf("Entity %s not found, not removing", ksvc.UID)
+		logutil.BgLogger().Debug(fmt.Sprintf("Entity %s not found, not removing", ksvc.UID))
 	}
 }
 

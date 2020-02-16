@@ -6,9 +6,10 @@
 package docker
 
 import (
+	"fmt"
 	"net"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const rancherIPLabel = "io.rancher.container.ip"
@@ -20,7 +21,7 @@ func FindRancherIPInLabels(labels map[string]string) (string, bool) {
 	if found {
 		ipv4Addr, _, err := net.ParseCIDR(cidr)
 		if err != nil {
-			log.Warnf("error while retrieving Rancher IP: %q is not valid", cidr)
+			logutil.BgLogger().Warn(fmt.Sprintf("error while retrieving Rancher IP: %q is not valid", cidr))
 			return "", false
 		}
 		return ipv4Addr.String(), true

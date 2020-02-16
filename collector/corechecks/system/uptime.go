@@ -9,7 +9,8 @@ import (
 	"github.com/frankhang/doppler/aggregator"
 	"github.com/frankhang/doppler/collector/check"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 const uptimeCheckName = "uptime"
@@ -28,7 +29,7 @@ func (c *UptimeCheck) Run() error {
 
 	t, err := uptime()
 	if err != nil {
-		log.Errorf("system.UptimeCheck: could not retrieve uptime: %s", err)
+		logutil.BgLogger().Error("system.UptimeCheck: could not retrieve uptime", zap.Error(err))
 		return err
 	}
 

@@ -8,7 +8,8 @@
 package python
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/util/containers"
 )
@@ -45,6 +46,6 @@ func IsContainerExcluded(name, image *C.char) C.int {
 func initContainerFilter() {
 	var err error
 	if filter, err = containers.GetSharedFilter(); err != nil {
-		log.Errorf("Error initializing container filtering: %s", err)
+		logutil.BgLogger().Error("Error initializing container filtering", zap.Error(err))
 	}
 }

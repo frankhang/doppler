@@ -103,7 +103,7 @@ func (m serviceMapper) MapOnRef(_ string, pods []*kubelet.Pod, endpointList v1.E
 					continue
 				}
 				if ref.Name == "" || ref.Namespace == "" {
-					log.Debugf("Incomplete reference for object %s on service %s, skipping", ref.UID, svc.Name)
+					logutil.BgLogger().Debug(fmt.Sprintf("Incomplete reference for object %s on service %s, skipping", ref.UID, svc.Name))
 					continue
 				}
 

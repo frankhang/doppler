@@ -7,11 +7,12 @@ package security
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"io/ioutil"
 	"os/user"
 	"syscall"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	acl "github.com/hectane/go-acl"
 	"golang.org/x/sys/windows"
 )
@@ -52,56 +53,56 @@ func saveAuthToken(token, tokenPath string) error {
 	var sidString string
 	currUser, err := user.Current()
 	if err != nil {
-		log.Warnf("Unable to get current user %v", err)
-		log.Infof("Attempting to get current user information directly")
+		logutil.BgLogger().Warnf("Unable to get current user", zap.Error(err))
+		logutil.BgLogger().Info("Attempting to get current user information directly")
 		tok, e := syscall.OpenCurrentProcessToken()
 		if e != nil {
-			log.Warnf("Couldn't get process token %v", e)
+			logutil.BgLogger().Warn("Couldn't get process token", zap.Error(e))
 			return e
 		}
 		defer tok.Close()
 		user, e := tok.GetTokenUser()
 		if e != nil {
-			log.Warnf("Couldn't get  token user %v", e)
+			logutil.BgLogger().Warnf("Couldn't get  token user", zap.Error(e))
 			return e
 		}
 		sidString, e = user.User.Sid.String()
 		if e != nil {
-			log.Warnf("Couldn't get  user sid string %v", e)
+			logutil.BgLogger().Warnf("Couldn't get  user sid string", zap.Error(e))
 			return e
 		}
 
-		log.Infof("Got sidstring from token user")
+		logutil.BgLogger().Infof("Got sidstring from token user")
 
 		// now just do some debugging, see what we weren't able to get.
 		pg, e := tok.GetTokenPrimaryGroup()
 		if e != nil {
-			log.Warnf("Would have failed getting token PG %v", e)
+			logutil.BgLogger().Warnf("Would have failed getting token PG", zap.Error(e))
 		}
 		_, e = pg.PrimaryGroup.String()
 		if e != nil {
-			log.Warnf("Would have failed getting  PG  string %v", e)
+			logutil.BgLogger().Warn("Would have failed getting  PG  string", zap.Error(e))
 		}
 		dir, e := tok.GetUserProfileDirectory()
 		if e != nil {
-			log.Warnf("Would have failed getting  primary directory %v", e)
+			logutil.BgLogger().Warn("Would have failed getting  primary directory", zap.Error(e))
 		} else {
-			log.Infof("Profile directory is %v", dir)
+			logutil.BgLogger().Info(fmt.Sprintf("Profile directory is %v", dir))
 		}
 		username, domain, e := lookupUsernameAndDomain(user.User.Sid)
 		if e != nil {
-			log.Warnf("Would have failed getting username and domain %v", e)
+			logutil.BgLogger().Warn("Would have failed getting username and domain", zap.Error(e))
 		} else {
-			log.Infof("Username/domain is %v %v", username, domain)
+			logutil.BgLogger().Info(fmt.Sprintf("Username/domain is %v %v", username, domain))
 		}
 
 	} else {
-		log.Infof("Getting sidstring from current user")
+		logutil.BgLogger().Info("Getting sidstring from current user")
 		sidString = currUser.Uid
 	}
 	currUserSid, err := windows.StringToSid(sidString)
 	if err != nil {
-		log.Warnf("Unable to get current user sid %v", err)
+		logutil.BgLogger().Warnf("Unable to get current user sid", zap.Error(err))
 		return err
 	}
 	err = ioutil.WriteFile(tokenPath, []byte(token), 0755)
@@ -113,7 +114,7 @@ func saveAuthToken(token, tokenPath string) error {
 			acl.GrantSid(windows.GENERIC_ALL, wellKnownSids["Administrators"]),
 			acl.GrantSid(windows.GENERIC_ALL, wellKnownSids["System"]),
 			acl.GrantSid(windows.GENERIC_ALL, currUserSid))
-		log.Infof("Wrote auth token acl %v", err)
+		logutil.BgLogger().Info("Wrote auth token acl", zap.Error(err))
 	}
 	return err
 }

@@ -48,7 +48,7 @@ func GetVersion(agentVersion **C.char) {
 func GetHostname(hostname **C.char) {
 	goHostname, err := util.GetHostname()
 	if err != nil {
-		log.Warnf("Error getting hostname: %s\n", err)
+		logutil.BgLogger().Warn("Error getting hostname", zap.Error(err))
 		goHostname = ""
 	}
 	// hostname will be free by rtloader when it's done with it

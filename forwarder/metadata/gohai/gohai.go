@@ -11,9 +11,10 @@ import (
 	"github.com/DataDog/gohai/memory"
 	"github.com/DataDog/gohai/network"
 	"github.com/DataDog/gohai/platform"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/config"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // GetPayload builds a payload of every metadata collected with gohai except processes metadata.
@@ -30,21 +31,21 @@ func getGohaiInfo() *gohai {
 	if err == nil {
 		res.CPU = cpuPayload
 	} else {
-		log.Errorf("Failed to retrieve cpu metadata: %s", err)
+		logutil.BgLogger().Error("Failed to retrieve cpu metadata", zap.Error(err))
 	}
 
 	fileSystemPayload, err := new(filesystem.FileSystem).Collect()
 	if err == nil {
 		res.FileSystem = fileSystemPayload
 	} else {
-		log.Errorf("Failed to retrieve filesystem metadata: %s", err)
+		logutil.BgLogger().Error("Failed to retrieve filesystem metadata", zap.Error(err))
 	}
 
 	memoryPayload, err := new(memory.Memory).Collect()
 	if err == nil {
 		res.Memory = memoryPayload
 	} else {
-		log.Errorf("Failed to retrieve memory metadata: %s", err)
+		logutil.BgLogger().Error("Failed to retrieve memory metadata", zap.Error(err))
 	}
 
 	if !config.IsContainerized() {
@@ -52,7 +53,7 @@ func getGohaiInfo() *gohai {
 		if err == nil {
 			res.Network = networkPayload
 		} else {
-			log.Errorf("Failed to retrieve network metadata: %s", err)
+			logutil.BgLogger().Error("Failed to retrieve network metadata", zap.Error(err))
 		}
 	}
 
@@ -60,7 +61,7 @@ func getGohaiInfo() *gohai {
 	if err == nil {
 		res.Platform = platformPayload
 	} else {
-		log.Errorf("Failed to retrieve platform metadata: %s", err)
+		logutil.BgLogger().Error("Failed to retrieve platform metadata", zap.Error(err))
 	}
 
 	return res

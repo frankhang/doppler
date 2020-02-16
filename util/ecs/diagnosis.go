@@ -9,7 +9,7 @@ package ecs
 
 import (
 	"github.com/frankhang/doppler/diagnose/diagnosis"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	ecsmeta "github.com/frankhang/doppler/util/ecs/metadata"
 )
@@ -24,16 +24,16 @@ func init() {
 func diagnoseECS() error {
 	client, err := ecsmeta.V1()
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return err
 	}
-	log.Info("successfully detected ECS metadata server endpoint")
+	logutil.BgLogger().Info("successfully detected ECS metadata server endpoint")
 
 	if _, err = client.GetTasks(); err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return err
 	}
-	log.Info("successfully retrieved task list from ECS metadata server")
+	logutil.BgLogger().Info("successfully retrieved task list from ECS metadata server")
 
 	return nil
 }
@@ -42,16 +42,16 @@ func diagnoseECS() error {
 func diagnoseECSTags() error {
 	client, err := ecsmeta.V3FromCurrentTask()
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return err
 	}
-	log.Info("successfully detected ECS metadata server endpoint for resource tags")
+	logutil.BgLogger().Info("successfully detected ECS metadata server endpoint for resource tags")
 
 	if _, err = client.GetTaskWithTags(); err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return err
 	}
-	log.Info("successfully retrieved task with potential tags from ECS metadata server")
+	logutil.BgLogger().Info("successfully retrieved task with potential tags from ECS metadata server")
 
 	return nil
 }
@@ -59,10 +59,10 @@ func diagnoseECSTags() error {
 // diagnose the ECS Fargate metadata API availability
 func diagnoseFargate() error {
 	if _, err := ecsmeta.V2().GetTask(); err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return err
 	}
-	log.Info("successfully retrieved task from Fargate metadata endpoint")
+	logutil.BgLogger().Info("successfully retrieved task from Fargate metadata endpoint")
 
 	return nil
 }

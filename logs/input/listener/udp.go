@@ -7,9 +7,10 @@ package listener
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"net"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/pipeline"
@@ -45,10 +46,10 @@ func NewUDPListener(pipelineProvider pipeline.Provider, source *config.LogSource
 
 // Start opens a new UDP connection and starts a tailer.
 func (l *UDPListener) Start() {
-	log.Infof("Starting UDP forwarder on port: %d, with read buffer size: %d", l.source.Config.Port, l.frameSize)
+	logutil.BgLogger().Info(fmt.Sprintf("Starting UDP forwarder on port: %d, with read buffer size: %d", l.source.Config.Port, l.frameSize))
 	err := l.startNewTailer()
 	if err != nil {
-		log.Errorf("Can't start UDP forwarder on port %d: %v", l.source.Config.Port, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Can't start UDP forwarder on port %d", l.source.Config.Port), zap.Error(err))
 		l.source.Status.Error(err)
 		return
 	}
@@ -57,7 +58,7 @@ func (l *UDPListener) Start() {
 
 // Stop stops the tailer.
 func (l *UDPListener) Stop() {
-	log.Infof("Stopping UDP forwarder on port: %d", l.source.Config.Port)
+	logutil.BgLogger().Info(fmt.Sprintf("Stopping UDP forwarder on port: %d", l.source.Config.Port))
 	l.tailer.Stop()
 }
 
@@ -108,11 +109,11 @@ func (l *UDPListener) read(tailer *Tailer) ([]byte, error) {
 
 // resetTailer creates a new tailer.
 func (l *UDPListener) resetTailer() {
-	log.Infof("Resetting the UDP connection on port: %d", l.source.Config.Port)
+	logutil.BgLogger().Info(fmt.Sprintf("Resetting the UDP connection on port: %d", l.source.Config.Port))
 	l.tailer.Stop()
 	err := l.startNewTailer()
 	if err != nil {
-		log.Errorf("Could not reset the UDP connection on port %d: %v", l.source.Config.Port, err)
+		logutil.BgLogger().Error(fmt.Sprintf("Could not reset the UDP connection on port %d", l.source.Config.Port), zap.Error(err))
 		l.source.Status.Error(err)
 		return
 	}

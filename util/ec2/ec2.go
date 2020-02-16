@@ -15,7 +15,7 @@ import (
 
 	. "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/common"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // declare these as vars not const to ease testing
@@ -198,6 +198,6 @@ func isDefaultHostname(hostname string, useWindowsPrefix bool) bool {
 
 // HostnameProvider gets the hostname
 func HostnameProvider() (string, error) {
-	log.Debug("GetHostname trying EC2 metadata...")
+	logutil.BgLogger().Debug("GetHostname trying EC2 metadata...")
 	return GetInstanceID()
 }

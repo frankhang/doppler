@@ -1,13 +1,15 @@
 package agent
 
 import (
+	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 	"strings"
 
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/tagger/collectors"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
 )
 
 type tagRetriever func(entity string, cardinality collectors.TagCardinality) ([]string, error)
@@ -36,7 +38,7 @@ func enrichTags(tags []string, defaultHostname string) ([]string, string) {
 			entity := kubelet.KubePodTaggerEntityPrefix + tag[len(entityIDTagPrefix):]
 			entityTags, err := getTags(entity, tagger.DogstatsdCardinality)
 			if err != nil {
-				log.Tracef("Cannot get tags for entity %s: %s", entity, err)
+				logutil.BgLogger().Debug(fmt.Sprintf("Cannot get tags for entity %s", entity), zap.Error(err))
 				continue
 			}
 			extraTags = append(extraTags, entityTags...)

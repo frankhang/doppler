@@ -9,6 +9,7 @@ package python
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	yaml "gopkg.in/yaml.v2"
@@ -36,7 +37,7 @@ func getConnections() map[string]string {
 	kubeutil, err := kubelet.GetKubeUtil()
 	if err != nil {
 		// Connection to the kubelet fail, return empty dict
-		log.Errorf("connection to kubelet failed: %v", err)
+		logutil.BgLogger().Error("connection to kubelet failed", zap.Error(err))
 		return nil
 	}
 
@@ -53,15 +54,15 @@ func GetKubeletConnectionInfo(payload **C.char) {
 	var ok bool
 
 	if cached, hit := cache.Cache.Get(kubeletCacheKey); hit {
-		log.Debug("cache hit for kubelet connection info")
+		logutil.BgLogger().Debug("cache hit for kubelet connection info")
 		if creds, ok = cached.(string); !ok {
-			log.Error("invalid cache format, forcing a cache miss")
+			logutil.BgLogger().Error("invalid cache format, forcing a cache miss")
 			creds = ""
 		}
 	}
 
 	if creds == "" { // Cache miss
-		log.Debug("cache miss for kubelet connection info")
+		logutil.BgLogger().Debug("cache miss for kubelet connection info")
 		connections := getConnectionsFunc()
 		if connections == nil {
 			return

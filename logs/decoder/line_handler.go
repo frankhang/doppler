@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/logs/parser"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // truncatedFlag is the flag that is added at the beginning
@@ -91,7 +91,7 @@ func (h *SingleLineHandler) process(line []byte) {
 
 	content, status, timestamp, err := h.parser.Parse(line)
 	if err != nil {
-		log.Debug(err)
+		logutil.BgLogger().Debug(err.Error())
 	}
 	content = bytes.TrimSpace(content)
 	if len(content) == 0 {
@@ -212,7 +212,7 @@ func (h *MultiLineHandler) run() {
 func (h *MultiLineHandler) process(line []byte) {
 	content, status, timestamp, err := h.parser.Parse(line)
 	if err != nil {
-		log.Debug(err)
+		logutil.BgLogger().Debug(err.Error())
 	}
 
 	if h.newContentRe.Match(content) {

@@ -6,11 +6,13 @@
 package providers
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/autodiscovery/providers/names"
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/docker"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 
 	ecsmeta "github.com/frankhang/doppler/util/ecs/metadata"
 	v2 "github.com/frankhang/doppler/util/ecs/metadata/v2"
@@ -59,7 +61,7 @@ func parseECSContainers(containers []v2.Container) ([]integration.Config, error)
 		configs, errors := extractTemplatesFromMap(dockerEntityName, c.Labels, ecsADLabelPrefix)
 
 		for _, err := range errors {
-			log.Errorf("unable to extract templates for container %s - %s", c.DockerID, err)
+			logutil.BgLogger().Error("unable to extract templates for container %s - %s", zap.String("id", c.DockerID), zap.Error(err))
 		}
 
 		for idx := range configs {

@@ -48,7 +48,7 @@ func IsFargateInstance() bool {
 
 		_, err := ecsmeta.V2().GetTask()
 		if err != nil {
-			log.Debug(err)
+			logutil.BgLogger().Debug(err.Error())
 			return newBoolEntry(false)
 		}
 

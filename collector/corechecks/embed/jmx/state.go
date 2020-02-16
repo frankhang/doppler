@@ -9,13 +9,14 @@ package jmx
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/util/cache"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type jmxState struct {
@@ -88,6 +89,6 @@ func GetScheduledConfigsModificationTimestamp() int64 {
 func StopJmxfetch() {
 	err := state.runner.stopRunner()
 	if err != nil {
-		log.Errorf("failure to kill jmxfetch process: %s", err)
+		logutil.BgLogger().Error("failure to kill jmxfetch process", zap.Error(err))
 	}
 }

@@ -148,7 +148,7 @@ func (h *AutoscalersController) updateWPAutoscaler(old, obj interface{}) {
 	// Need to delete the old object from the local cache. If the labels have changed, the syncAutoscaler would not override the old key.
 	toDelete := autoscalers.InspectWPA(oldAutoscaler)
 	h.deleteFromLocalStore(toDelete)
-	log.Tracef("Processing update event for wpa %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations)
+	logutil.BgLogger().Debug(fmt.Sprintf("Processing update event for wpa %s/%s with configuration: %s", newAutoscaler.Namespace, newAutoscaler.Name, newAutoscaler.Annotations))
 	h.enqueueWPA(newAutoscaler)
 }
 
@@ -164,11 +164,11 @@ func (h *AutoscalersController) deleteWPAutoscaler(obj interface{}) {
 	if ok {
 		toDelete.External = autoscalers.InspectWPA(deletedWPA)
 		h.deleteFromLocalStore(toDelete.External)
-		log.Debugf("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name)
+		logutil.BgLogger().Debug(fmt.Sprintf("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name))
 		if !h.le.IsLeader() {
 			return
 		}
-		log.Infof("Deleting entries of metrics from Ref %s/%s in the Global Store", deletedWPA.Namespace, deletedWPA.Name)
+		logutil.BgLogger().Info(fmt.Sprintf("Deleting entries of metrics from Ref %s/%s in the Global Store", deletedWPA.Namespace, deletedWPA.Name))
 		if err := h.store.DeleteExternalMetricValues(toDelete); err != nil {
 			h.enqueueWPA(deletedWPA)
 			return
@@ -189,7 +189,7 @@ func (h *AutoscalersController) deleteWPAutoscaler(obj interface{}) {
 
 	logutil.BgLogger().Debug(fmt.Sprintf("Deleting Metrics from WPA %s/%s", deletedWPA.Namespace, deletedWPA.Name))
 	toDelete.External = autoscalers.InspectWPA(deletedWPA)
-	log.Debugf("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name)
+	logutil.BgLogger().Debug(fmt.Sprintf("Deleting %s/%s from the local cache", deletedWPA.Namespace, deletedWPA.Name))
 	h.deleteFromLocalStore(toDelete.External)
 	if err := h.store.DeleteExternalMetricValues(toDelete); err != nil {
 		h.enqueueWPA(deletedWPA)

@@ -13,13 +13,14 @@ package system
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 	"unsafe"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/util/winutil/pdhutil"
 	"github.com/DataDog/gohai/cpu"
 	"golang.org/x/sys/windows"
@@ -72,11 +73,11 @@ func (c *CPUCheck) Run() error {
 
 	cpuTimes, err := times()
 	if err != nil {
-		log.Errorf("system.CPUCheck: could not retrieve cpu stats: %s", err)
+		logutil.BgLogger().Error("system.CPUCheck: could not retrieve cpu stats: %s", err)
 		return err
 	} else if len(cpuTimes) < 1 {
 		errEmpty := fmt.Errorf("no cpu stats retrieve (empty results)")
-		log.Errorf("system.CPUCheck: %s", errEmpty)
+		logutil.BgLogger().Error("system.CPUCheck", zap.Error(errEmpty))
 		return errEmpty
 	}
 	t := cpuTimes[0]
@@ -103,7 +104,7 @@ func (c *CPUCheck) Run() error {
 	}
 	vals, err := c.counter.GetAllValues()
 	if err != nil {
-		log.Warnf("Error getting handle value %v", err)
+		logutil.BgLogger().Warn("Error getting handle value", zap.Error(err))
 	} else {
 		val := vals["_Total"]
 		sender.Gauge("system.cpu.interrupt", float64(val), "", nil)

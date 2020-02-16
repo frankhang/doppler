@@ -8,10 +8,12 @@
 package python
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/aggregator"
 	chk "github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/metrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 /*
@@ -28,7 +30,7 @@ func SubmitMetric(checkID *C.char, metricType C.metric_type_t, metricName *C.cha
 
 	sender, err := aggregator.GetSender(chk.ID(goCheckID))
 	if err != nil || sender == nil {
-		log.Errorf("Error submitting metric to the Sender: %v", err)
+		logutil.BgLogger().Error("Error submitting metric to the Sender", zap.Error(err))
 		return
 	}
 
@@ -62,7 +64,7 @@ func SubmitServiceCheck(checkID *C.char, scName *C.char, status C.int, tags **C.
 
 	sender, err := aggregator.GetSender(chk.ID(goCheckID))
 	if err != nil || sender == nil {
-		log.Errorf("Error submitting metric to the Sender: %v", err)
+		logutil.BgLogger().Error("Error submitting metric to the Sender", zap.Error(err))
 		return
 	}
 
@@ -77,7 +79,7 @@ func SubmitServiceCheck(checkID *C.char, scName *C.char, status C.int, tags **C.
 
 func eventParseString(value *C.char, fieldName string) string {
 	if value == nil {
-		log.Tracef("Can't parse value for key '%s' in event submitted from python check", fieldName)
+		logutil.BgLogger().Debug(fmt.Sprintf("Can't parse value for key '%s' in event submitted from python check", fieldName))
 		return ""
 	}
 	return C.GoString(value)
@@ -90,7 +92,7 @@ func SubmitEvent(checkID *C.char, event *C.event_t) {
 
 	sender, err := aggregator.GetSender(chk.ID(goCheckID))
 	if err != nil || sender == nil {
-		log.Errorf("Error submitting metric to the Sender: %v", err)
+		logutil.BgLogger().Error("Error submitting metric to the Sender", zap.Error(err))
 		return
 	}
 
@@ -116,7 +118,7 @@ func SubmitHistogramBucket(checkID *C.char, metricName *C.char, value C.int, low
 	goCheckID := C.GoString(checkID)
 	sender, err := aggregator.GetSender(chk.ID(goCheckID))
 	if err != nil || sender == nil {
-		log.Errorf("Error submitting histogram bucket to the Sender: %v", err)
+		logutil.BgLogger().Error("Error submitting histogram bucket to the Sender", zap.Error(err))
 		return
 	}
 

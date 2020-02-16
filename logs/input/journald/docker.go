@@ -13,7 +13,7 @@ import (
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/tagger/collectors"
 	dockerutil "github.com/frankhang/doppler/util/docker"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // containerIDKey represents the key of the container identifier in a journal entry.
@@ -35,7 +35,7 @@ func (t *Tailer) getContainerID(entry *sdjournal.JournalEntry) string {
 func (t *Tailer) getContainerTags(containerID string) []string {
 	tags, err := tagger.Tag(dockerutil.ContainerIDToTaggerEntityName(containerID), collectors.HighCardinality)
 	if err != nil {
-		log.Warn(err)
+		logutil.BgLogger().Warn(err.Error())
 	}
 	return tags
 }

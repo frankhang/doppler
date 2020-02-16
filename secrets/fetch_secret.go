@@ -91,7 +91,7 @@ func fetchSecret(secretsHandle []string, origin string) (map[string]string, erro
 	if err != nil {
 		return nil, fmt.Errorf("could not serialize secrets IDs to fetch password: %s", err)
 	}
-	log.Debugf("calling secret_backend_command with payload: '%s'", jsonPayload)
+	logutil.BgLogger().Debug(fmt.Sprintf("calling secret_backend_command with payload: '%s'", jsonPayload))
 	output, err := runCommand(string(jsonPayload))
 	if err != nil {
 		return nil, err

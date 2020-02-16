@@ -6,7 +6,8 @@
 package sender
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/logs/message"
 	"github.com/frankhang/doppler/logs/metrics"
@@ -26,7 +27,7 @@ func (s *streamStrategy) Send(inputChan chan *message.Message, outputChan chan *
 			if shouldStopSending(err) {
 				return
 			}
-			log.Warnf("Could not send payload: %v", err)
+			logutil.BgLogger().Warn("Could not send payload", zap.Error(err))
 		}
 		metrics.LogsSent.Add(1)
 		metrics.TlmLogsSent.Inc()

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/metrics"
@@ -214,7 +214,7 @@ func (s *checkSender) SendRawMetricSample(sample *metrics.MetricSample) {
 func (s *checkSender) sendMetricSample(metric string, value float64, hostname string, tags []string, mType metrics.MetricType) {
 	tags = append(tags, s.checkTags...)
 
-	log.Trace(mType.String(), " sample: ", metric, ": ", value, " for hostname: ", hostname, " tags: ", tags)
+	logutil.BgLogger().Debug(fmt.Sprintf(mType.String(), " sample: ", metric, ": ", value, " for hostname: ", hostname, " tags: ", tags))
 
 	metricSample := &metrics.MetricSample{
 		Name:       metric,
@@ -274,8 +274,8 @@ func (s *checkSender) Histogram(metric string, value float64, hostname string, t
 func (s *checkSender) HistogramBucket(metric string, value int, lowerBound, upperBound float64, monotonic bool, hostname string, tags []string) {
 	tags = append(tags, s.checkTags...)
 
-	log.Tracef(
-		"Histogram Bucket %s submitted: %v [%f-%f] monotonic: %v for host %s tags: %v",
+	logutil.BgLogger().Debug(
+		fmt.Sprintf("Histogram Bucket %s submitted: %v [%f-%f] monotonic: %v for host %s tags: %v",
 		metric,
 		value,
 		lowerBound,
@@ -283,7 +283,7 @@ func (s *checkSender) HistogramBucket(metric string, value int, lowerBound, uppe
 		monotonic,
 		hostname,
 		tags,
-	)
+	))
 
 	histogramBucket := &metrics.HistogramBucket{
 		Name:       metric,
@@ -321,7 +321,7 @@ func (s *checkSender) SendRawServiceCheck(sc *metrics.ServiceCheck) {
 
 // ServiceCheck submits a service check
 func (s *checkSender) ServiceCheck(checkName string, status metrics.ServiceCheckStatus, hostname string, tags []string, message string) {
-	log.Trace("Service check submitted: ", checkName, ": ", status.String(), " for hostname: ", hostname, " tags: ", tags)
+	logutil.BgLogger().Debug(fmt.Sprintf("Service check submitted: ", checkName, ": ", status.String(), " for hostname: ", hostname, " tags: ", tags))
 	serviceCheck := metrics.ServiceCheck{
 		CheckName: checkName,
 		Status:    status,
@@ -346,7 +346,7 @@ func (s *checkSender) ServiceCheck(checkName string, status metrics.ServiceCheck
 func (s *checkSender) Event(e metrics.Event) {
 	e.Tags = append(e.Tags, s.checkTags...)
 
-	log.Trace("Event submitted: ", e.Title, " for hostname: ", e.Host, " tags: ", e.Tags)
+	logutil.BgLogger().Debug(fmt.Sprintf("Event submitted: ", e.Title, " for hostname: ", e.Host, " tags: ", e.Tags))
 
 	if e.Host == "" && !s.defaultHostnameDisabled {
 		e.Host = s.defaultHostname

@@ -9,12 +9,14 @@ package jsonstream
 
 import (
 	"bytes"
+	"fmt"
+	"go.uber.org/zap"
 
 	jsoniter "github.com/json-iterator/go"
 
 	"github.com/frankhang/doppler/forwarder"
 	"github.com/frankhang/doppler/serializer/marshaler"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 var jsonConfig = jsoniter.Config{
@@ -94,7 +96,7 @@ func (b *PayloadBuilder) BuildWithOnErrItemTooBigPolicy(
 		jsonStream.Reset(nil)
 		err := m.WriteItem(jsonStream, i)
 		if err != nil {
-			log.Warnf("error marshalling an item, skipping: %s", err)
+			logutil.BgLogger().Warn("error marshalling an item, skipping", zap.Error(err))
 			i++
 			expvarsWriteItemErrors.Add(1)
 			tlmWriteItemErrors.Inc()
@@ -131,7 +133,7 @@ func (b *PayloadBuilder) BuildWithOnErrItemTooBigPolicy(
 		default:
 			// Unexpected error, drop the item
 			i++
-			log.Warnf("Dropping an item, %s: %s", m.DescribeItem(i), err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Dropping an item, %s: %s", m.DescribeItem(i)), zap.Error(err))
 			expvarsItemDrops.Add(1)
 			tlmItemDrops.Inc()
 			continue

@@ -7,13 +7,14 @@ package tcp
 
 import (
 	"expvar"
+	"fmt"
 	"net"
 	"sync"
 
 	"github.com/frankhang/doppler/logs/client"
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/metrics"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -96,7 +97,7 @@ func (d *Destination) SendAsync(payload []byte) {
 	default:
 		// TODO: Display the warning in the status
 		if metrics.DestinationLogsDropped.Get(host).(*expvar.Int).Value()%warningPeriod == 0 {
-			log.Warnf("Some logs sent to additional destination %v were dropped", host)
+			logutil.BgLogger().Warn(fmt.Sprintf("Some logs sent to additional destination %v were dropped", host))
 		}
 		metrics.DestinationLogsDropped.Add(host, 1)
 		metrics.TlmLogsDropped.Inc(host)

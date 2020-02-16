@@ -7,12 +7,13 @@ package corechecks
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	"github.com/frankhang/doppler/collector/loaders"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // CheckFactory factory function type to instantiate checks
@@ -73,7 +74,7 @@ func (gl *GoCheckLoader) Load(config integration.Config) ([]check.Check, error) 
 		newCheck := factory()
 		if err := newCheck.Configure(instance, config.InitConfig, config.Source); err != nil {
 			errors = append(errors, fmt.Sprintf("Could not configure check %s: %s", newCheck, err))
-			log.Errorf("core.loader: could not configure check %s: %s", newCheck, err)
+			logutil.BgLogger().Error(fmt.Sprintf("core.loader: could not configure check %s", newCheck, zap.Error(err))
 			continue
 		}
 		checks = append(checks, newCheck)

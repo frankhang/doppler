@@ -14,7 +14,7 @@ import (
 
 	"github.com/frankhang/doppler/status/health"
 	httputils "github.com/frankhang/doppler/util/http"
-	"github.com/frankhang/doppler/util/log"
+
 	"github.com/frankhang/doppler/version"
 )
 
@@ -79,7 +79,7 @@ func (fh *forwarderHealth) Stop() {
 }
 
 func (fh *forwarderHealth) healthCheckLoop() {
-	log.Debug("Waiting for APIkey validity to be confirmed.")
+	logutil.BgLogger().Debug("Waiting for APIkey validity to be confirmed.")
 
 	validateTicker := time.NewTicker(time.Hour * 1)
 	defer validateTicker.Stop()
@@ -161,7 +161,7 @@ func (fh *forwarderHealth) hasValidAPIKey() bool {
 		for _, apiKey := range apiKeys {
 			v, err := fh.validateAPIKey(apiKey, domain)
 			if err != nil {
-				log.Debug(err)
+				logutil.BgLogger().Debug(err.Error())
 				apiError = true
 			} else if v {
 				logutil.BgLogger().Debug(fmt.Sprintf("api_key '%s' for domain %s is valid", apiKey, domain))

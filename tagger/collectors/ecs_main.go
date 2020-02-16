@@ -9,6 +9,7 @@ package collectors
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"time"
 
 	"github.com/frankhang/doppler/config"
@@ -16,7 +17,7 @@ import (
 	"github.com/frankhang/doppler/tagger/utils"
 	taggerutil "github.com/frankhang/doppler/tagger/utils"
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	ecsutil "github.com/frankhang/doppler/util/ecs"
 	ecsmeta "github.com/frankhang/doppler/util/ecs/metadata"
@@ -63,7 +64,7 @@ func (c *ECSCollector) Detect(out chan<- []*TagInfo) (CollectionMode, error) {
 
 	instance, err := c.metaV1.GetInstance()
 	if err != nil {
-		log.Warnf("Cannot determine ECS cluster name: %s", err)
+		logutil.BgLogger().Warn("Cannot determine ECS cluster name", zap.Error(err))
 	}
 
 	c.clusterName = instance.Cluster
@@ -116,7 +117,7 @@ func (c *ECSCollector) Fetch(entity string) ([]string, []string, []string, error
 func addTagsForContainer(containerID string, tags *utils.TagList) {
 	task, err := fetchContainerTaskWithTagsV3(containerID)
 	if err != nil {
-		log.Warnf("Unable to get resource tags for container %s: %s", containerID, err)
+		logutil.BgLogger().Warn("Unable to get resource tags for container", zap.String("id", containerID), zap.Error(err))
 		return
 	}
 	addResourceTags(tags, task.ContainerInstanceTags)

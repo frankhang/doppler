@@ -6,7 +6,9 @@
 package windowsevent
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"fmt"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/pipeline"
@@ -35,9 +37,9 @@ func NewLauncher(sources *config.LogSources, pipelineProvider pipeline.Provider)
 func (l *Launcher) Start() {
 	availableChannels, err := EnumerateChannels()
 	if err != nil {
-		log.Debug("Could not list windows event log channels: ", err)
+		logutil.BgLogger().Debug("Could not list windows event log channels", zap.Error(err))
 	} else {
-		log.Debug("Found available windows event log channels: ", availableChannels)
+		logutil.BgLogger().Debug(fmt.Sprintf("Found available windows event log channels: ", availableChannels))
 	}
 	go l.run()
 }
@@ -54,7 +56,7 @@ func (l *Launcher) run() {
 			}
 			tailer, err := l.setupTailer(source)
 			if err != nil {
-				log.Info("Could not set up windows event log tailer: ", err)
+				logutil.BgLogger().Info("Could not set up windows event log tailer", zap.Error(err))
 			} else {
 				l.tailers[identifier] = tailer
 			}

@@ -3,9 +3,10 @@ package agent
 import (
 	"bytes"
 	"fmt"
+	"go.uber.org/zap"
 	"strconv"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type serviceCheckStatus int
@@ -126,7 +127,7 @@ func parseServiceCheck(message []byte) (dogstatsdServiceCheck, error) {
 		optionalField, message = nextField(message)
 		serviceCheck, err = applyServiceCheckOptionalField(serviceCheck, optionalField)
 		if err != nil {
-			log.Warnf("invalid service check optional field: %v", err)
+			logutil.BgLogger().Warn("invalid service check optional field", zap.Error(err))
 		}
 	}
 	return serviceCheck, nil

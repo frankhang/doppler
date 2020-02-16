@@ -29,7 +29,7 @@ import (
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/telemetry"
 	"github.com/frankhang/doppler/util"
-	"github.com/frankhang/doppler/util/log"
+
 	l "github.com/sirupsen/logrus"
 )
 
@@ -386,7 +386,7 @@ func findOriginTags(origin string) []string {
 	if origin != NoOrigin {
 		originTags, err := tagger.Tag(origin, tagger.DogstatsdCardinality)
 		if err != nil {
-			log.Errorf(err.Error())
+			logutil.BgLogger().Error(err.Error())
 		} else {
 			tags = append(tags, originTags...)
 		}

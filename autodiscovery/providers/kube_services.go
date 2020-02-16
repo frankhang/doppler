@@ -10,6 +10,7 @@ package providers
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
@@ -83,7 +84,7 @@ func (k *KubeServiceConfigProvider) IsUpToDate() (bool, error) {
 
 func (k *KubeServiceConfigProvider) invalidate(obj interface{}) {
 	if obj != nil {
-		log.Trace("Invalidating configs on new/deleted service")
+		logutil.BgLogger().Debug("Invalidating configs on new/deleted service")
 		k.upToDate = false
 	}
 }
@@ -109,7 +110,7 @@ func (k *KubeServiceConfigProvider) invalidateIfChanged(old, obj interface{}) {
 	}
 	// Compare annotations
 	if valuesDiffer(castedObj.Annotations, castedOld.Annotations, kubeServiceAnnotationPrefix) {
-		log.Trace("Invalidating configs on service change")
+		logutil.BgLogger().Debug("Invalidating configs on service change")
 		k.upToDate = false
 		return
 	}
@@ -145,13 +146,13 @@ func parseServiceAnnotations(services []*v1.Service) ([]integration.Config, erro
 	var configs []integration.Config
 	for _, svc := range services {
 		if svc == nil || svc.ObjectMeta.UID == "" {
-			log.Debug("Ignoring a nil service")
+			logutil.BgLogger().Debug("Ignoring a nil service")
 			continue
 		}
 		service_id := apiserver.EntityForService(svc)
 		svcConf, errors := extractTemplatesFromMap(service_id, svc.Annotations, kubeServiceAnnotationPrefix)
 		for _, err := range errors {
-			log.Errorf("Cannot parse service template for service %s/%s: %s", svc.Namespace, svc.Name, err)
+			logutil.BgLogger().Error(fmt.Sprintf("Cannot parse service template for service %s/%s", svc.Namespace, svc.Name), zap.Error(err))
 		}
 		// All configurations are cluster checks
 		for i := range svcConf {

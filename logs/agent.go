@@ -6,12 +6,13 @@
 package logs
 
 import (
+	"go.uber.org/zap"
 	"time"
 
 	coreConfig "github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/status/health"
 	"github.com/frankhang/doppler/util"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/auditor"
 	"github.com/frankhang/doppler/logs/client"
@@ -110,7 +111,7 @@ func (a *Agent) Stop() {
 	select {
 	case <-c:
 	case <-time.After(timeout):
-		log.Info("Timed out when stopping logs-agent, forcing it to stop now")
+		logutil.BgLogger().Info("Timed out when stopping logs-agent, forcing it to stop now")
 		// We force all destinations to read/flush all the messages they get without
 		// trying to write to the network.
 		a.destinationsCtx.Stop()
@@ -122,11 +123,11 @@ func (a *Agent) Stop() {
 		select {
 		case <-c:
 		case <-timeout.C:
-			log.Warn("Force close of the Logs Agent, dumping the Go routines.")
+			logutil.BgLogger().Warn("Force close of the Logs Agent, dumping the Go routines.")
 			if stack, err := util.GetGoRoutinesDump(); err != nil {
-				log.Warnf("can't get the Go routines dump: %s\n", err)
+				logutil.BgLogger().Warn("can't get the Go routines dump", zap.Error(err))
 			} else {
-				log.Warn(stack)
+				logutil.BgLogger().Warn(stack)
 			}
 		}
 	}

@@ -8,7 +8,7 @@ package auditor
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/frankhang/util/logutil"
+
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/frankhang/doppler/status/health"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/message"
@@ -91,7 +91,7 @@ func (a *Auditor) Stop() {
 	a.cleanupRegistry()
 	err := a.flushRegistry()
 	if err != nil {
-		log.Warn(err)
+		logutil.BgLogger().Warn(err.Error())
 	}
 }
 
@@ -143,10 +143,10 @@ func (a *Auditor) run() {
 			if err != nil {
 				if os.IsPermission(err) || os.IsNotExist(err) {
 					fileError.Do(func() {
-						log.Warn(err)
+						logutil.BgLogger().Warn(err.Error())
 					})
 				} else {
-					log.Warn(err)
+					logutil.BgLogger().Warn(err.Error())
 				}
 			}
 		}

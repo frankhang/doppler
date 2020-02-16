@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const maxLength = 255
@@ -34,10 +34,10 @@ func ValidHostname(hostname string) error {
 	} else if isLocal(hostname) {
 		return fmt.Errorf("%s is a local hostname", hostname)
 	} else if len(hostname) > maxLength {
-		log.Errorf("ValidHostname: name exceeded the maximum length of %d characters", maxLength)
+		logutil.BgLogger().Error(fmt.Sprintf("ValidHostname: name exceeded the maximum length of %d characters", maxLength))
 		return fmt.Errorf("name exceeded the maximum length of %d characters", maxLength)
 	} else if !validHostnameRfc1123.MatchString(hostname) {
-		log.Errorf("ValidHostname: %s is not RFC1123 compliant", hostname)
+		logutil.BgLogger().Error(fmt.Sprintf("ValidHostname: %s is not RFC1123 compliant", hostname))
 		return fmt.Errorf("%s is not RFC1123 compliant", hostname)
 	}
 	return nil

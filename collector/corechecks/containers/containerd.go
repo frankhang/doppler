@@ -106,7 +106,7 @@ func (c *ContainerdCheck) Run() error {
 	cu, errHealth := cutil.GetContainerdUtil()
 	if errHealth != nil {
 		sender.ServiceCheck("containerd.health", metrics.ServiceCheckCritical, "", nil, fmt.Sprintf("Connectivity error %v", errHealth))
-		log.Infof("Error ensuring connectivity with Containerd daemon %v", errHealth)
+		logutil.BgLogger().Info(fmt.Sprintf("Error ensuring connectivity with Containerd daemon %v", errHealth))
 		return errHealth
 	}
 	sender.ServiceCheck("containerd.health", metrics.ServiceCheckOK, "", nil, "")
@@ -136,7 +136,7 @@ func computeEvents(events []containerdEvent, sender aggregator.Sender, fil *ddCo
 		split := strings.Split(e.Topic, "/")
 		if len(split) != 3 {
 			// sanity checking the event, to avoid submitting
-			log.Debugf("Event topic %s does not have the expected format", e.Topic)
+			logutil.BgLogger().Debug(fmt.Sprintf("Event topic %s does not have the expected format", e.Topic))
 			continue
 		}
 		if split[1] == "images" {
@@ -163,7 +163,7 @@ func computeEvents(events []containerdEvent, sender aggregator.Sender, fil *ddCo
 			tags, err := tagger.Tag(ddContainers.ContainerEntityPrefix+e.ID, collectors.HighCardinality)
 			if err != nil {
 				// If there is an error retrieving tags from the Tagger, we can still submit the event as is.
-				log.Errorf("Could not retrieve tags for the container %s: %v", e.ID, err)
+				logutil.BgLogger().Error(fmt.Sprintf("Could not retrieve tags for the container %s: %v", e.ID), zap.Error(err))
 			}
 			output.Tags = append(output.Tags, tags...)
 		}
@@ -202,7 +202,7 @@ func computeMetrics(sender aggregator.Sender, cu cutil.ContainerdItf, fil *ddCon
 
 		metricTask, errTask := cu.TaskMetrics(ctn)
 		if errTask != nil {
-			log.Tracef("Could not retrieve metrics from task %s: %s", ctn.ID()[:12], errTask.Error())
+			logutil.BgLogger().Debug(fmt.Sprintf("Could not retrieve metrics from task %s", ctn.ID()[:12]), zap.Error(errTask))
 			continue
 		}
 
@@ -264,7 +264,7 @@ func convertTasktoMetrics(metricTask *containerdTypes.Metric) (*cgroups.Metrics,
 		Value:   metricTask.Data.Value,
 	})
 	if err != nil {
-		log.Errorf(err.Error())
+		logutil.BgLogger().Error(err.Error())
 		return nil, err
 	}
 	return metricAny.(*cgroups.Metrics), nil

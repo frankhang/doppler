@@ -29,7 +29,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 	// list if latestResVer is "" or if lastListTS is > syncTimeout
 	diffTime := time.Now().Sub(lastListTime)
 	if resVer == "" || diffTime > syncTimeout {
-		log.Debugf("Return listForEventResync diffTime: %d/%d", diffTime, syncTimeout)
+		logutil.BgLogger().Debug(fmt.Sprintf("Return listForEventResync diffTime: %d/%d", diffTime, syncTimeout))
 		listed, lastResVer, lastTime, err := c.listForEventResync(eventReadTimeout, eventCardinalityLimit, filter)
 		if err != nil {
 			return nil, "", time.Now(), err
@@ -53,7 +53,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 	}
 
 	defer evWatcher.Stop()
-	log.Debugf("Starting to watch from %s", resVer)
+	logutil.BgLogger().Debug(fmt.Sprintf("Starting to watch from %s", resVer))
 	// watch during 2 * timeout maximum and store where we are at.
 	timeoutParse := time.NewTimer(time.Duration(eventReadTimeout) * time.Second)
 	for {
@@ -70,7 +70,7 @@ func (c *APIClient) RunEventCollection(resVer string, lastListTime time.Time, ev
 				switch status.Reason {
 				// Using a switch as there are a lot of different types and we might want to explore adapting the behaviour for certain ones in the future.
 				case "Expired":
-					log.Debugf("Resource Version is too old, listing all events and collecting only the new ones")
+					logutil.BgLogger().Debug("Resource Version is too old, listing all events and collecting only the new ones")
 					evList, resVer, lastListTime, err := c.listForEventResync(eventReadTimeout, eventCardinalityLimit, filter)
 					if err != nil {
 						return added, resVer, lastListTime, err

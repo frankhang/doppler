@@ -8,8 +8,10 @@
 package docker
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/diagnose/diagnosis"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 func init() {
@@ -20,16 +22,16 @@ func init() {
 func diagnose() error {
 	_, err := GetDockerUtil()
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(string(err))
 	} else {
-		log.Info("successfully connected to docker")
+		logutil.BgLogger().Info("successfully connected to docker")
 	}
 
 	hostname, err := HostnameProvider()
 	if err != nil {
-		log.Errorf("returned hostname %q with error: %s", hostname, err)
+		logutil.BgLogger().Error(fmt.Sprintf("returned hostname %q", hostname), zap.Error(err))
 	} else {
-		log.Infof("successfully got hostname %q from docker", hostname)
+		logutil.BgLogger().Info(fmt.Sprintf("successfully got hostname %q from docker", hostname))
 	}
 	return err
 }

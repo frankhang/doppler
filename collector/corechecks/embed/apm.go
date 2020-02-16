@@ -12,6 +12,7 @@ package embed
 import (
 	"bufio"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"os/exec"
 	"sync/atomic"
@@ -23,7 +24,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -69,7 +70,7 @@ func (c *APMCheck) run() error {
 	select {
 	// poll the stop channel once to make sure no stop was requested since the last call to `run`
 	case <-c.stop:
-		log.Info("Not starting APM check: stop requested")
+		logutil.BgLogger().Info("Not starting APM check: stop requested")
 		c.stopDone <- struct{}{}
 		return nil
 	default:
@@ -92,7 +93,7 @@ func (c *APMCheck) run() error {
 	go func() {
 		in := bufio.NewScanner(stdout)
 		for in.Scan() {
-			log.Info(in.Text())
+			logutil.BgLogger().Info(in.Text())
 		}
 	}()
 
@@ -104,7 +105,7 @@ func (c *APMCheck) run() error {
 	go func() {
 		in := bufio.NewScanner(stderr)
 		for in.Scan() {
-			log.Error(in.Text())
+			logutil.BgLogger().Error(in.Text())
 		}
 	}()
 
@@ -123,7 +124,7 @@ func (c *APMCheck) run() error {
 	case <-c.stop:
 		err = cmd.Process.Signal(os.Kill)
 		if err != nil {
-			log.Errorf("unable to stop APM check: %s", err)
+			logutil.BgLogger().Error("unable to stop APM check", zap.Error(err))
 		}
 	}
 
@@ -146,7 +147,7 @@ func (c *APMCheck) Configure(data integration.Data, initConfig integration.Data,
 		if _, err := os.Stat(checkConf.BinPath); err == nil {
 			c.binPath = checkConf.BinPath
 		} else {
-			log.Warnf("Can't access apm binary at %s, falling back to default path at %s", checkConf.BinPath, defaultBinPath)
+			logutil.BgLogger().Warn(fmt.Sprintf("Can't access apm binary at %s, falling back to default path at %s", checkConf.BinPath, defaultBinPath))
 		}
 	}
 
@@ -191,7 +192,7 @@ func (c *APMCheck) IsTelemetryEnabled() bool {
 // Stop sends a termination signal to the APM process
 func (c *APMCheck) Stop() {
 	if atomic.LoadUint32(&c.running) == 0 {
-		log.Info("APM Agent not running.")
+		logutil.BgLogger().Info("APM Agent not running.")
 		return
 	}
 

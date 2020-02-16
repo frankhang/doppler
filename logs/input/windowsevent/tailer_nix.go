@@ -8,12 +8,12 @@
 package windowsevent
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // Start does not do much
 func (t *Tailer) Start() {
-	log.Warn("windows event log not supported on this system")
+	logutil.BgLogger().Warn("windows event log not supported on this system")
 	go t.tail()
 }
 

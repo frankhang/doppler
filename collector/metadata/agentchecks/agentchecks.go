@@ -7,6 +7,8 @@ package agentchecks
 
 import (
 	"encoding/json"
+	"fmt"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/collector"
 	"github.com/frankhang/doppler/collector/runner"
@@ -14,7 +16,7 @@ import (
 	"github.com/frankhang/doppler/metadata/externalhost"
 	"github.com/frankhang/doppler/metadata/host"
 	"github.com/frankhang/doppler/util"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // GetPayload builds a payload of all the agentchecks metadata
@@ -51,7 +53,7 @@ func GetPayload() *Payload {
 	for check, errs := range loaderErrors {
 		jsonErrs, err := json.Marshal(errs)
 		if err != nil {
-			log.Warnf("Error formatting loader error from check %s: %v", check, err)
+			logutil.BgLogger().Warn(fmt.Sprintf("Error formatting loader error from check %s", check), zap.Error(err))
 		}
 		status := []interface{}{
 			check, check, "initialization", "ERROR", string(jsonErrs),

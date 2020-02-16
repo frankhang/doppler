@@ -13,7 +13,8 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/util/clusteragent"
 	"github.com/frankhang/doppler/util/kubernetes/kubelet"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 )
 
 // EndpointsChecksConfigProvider implements the ConfigProvider interface
@@ -32,12 +33,12 @@ func NewEndpointsChecksConfigProvider(cfg config.ConfigurationProviders) (Config
 	var err error
 	c.nodeName, err = getNodename()
 	if err != nil {
-		log.Errorf("Cannot get node name: %s", err)
+		logutil.BgLogger().Error("Cannot get node name", zap.Error(err))
 		return nil, err
 	}
 	err = c.initClient()
 	if err != nil {
-		log.Warnf("Cannot get dca client: %v", err)
+		logutil.BgLogger().Warn("Cannot get dca client", zap.Error(err))
 	}
 	return c, nil
 }
@@ -78,7 +79,7 @@ func (c *EndpointsChecksConfigProvider) Collect() ([]integration.Config, error) 
 func getNodename() (string, error) {
 	ku, err := kubelet.GetKubeUtil()
 	if err != nil {
-		log.Errorf("Cannot get kubeUtil object: %s", err)
+		logutil.BgLogger().Error("Cannot get kubeUtil object", zap.Error(err))
 		return "", err
 	}
 	return ku.GetNodename()

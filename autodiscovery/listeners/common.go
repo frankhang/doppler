@@ -8,9 +8,10 @@ package listeners
 import (
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/util/containers"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 const (
@@ -28,8 +29,8 @@ func ComputeContainerServiceIDs(entity string, image string, labels map[string]s
 		return []string{l}
 	}
 	if l, found := labels[legacyIdentifierLabel]; found {
-		log.Warnf("found legacy %s label for %s, please use the new name %s",
-			legacyIdentifierLabel, entity, newIdentifierLabel)
+		logutil.BgLogger().Warn(fmt.Sprintf("found legacy %s label for %s, please use the new name %s",
+			legacyIdentifierLabel, entity, newIdentifierLabel))
 		return []string{l}
 	}
 
@@ -38,7 +39,7 @@ func ComputeContainerServiceIDs(entity string, image string, labels map[string]s
 	// Add Image names (long then short if different)
 	long, short, _, err := containers.SplitImageName(image)
 	if err != nil {
-		log.Warnf("error while spliting image name: %s", err)
+		logutil.BgLogger().Warn("error while spliting image name", zap.Error(err))
 	}
 	if len(long) > 0 {
 		ids = append(ids, long)

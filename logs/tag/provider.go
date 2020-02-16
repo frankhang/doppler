@@ -6,13 +6,15 @@
 package tag
 
 import (
+	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/tagger/collectors"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 // Provider returns a list of up-to-date tags for a given entity.
@@ -48,7 +50,7 @@ func (p *provider) GetTags() []string {
 	})
 	tags, err := tagger.Tag(p.entityID, collectors.HighCardinality)
 	if err != nil {
-		log.Warnf("Cannot tag container %s: %v", p.entityID, err)
+		logutil.BgLogger().Warn(fmt.Sprintf("Cannot tag container %s: %v", p.entityID), zap.Error(err))
 		return []string{}
 	}
 	return tags

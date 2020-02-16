@@ -7,11 +7,12 @@
 package common
 
 import (
+	"go.uber.org/zap"
 	"path"
 
 	"github.com/frankhang/doppler/util/cache"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	gopsutilhost "github.com/shirou/gopsutil/host"
 )
 
@@ -24,7 +25,7 @@ func getUUID() string {
 	info, err := gopsutilhost.Info()
 	if err != nil {
 		// don't cache and return zero value
-		log.Errorf("failed to retrieve host info: %s", err)
+		logutil.BgLogger().Error("failed to retrieve host info", zap.Error(err))
 		return ""
 	}
 	cache.Cache.Set(key, info.HostID, cache.NoExpiration)

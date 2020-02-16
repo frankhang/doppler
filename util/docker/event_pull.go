@@ -11,11 +11,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"go.uber.org/zap"
 	"io"
 	"strings"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/events"
@@ -65,11 +66,11 @@ func (d *DockerUtil) processContainerEvent(msg events.Message) (*ContainerEvent,
 		var err error
 		imageName, err = d.ResolveImageName(imageName)
 		if err != nil {
-			log.Warnf("can't resolve image name %s: %s", imageName, err)
+			logutil.BgLogger().Warn("can't resolve image name %s", imageName, zap.Error(err))
 		}
 	}
 	if d.cfg.filter.IsExcluded(containerName, imageName) {
-		log.Tracef("events from %s are skipped as the image is excluded for the event collection", containerName)
+		logutil.BgLogger().Debug(fmt.Sprintf("events from %s are skipped as the image is excluded for the event collection", containerName))
 		return nil, nil
 	}
 
@@ -118,7 +119,7 @@ func (d *DockerUtil) LatestContainerEvents(since time.Time) ([]*ContainerEvent, 
 		case msg := <-msgChan:
 			event, err := d.processContainerEvent(msg)
 			if err != nil {
-				log.Warnf("error parsing docker message: %s", err)
+				logutil.BgLogger().Warn("error parsing docker message", zap.Error(err))
 				continue
 			} else if event == nil {
 				continue

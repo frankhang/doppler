@@ -22,7 +22,7 @@ import (
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/util/cache"
 	"github.com/frankhang/doppler/util/executable"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/frankhang/doppler/version"
 )
 
@@ -238,12 +238,12 @@ func detectPythonLocation(pythonVersion string) {
 		 * back to the compile time values
 		 */
 		if _, err := os.Stat(agentpythonHome2); os.IsNotExist(err) {
-			log.Warnf("relative embedded directory not found for python2; using default %s", pythonHome2)
+			logutil.BgLogger().Warn(fmt.Sprintf("relative embedded directory not found for python2; using default %s", pythonHome2))
 		} else {
 			pythonHome2 = agentpythonHome2
 		}
 		if _, err := os.Stat(agentpythonHome3); os.IsNotExist(err) {
-			log.Warnf("relative embedded directory not found for python3; using default %s", pythonHome3)
+			logutil.BgLogger().Warn(fmt.Sprintf("relative embedded directory not found for python3; using default %s", pythonHome3))
 		} else {
 			pythonHome3 = agentpythonHome3
 		}
@@ -281,10 +281,10 @@ func Initialize(paths ...string) error {
 	defer C._free(unsafe.Pointer(csPythonHome))
 	if pythonVersion == "2" {
 		rtloader = C.make2(csPythonHome, &pyErr)
-		log.Infof("Initializing rtloader with python2 %s", PythonHome)
+		logutil.BgLogger().Info(fmt.Sprintf("Initializing rtloader with python2 %s", PythonHome))
 	} else if pythonVersion == "3" {
 		rtloader = C.make3(csPythonHome, &pyErr)
-		log.Infof("Initializing rtloader with python3 %s", PythonHome)
+		logutil.BgLogger().Info(fmt.Sprintf("Initializing rtloader with python3 %s", PythonHome))
 	} else {
 		return addExpvarPythonInitErrors(fmt.Sprintf("unsuported version of python: %s", pythonVersion))
 	}
@@ -306,7 +306,7 @@ func Initialize(paths ...string) error {
 
 	// Any platform-specific initialization
 	if initializePlatform() != nil {
-		log.Warnf("unable to complete platform-specific initialization - should be non-fatal")
+		logutil.BgLogger().Warn("unable to complete platform-specific initialization - should be non-fatal")
 	}
 
 	// Setup custom builtin before RtLoader initialization
@@ -341,7 +341,7 @@ func Initialize(paths ...string) error {
 		PythonPath = C.GoString(pyInfo.path)
 		C.free_py_info(rtloader, pyInfo)
 	} else {
-		log.Errorf("Could not query python information: %s", C.GoString(C.get_error(rtloader)))
+		logutil.BgLogger().Error(fmt.Sprintf("Could not query python information: %s", C.GoString(C.get_error(rtloader))))
 	}
 
 	sendTelemetry(pythonVersion)

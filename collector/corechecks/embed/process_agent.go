@@ -11,6 +11,7 @@ package embed
 import (
 	"bufio"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,7 +26,7 @@ import (
 	"github.com/frankhang/doppler/config"
 	"github.com/frankhang/doppler/telemetry"
 	"github.com/frankhang/doppler/util/executable"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type processAgentCheckConf struct {
@@ -70,7 +71,7 @@ func (c *ProcessAgentCheck) run() error {
 	select {
 	// poll the stop channel once to make sure no stop was requested since the last call to `run`
 	case <-c.stop:
-		log.Info("Not starting Process Agent check: stop requested")
+		logutil.BgLogger().Info("Not starting Process Agent check: stop requested")
 		c.stopDone <- struct{}{}
 		return nil
 	default:
@@ -86,7 +87,7 @@ func (c *ProcessAgentCheck) run() error {
 	go func() {
 		in := bufio.NewScanner(stdout)
 		for in.Scan() {
-			log.Info(in.Text())
+			logutil.BgLogger().Info(in.Text())
 		}
 	}()
 
@@ -98,7 +99,7 @@ func (c *ProcessAgentCheck) run() error {
 	go func() {
 		in := bufio.NewScanner(stderr)
 		for in.Scan() {
-			log.Error(in.Text())
+			logutil.BgLogger().Error(in.Text())
 		}
 	}()
 
@@ -117,7 +118,7 @@ func (c *ProcessAgentCheck) run() error {
 	case <-c.stop:
 		err = cmd.Process.Signal(os.Kill)
 		if err != nil {
-			log.Errorf("unable to stop process-agent check: %s", err)
+			logutil.BgLogger().Error("unable to stop process-agent check", zap.Error(err))
 		}
 	}
 
@@ -132,7 +133,7 @@ func (c *ProcessAgentCheck) Configure(data integration.Data, initConfig integrat
 	// only log whether process check is enabled or not but don't return early, because we still need to initialize "binPath", "source" and
 	// start up process-agent. Ultimately it's up to process-agent to decide whether to run or not based on the config
 	if enabled := config.Datadog.GetBool("process_config.enabled"); !enabled {
-		log.Info("live process monitoring is disabled through main configuration file")
+		logutil.BgLogger().Info("live process monitoring is disabled through main configuration file")
 	}
 
 	var checkConf processAgentCheckConf
@@ -146,7 +147,7 @@ func (c *ProcessAgentCheck) Configure(data integration.Data, initConfig integrat
 		if _, err := os.Stat(checkConf.BinPath); err == nil {
 			c.binPath = checkConf.BinPath
 		} else {
-			log.Warnf("Can't access process-agent binary at %s, falling back to default path at %s", checkConf.BinPath, defaultBinPath)
+			fWarnf("Can't access process-agent binary at %s, falling back to default path at %s", checkConf.BinPath, defaultBinPath)
 		}
 	}
 
@@ -191,7 +192,7 @@ func (c *ProcessAgentCheck) IsTelemetryEnabled() bool {
 // Stop sends a termination signal to the process-agent process
 func (c *ProcessAgentCheck) Stop() {
 	if atomic.LoadUint32(&c.running) == 0 {
-		log.Info("Process Agent not running.")
+		logutil.BgLogger().Info("Process Agent not running.")
 		return
 	}
 

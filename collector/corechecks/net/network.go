@@ -11,6 +11,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"regexp"
 	"strconv"
@@ -20,7 +21,7 @@ import (
 	"github.com/frankhang/doppler/autodiscovery/integration"
 	"github.com/frankhang/doppler/collector/check"
 	core "github.com/frankhang/doppler/collector/corechecks"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/shirou/gopsutil/net"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -142,7 +143,7 @@ func (c *NetworkCheck) Run() error {
 		if protocolStats.Protocol == "tcp" {
 			counters, err := c.net.NetstatTCPExtCounters()
 			if err != nil {
-				log.Debug(err)
+				logutil.BgLogger().Debug(string(err))
 			} else {
 				for counter, value := range counters {
 					protocolStats.Stats[counter] = value
@@ -293,7 +294,7 @@ func (c *NetworkCheck) Configure(rawInstance integration.Data, rawInitConfig int
 	if c.config.instance.ExcludedInterfaceRe != "" {
 		pattern, err := regexp.Compile(c.config.instance.ExcludedInterfaceRe)
 		if err != nil {
-			log.Errorf("Failed to parse network check option excluded_interface_re: %s", err)
+			logutil.BgLogger().Error("Failed to parse network check option excluded_interface_re", zap.Error(err))
 		} else {
 			c.config.instance.ExcludedInterfacePattern = pattern
 		}

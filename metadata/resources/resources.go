@@ -8,8 +8,9 @@
 package resources
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 	"github.com/DataDog/gohai/processes"
+	"go.uber.org/zap"
 )
 
 // GetPayload builds a payload of processes metadata collected from gohai.
@@ -18,7 +19,7 @@ func GetPayload(hostname string) *Payload {
 	// Get processes metadata from gohai
 	proc, err := new(processes.Processes).Collect()
 	if err != nil {
-		log.Warn("Failed to retrieve processes metadata: ", err)
+		logutil.BgLogger().Warn("Failed to retrieve processes metadata", zap.Error(err))
 		return nil
 	}
 

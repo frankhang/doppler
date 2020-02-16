@@ -6,9 +6,10 @@
 package sender
 
 import (
+	"go.uber.org/zap"
 	"time"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/message"
 	"github.com/frankhang/doppler/logs/metrics"
@@ -93,7 +94,7 @@ func (s *batchStrategy) sendBuffer(outputChan chan *message.Message, send func([
 		if shouldStopSending(err) {
 			return
 		}
-		log.Warnf("Could not send payload: %v", err)
+		logutil.BgLogger().Warn("Could not send payload", zap.Error(err))
 	}
 
 	metrics.LogsSent.Add(int64(len(messages)))

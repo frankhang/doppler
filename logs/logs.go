@@ -12,7 +12,7 @@ import (
 
 	"github.com/frankhang/doppler/logs/metrics"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/scheduler"
@@ -70,10 +70,10 @@ func Start() error {
 
 	// setup and start the agent
 	agent = NewAgent(sources, services, processingRules, endpoints)
-	log.Info("Starting logs-agent...")
+	logutil.BgLogger().Info("Starting logs-agent...")
 	agent.Start()
 	atomic.StoreInt32(&isRunning, 1)
-	log.Info("logs-agent started")
+	logutil.BgLogger().Info("logs-agent started")
 
 	// add the default sources
 	for _, source := range config.DefaultSources() {
@@ -86,7 +86,7 @@ func Start() error {
 // Stop stops properly the logs-agent to prevent data loss,
 // it only returns when the whole pipeline is flushed.
 func Stop() {
-	log.Info("Stopping logs-agent")
+	logutil.BgLogger().Info("Stopping logs-agent")
 	if IsAgentRunning() {
 		if agent != nil {
 			agent.Stop()
@@ -99,7 +99,7 @@ func Stop() {
 		status.Clear()
 		atomic.StoreInt32(&isRunning, 0)
 	}
-	log.Info("logs-agent stopped")
+	logutil.BgLogger().Info("logs-agent stopped")
 }
 
 // IsAgentRunning returns true if the logs-agent is running.

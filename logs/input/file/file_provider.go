@@ -7,13 +7,14 @@ package file
 
 import (
 	"fmt"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/frankhang/doppler/logs/status"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 
 	"github.com/frankhang/doppler/logs/config"
 )
@@ -74,7 +75,7 @@ func (p *Provider) FilesToTail(sources []*config.LogSource) []*File {
 				source.Messages.AddMessage(source.Config.Path, fmt.Sprintf("%d files tailed out of %d files matching", tailedFileCounter, len(files)))
 			}
 			if shouldLogErrors {
-				log.Warnf("Could not collect files: %v", err)
+				logutil.BgLogger().Warn("Could not collect files", zap.Error(err))
 			}
 			continue
 		}
@@ -102,7 +103,7 @@ func (p *Provider) FilesToTail(sources []*config.LogSource) []*File {
 	}
 
 	if len(filesToTail) == p.filesLimit {
-		log.Warn("Reached the limit on the maximum number of files in use: ", p.filesLimit)
+		logutil.BgLogger().Warn(fmt.Sprintf("Reached the limit on the maximum number of files in use: ", p.filesLimit))
 		return filesToTail
 	}
 
