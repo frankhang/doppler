@@ -8,7 +8,6 @@ package forwarder
 import (
 	"expvar"
 	"fmt"
-	"github.com/frankhang/util/logutil"
 	"go.uber.org/zap"
 	"net/http"
 	"strings"

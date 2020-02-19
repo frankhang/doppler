@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"expvar"
 	"fmt"
-	"github.com/frankhang/util/logutil"
 	"net/http"
 	"regexp"
 
