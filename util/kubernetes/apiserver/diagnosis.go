@@ -8,8 +8,9 @@
 package apiserver
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/diagnose/diagnosis"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 func init() {
@@ -22,9 +23,9 @@ func diagnose() error {
 	c, err := GetAPIClient()
 	isConnectVerbose = false
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 		return err
 	}
-	log.Infof("Detecting OpenShift APIs: %s available", c.DetectOpenShiftAPILevel())
+	logutil.BgLogger().Info(fmt.Sprintf("Detecting OpenShift APIs: %s available", c.DetectOpenShiftAPILevel()))
 	return nil
 }

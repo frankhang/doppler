@@ -6,7 +6,8 @@
 package processor
 
 import (
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
+	"go.uber.org/zap"
 
 	"github.com/frankhang/doppler/logs/config"
 	"github.com/frankhang/doppler/logs/message"
@@ -61,7 +62,7 @@ func (p *Processor) run() {
 			// Encode the message to its final format
 			content, err := p.encoder.Encode(msg, redactedMsg)
 			if err != nil {
-				log.Error("unable to encode msg ", err)
+				logutil.BgLogger().Error("unable to encode msg", zap.Error(err))
 				continue
 			}
 			msg.Content = content

@@ -7,7 +7,7 @@ package clusteragent
 
 import (
 	"github.com/frankhang/doppler/diagnose/diagnosis"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 func init() {
@@ -17,7 +17,7 @@ func init() {
 func diagnose() error {
 	_, err := GetClusterAgentClient()
 	if err != nil {
-		log.Error(err)
+		logutil.BgLogger().Error(err.Error())
 	}
 	return err
 }

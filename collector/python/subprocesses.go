@@ -11,7 +11,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type subprocessContext struct {
@@ -45,7 +45,7 @@ func GetSubprocessContextCancel() (context.Context, context.CancelFunc) {
 func TerminateRunningProcesses() {
 	_, cancel := GetSubprocessContextCancel()
 
-	log.Info("Canceling all running python subprocesses")
+	logutil.BgLogger().Info("Canceling all running python subprocesses")
 	cancel()
 
 	// reset context

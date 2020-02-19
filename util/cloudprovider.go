@@ -6,13 +6,14 @@
 package util
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/metadata/inventories"
 	"github.com/frankhang/doppler/util/alibaba"
 	"github.com/frankhang/doppler/util/azure"
 	"github.com/frankhang/doppler/util/ec2"
 	"github.com/frankhang/doppler/util/ecs"
 	"github.com/frankhang/doppler/util/gce"
-	"github.com/frankhang/doppler/util/log"
+	"github.com/frankhang/util/logutil"
 )
 
 type cloudProviderDetector struct {
@@ -38,9 +39,9 @@ func DetectCloudProvider() {
 	for _, cloudDetector := range detectors {
 		if cloudDetector.callback() {
 			inventories.SetAgentMetadata(inventories.CloudProviderMetatadaName, cloudDetector.name)
-			log.Infof("Cloud provider %s detected", cloudDetector.name)
+			logutil.BgLogger().Info(fmt.Sprintf("Cloud provider %s detected", cloudDetector.name))
 			return
 		}
 	}
-	log.Info("No cloud provider detected")
+	logutil.BgLogger().Info("No cloud provider detected")
 }
