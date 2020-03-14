@@ -361,6 +361,8 @@ func (agg *BufferedAggregator) addEvent(e metrics.Event) {
 func (agg *BufferedAggregator) addSample(metricSample *metrics.MetricSample, timestamp float64) {
 	metricSample.Tags = util.SortUniqInPlace(metricSample.Tags)
 	agg.statsdSampler.addSample(metricSample, timestamp)
+
+	logutil.BgLogger().Info("addSample", zap.Reflect("message", metricSample))
 }
 
 // GetSeriesAndSketches grabs all the series & sketches from the queue and clears the queue

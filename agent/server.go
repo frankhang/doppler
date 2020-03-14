@@ -282,11 +282,16 @@ func (s *Server) parsePackets(batcher *batcher, packets []*Packet) {
 			logutil.BgLogger().Debug("Agent receive", zap.ByteString("packet", packet.Contents))
 		}
 
+		//logutil.BgLogger().Info("Agent receive", zap.ByteString("packet", packet.Contents))
+
+
 		for {
 			message := nextMessage(&packet.Contents)
 			if message == nil {
 				break
 			}
+
+			logutil.BgLogger().Info("nextMessage", zap.ByteString("message", message))
 			if s.Statistics != nil {
 				s.Statistics.StatEvent(1)
 			}

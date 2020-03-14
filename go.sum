@@ -5,6 +5,10 @@ github.com/DataDog/agent-payload v0.0.0-20200109192131-0d6a8581d27b h1:QfmhSb3p+
 github.com/DataDog/agent-payload v0.0.0-20200109192131-0d6a8581d27b/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
 github.com/DataDog/agent-payload v0.0.0-20200127201704-05b7bb250766 h1:11N0VKuh+pz9JVYPkqSzQHpHG+68TZNakWOegFWG+LU=
 github.com/DataDog/agent-payload v0.0.0-20200127201704-05b7bb250766/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
+github.com/DataDog/agent-payload v0.0.0-20200302171055-309786a4f3c8 h1:z7Ii7rupr5NmI/KS92gfA4eJBStuWFlFbMRXHhkZYKw=
+github.com/DataDog/agent-payload v0.0.0-20200302171055-309786a4f3c8/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
+github.com/DataDog/agent-payload v0.0.0-20200311165435-f56fbdc682ac h1:2955uWjJdXoFwNpjgKPbn5LhKZixJ5Xi2nsb6K26mdw=
+github.com/DataDog/agent-payload v0.0.0-20200311165435-f56fbdc682ac/go.mod h1:/2RW4IC/2z54jtB6RLgq5UtVI1TsX0joDRjKbkLT+mk=
 github.com/DataDog/datadog-agent v0.0.0-20200117150813-39746ffdd7e1 h1:m9op/lZ76eEv/k4HHskRB4np0VZ33YdyFw/2XmBmZ1A=
 github.com/DataDog/datadog-agent v0.0.0-20200117150813-39746ffdd7e1/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-agent v0.0.0-20200131153522-7bd7ba0a3f7e h1:P+zoWthC7Zp0UvoAwZelDjZrbVWjdvJqKLZ1LQD3Xww=
@@ -27,6 +31,14 @@ github.com/DataDog/datadog-agent v0.0.0-20200213142158-77bb0c97ee8b h1:D8XtKkN0v
 github.com/DataDog/datadog-agent v0.0.0-20200213142158-77bb0c97ee8b/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-agent v0.0.0-20200219102832-21644d1ece74 h1:xvcgrxWaWRAIcCGrdSx1ie2A2mIzHw/tqyBRZFfdNJU=
 github.com/DataDog/datadog-agent v0.0.0-20200219102832-21644d1ece74/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200306141324-e058ce4a597a h1:EuM5Yknbjktl+fz8sKp2SwcbkD5J2CXNQAtZcs3LeZo=
+github.com/DataDog/datadog-agent v0.0.0-20200306141324-e058ce4a597a/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200310205557-70c559338c46 h1:WJursTQWiDpXuwdWl/qU6WIUZj8lExk+kuGczl6M/zw=
+github.com/DataDog/datadog-agent v0.0.0-20200310205557-70c559338c46/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200312090850-c5ce148991fe h1:vaEByyP7SSHkcG4BC7BB5d1W51Ip8+GZhutqnzPvu7g=
+github.com/DataDog/datadog-agent v0.0.0-20200312090850-c5ce148991fe/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200313133437-5e4c46567501 h1:auCdD6lRxHCa4OfLTS9ZFL9KWLEZbSvgi3oVkSj7hmw=
+github.com/DataDog/datadog-agent v0.0.0-20200313133437-5e4c46567501/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-go v3.3.1+incompatible h1:NT/ghvYzqIzTJGiqvc3n4t9cZy8waO+I2O3I8Cok6/k=
 github.com/DataDog/datadog-go v3.3.1+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/gohai v0.0.0-20190423095225-107ebc5d16ad h1:vIwXJo4heD9Nv5LcehO9FxTw3n9Us5xPBcAk0tgUvYI=
@@ -186,6 +198,8 @@ github.com/shirou/gopsutil v2.19.12+incompatible h1:WRstheAymn1WOPesh+24+bZKFkqr
 github.com/shirou/gopsutil v2.19.12+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shirou/gopsutil v2.20.1+incompatible h1:oIq9Cq4i84Hk8uQAUOG3eNdI/29hBawGrD5YRl6JRDY=
 github.com/shirou/gopsutil v2.20.1+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
+github.com/shirou/gopsutil v2.20.2+incompatible h1:ucK79BhBpgqQxPASyS2cu9HX8cfDVljBN1WWFvbNvgY=
+github.com/shirou/gopsutil v2.20.2+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.2 h1:SPIRibHv4MatM3XXNO2BJeFLZwZ2LvZgfQ5+UNI2im4=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
@@ -221,6 +235,10 @@ github.com/tiancaiamao/appdash v0.0.0-20181126055449-889f96f722a2/go.mod h1:2PfK
 github.com/tmc/grpc-websocket-proxy v0.0.0-20190109142713-0ad062ec5ee5/go.mod h1:ncp9v5uamzpCO7NfCPTXjqaC+bZgJeR0sMTm6dMHP7U=
 github.com/twmb/murmur3 v1.0.0 h1:MLMwMEQRKsu94uJnoveYjjHmcLwI3HNcWXP4LJuNe3I=
 github.com/twmb/murmur3 v1.0.0/go.mod h1:5Y5m8Y8WIyucaICVP+Aep5C8ydggjEuRQHDq1icoOYo=
+github.com/twmb/murmur3 v1.1.1 h1:jT/apbfn05lmNmvL+qrhXlLelBf8YJajjCWM+dB4FWg=
+github.com/twmb/murmur3 v1.1.1/go.mod h1:5Y5m8Y8WIyucaICVP+Aep5C8ydggjEuRQHDq1icoOYo=
+github.com/twmb/murmur3 v1.1.2 h1:tVjU5UNOzyljJlgj986Z/St7QdTjCffaa0IdwKJfzWQ=
+github.com/twmb/murmur3 v1.1.2/go.mod h1:Qq/R7NUyOfr65zD+6Q5IHKsJLwP7exErjN6lyyq3OSQ=
 github.com/uber/jaeger-client-go v2.20.1+incompatible h1:HgqpYBng0n7tLJIlyT4kPCIv5XgCsF+kai1NnnrJzEU=
 github.com/uber/jaeger-client-go v2.20.1+incompatible/go.mod h1:WVhlPFC8FDjOFMMWRy2pZqQJSXxYSwNYOkTr/Z6d3Kk=
 github.com/uber/jaeger-lib v2.2.0+incompatible h1:MxZXOiR2JuoANZ3J6DE/U0kSFv/eJ/GfSYVCjK7dyaw=

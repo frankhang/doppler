@@ -9,7 +9,7 @@ import (
 
 var (
 	//bufio.NewWriterSize(p.BufReadConn, defaultWriterSize)
-	url   = flag.String("url", "localhost:10001", "host:port")
+	url   = flag.String("url", "localhost:8125", "host:port")
 )
 
 func main() {
@@ -26,9 +26,15 @@ func main() {
 
 		err := statsd.Count("example_metric.count", 2, []string{"environment:dev"}, 1)
 		errors.MustNil(err)
+
+		err = statsd.Flush()
+
+		err = statsd.Gauge("example_metric.gauge", 10, []string{"environment:prod"}, 1)
+		errors.MustNil(err)
+
 		err = statsd.Flush()
 		errors.MustNil(err)
-		time.Sleep(10 * time.Second)
+		time.Sleep(time.Second)
 	}
 
 

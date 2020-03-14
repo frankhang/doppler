@@ -8,7 +8,7 @@ Test = "t2"
 #log_payloads = true
 
 [log]
-level = "debug"
+level = "info"
 
     #file log related config.
     [log.file]
