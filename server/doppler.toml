@@ -1,14 +1,11 @@
 host = "0.0.0.0"
 port = 8125
-token-limit = 1000
-read-timeout = 15
-write-timeout = 15
-Test = "t2"
 
-#log_payloads = true
+log_payloads = true
+enable_payloads_series = true
 
 [log]
-level = "info"
+level = "debug"
 
     #file log related config.
     [log.file]

@@ -43,11 +43,11 @@ type Config struct {
 	ForwarderNumWorkers        int `toml:"forwarder_num_workers" json:"forwarder_num_workers"`
 	ForwarderRetryQueueMaxSize int `toml:"forwarder_retry_queue_max_size" json:"forwarder_retry_queue_max_size"`
 
-	EnablePayloadsEvents         bool `toml:"enable_payloads.events" json:"enable_payloads.events"`
-	EnablePayloadsSeries         bool `toml:"enable_payloads.series" json:"enable_payloads.series"`
-	EnablePayloadsServiceChecks  bool `toml:"enable_payloads.service_checks" json:"enable_payloads.service_checks"`
-	EnablePayloadsSketches       bool `toml:"enable_payloads.sketches" json:"enable_payloads.sketches"`
-	EnablePayloadsJsonToV1Intake bool `toml:"enable_payloads.json_to_v1_intake" json:"enable_payloads.json_to_v1_intake"`
+	EnablePayloadsEvents         bool `toml:"enable_payloads_events" json:"enable_payloads_events"`
+	EnablePayloadsSeries         bool `toml:"enable_payloads_series" json:"enable_payloads_series"`
+	EnablePayloadsServiceChecks  bool `toml:"enable_payloads_service_checks" json:"enable_payloads_service_checks"`
+	EnablePayloadsSketches       bool `toml:"enable_payloads_sketches" json:"enable_payloads_sketches"`
+	EnablePayloadsJsonToV1Intake bool `toml:"enable_payloads_json_to_v1_intake" json:"enable_payloads_json_to_v1_intake"`
 
 	HostName                       string `toml:"hostname" json:"hostname"`
 	HostNameFqdn                   bool   `toml:"hostname_fqdn" json:"hostname_fqdn"`

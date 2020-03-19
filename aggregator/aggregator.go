@@ -343,6 +343,7 @@ func (agg *BufferedAggregator) addServiceCheck(sc metrics.ServiceCheck) {
 		sc.Ts = time.Now().Unix()
 	}
 	sc.Tags = util.SortUniqInPlace(sc.Tags)
+	logutil.BgLogger().Info("addServiceCheck", zap.Reflect("serviecheck", sc))
 
 	agg.serviceChecks = append(agg.serviceChecks, &sc)
 }
@@ -354,15 +355,19 @@ func (agg *BufferedAggregator) addEvent(e metrics.Event) {
 	}
 	e.Tags = util.SortUniqInPlace(e.Tags)
 
+	logutil.BgLogger().Info("addEvent", zap.Reflect("event", e))
 	agg.events = append(agg.events, &e)
 }
 
 // addSample adds the metric sample
 func (agg *BufferedAggregator) addSample(metricSample *metrics.MetricSample, timestamp float64) {
 	metricSample.Tags = util.SortUniqInPlace(metricSample.Tags)
-	agg.statsdSampler.addSample(metricSample, timestamp)
 
 	logutil.BgLogger().Info("addSample", zap.Reflect("message", metricSample))
+
+	agg.statsdSampler.addSample(metricSample, timestamp)
+
+
 }
 
 // GetSeriesAndSketches grabs all the series & sketches from the queue and clears the queue
