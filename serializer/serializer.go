@@ -288,26 +288,27 @@ func (s *Serializer) SendSeries(series marshaler.StreamJSONMarshaler) error {
 		return nil
 	}
 
-	useV1API := !config.Datadog.GetBool("use_v2_api.series")
-
-	var seriesPayloads forwarder.Payloads
-	var extraHeaders http.Header
-	var err error
-
-	if useV1API && s.enableJSONStream {
-		seriesPayloads, extraHeaders, err = s.serializeStreamablePayload(series, jsonstream.DropItemOnErrItemTooBig)
-	} else {
-		seriesPayloads, extraHeaders, err = s.serializePayload(series, true, useV1API)
-	}
-
-	if err != nil {
-		return fmt.Errorf("dropping series payload: %s", err)
-	}
-
-	if useV1API {
-		return s.Forwarder.SubmitV1Series(seriesPayloads, extraHeaders)
-	}
-	return s.Forwarder.SubmitSeries(seriesPayloads, extraHeaders)
+	return nil
+	//useV1API := !config.Datadog.GetBool("use_v2_api.series")
+	//
+	//var seriesPayloads forwarder.Payloads
+	//var extraHeaders http.Header
+	//var err error
+	//
+	//if useV1API && s.enableJSONStream {
+	//	seriesPayloads, extraHeaders, err = s.serializeStreamablePayload(series, jsonstream.DropItemOnErrItemTooBig)
+	//} else {
+	//	seriesPayloads, extraHeaders, err = s.serializePayload(series, true, useV1API)
+	//}
+	//
+	//if err != nil {
+	//	return fmt.Errorf("dropping series payload: %s", err)
+	//}
+	//
+	//if useV1API {
+	//	return s.Forwarder.SubmitV1Series(seriesPayloads, extraHeaders)
+	//}
+	//return s.Forwarder.SubmitSeries(seriesPayloads, extraHeaders)
 }
 
 // SendSketch serializes a list of SketSeriesList and sends the payload to the forwarder

@@ -24,13 +24,24 @@ func main() {
 
 	for {
 
-		err := statsd.Count("example_metric.count", 2, []string{"environment:dev"}, 1)
+		err := statsd.Count("example_metric.Count", 11, []string{"environment:dev"}, 1)
 		errors.MustNil(err)
 
-		err = statsd.Flush()
-
-		err = statsd.Gauge("example_metric.gauge", 10, []string{"environment:prod"}, 1)
+		err = statsd.Gauge("example_metric.Gauge", 22, []string{"environment:prod"}, 1)
 		errors.MustNil(err)
+
+		err = statsd.Histogram("example_metric.Histogram", 33.33, []string{"environment:prod"}, 1)
+		errors.MustNil(err)
+
+		err = statsd.Distribution("example_metric.Distribution", 44.44, []string{"environment:prod"}, 1)
+		errors.MustNil(err)
+
+		err = statsd.TimeInMilliseconds("example_metric.TimeInMilliseconds", 55.55, []string{"environment:prod"}, 1)
+		errors.MustNil(err)
+
+		err = statsd.Timing("example_metric.Timing", 6666, []string{"environment:prod"}, 1)
+		errors.MustNil(err)
+
 
 		err = statsd.Flush()
 		errors.MustNil(err)

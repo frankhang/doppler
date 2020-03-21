@@ -343,7 +343,7 @@ func (agg *BufferedAggregator) addServiceCheck(sc metrics.ServiceCheck) {
 		sc.Ts = time.Now().Unix()
 	}
 	sc.Tags = util.SortUniqInPlace(sc.Tags)
-	logutil.BgLogger().Info("addServiceCheck", zap.Reflect("serviecheck", sc))
+	logutil.BgLogger().Debug("addServiceCheck", zap.Reflect("servicecheck", sc))
 
 	agg.serviceChecks = append(agg.serviceChecks, &sc)
 }
@@ -355,7 +355,7 @@ func (agg *BufferedAggregator) addEvent(e metrics.Event) {
 	}
 	e.Tags = util.SortUniqInPlace(e.Tags)
 
-	logutil.BgLogger().Info("addEvent", zap.Reflect("event", e))
+	logutil.BgLogger().Debug("addEvent", zap.Reflect("event", e))
 	agg.events = append(agg.events, &e)
 }
 
@@ -363,9 +363,9 @@ func (agg *BufferedAggregator) addEvent(e metrics.Event) {
 func (agg *BufferedAggregator) addSample(metricSample *metrics.MetricSample, timestamp float64) {
 	metricSample.Tags = util.SortUniqInPlace(metricSample.Tags)
 
-	logutil.BgLogger().Info("addSample", zap.Reflect("message", metricSample))
+	logutil.BgLogger().Debug("addSample", zap.Reflect("sample", metricSample))
 
-	agg.statsdSampler.addSample(metricSample, timestamp)
+	//agg.statsdSampler.addSample(metricSample, timestamp)
 
 
 }

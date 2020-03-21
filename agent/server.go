@@ -275,6 +275,9 @@ func nextMessage(packet *[]byte) (message []byte) {
 	return message
 }
 
+
+
+
 func (s *Server) parsePackets(batcher *batcher, packets []*Packet) {
 	for _, packet := range packets {
 		originTags := findOriginTags(packet.Origin)
@@ -291,7 +294,7 @@ func (s *Server) parsePackets(batcher *batcher, packets []*Packet) {
 				break
 			}
 
-			logutil.BgLogger().Info("nextMessage", zap.ByteString("message", message))
+			logutil.BgLogger().Debug("nextMessage", zap.ByteString("message", message))
 			if s.Statistics != nil {
 				s.Statistics.StatEvent(1)
 			}
