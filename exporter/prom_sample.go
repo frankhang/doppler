@@ -17,7 +17,7 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 	ps := &PromSample{metric: pm}
 
 	pm.Symbol = getMetricSymbol(s)
-	pm.Name = s.Name
+	pm.Name = normalize(s.Name)
 	ps.Value = s.Value
 
 	tags := s.Tags
@@ -34,7 +34,8 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 			if len(tagPair) != 2 {
 				continue
 			}
-			tagName := strings.TrimSpace(tagPair[0])
+			//tagName := strings.TrimSpace(tagPair[0])
+			tagName := normalize(tagPair[0])
 			tagValue := strings.TrimSpace(tagPair[1])
 			if len(tagName) == 0 || len(tagValue) == 0 {
 				continue
@@ -48,6 +49,12 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 	pm.GenerateKey()
 
 	return ps
+
+}
+
+func normalize(s string) string {
+	t := strings.ReplaceAll(s, ".", "_")
+	return strings.TrimSpace(t)
 
 }
 

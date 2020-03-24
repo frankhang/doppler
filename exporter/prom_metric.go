@@ -41,25 +41,8 @@ func (pm *PromMetric) GenerateKey() {
 	pm.k = hack.String(buf)
 }
 
-func (pm *PromMetric) Key() string {
+
+func (pm *PromMetric) String() string {
 	return pm.k
 }
 
-func (pm *PromMetric) Hash() string {
-	return pm.Key()
-}
-
-func (pm *PromMetric) HashCode() string {
-	return pm.Key()
-}
-func (ps *PromMetric) String() string {
-	return ps.Key()
-}
-
-func (pm *PromMetric) Equal(pm2 *PromMetric) bool {
-	return pm.k == pm2.k
-}
-
-func (pm *PromMetric) Equals(pm2 *PromMetric) bool {
-	return pm.k == pm2.k
-}
