@@ -1,5 +1,6 @@
 host = "0.0.0.0"
 port = 8125
+prom_scrape_port = 8825
 
 log_payloads = true
 enable_payloads_series = true

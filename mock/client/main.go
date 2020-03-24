@@ -22,25 +22,32 @@ func main() {
 
 	defer statsd.Close()
 
+	statsd.Namespace = "ns1_"
+	statsd.Tags = []string{"App:UserCenter", "Env:dev"}
+
+
 	for {
 
-		err := statsd.Count("example_metric.Count", 11, []string{"environment:dev"}, 1)
+		err := statsd.Count("example_metric_Count", 11, nil, 1)
 		errors.MustNil(err)
 
-		err = statsd.Gauge("example_metric.Gauge", 22, []string{"environment:prod"}, 1)
-		errors.MustNil(err)
-
-		err = statsd.Histogram("example_metric.Histogram", 33.33, []string{"environment:prod"}, 1)
-		errors.MustNil(err)
-
-		err = statsd.Distribution("example_metric.Distribution", 44.44, []string{"environment:prod"}, 1)
-		errors.MustNil(err)
-
-		err = statsd.TimeInMilliseconds("example_metric.TimeInMilliseconds", 55.55, []string{"environment:prod"}, 1)
-		errors.MustNil(err)
-
-		err = statsd.Timing("example_metric.Timing", 6666, []string{"environment:prod"}, 1)
-		errors.MustNil(err)
+		//err = statsd.Gauge("example_metric_Gauge", 22, nil, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.Histogram("example_metric_Histogram", 33.33, []string{"Method:GET"}, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.Distribution("example_metric_Distribution", 44.44, nil, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 55.55, nil, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.Timing("example_metric_Timing", 6666, nil, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.Set("example_metric._Set", "7777", nil, 1)
+		//errors.MustNil(err)
 
 
 		err = statsd.Flush()

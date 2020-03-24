@@ -10,8 +10,8 @@ import (
 
 type Config struct {
 	config.Config
-	Test string `toml:"test" json:"test"`
 
+	PromScrapePort         int  `toml:"prom_scrape_port" json:"prom_scrape_port"`
 	HealthPort         int  `toml:"health_port" json:"health_port"`
 	InventoriesEnabled bool `toml:"inventories_enabled" json:"inventories_enabled"`
 	MetricsStatsEnable bool `toml:"metrics_stats_enable" json:"metrics_stats_enable"`
@@ -78,8 +78,8 @@ var (
 	GlobalConf  = atomic.Value{}
 	DefaultConf = Config{
 		Config: config.DefaultConf,
-		Test:   "t1",
 
+		PromScrapePort:0,
 		HealthPort: 0,
 
 		HistogramCopyToDistribution:   false,

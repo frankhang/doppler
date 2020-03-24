@@ -8,6 +8,7 @@ package aggregator
 import (
 	"expvar"
 	"fmt"
+	"github.com/frankhang/util/errors"
 	"github.com/frankhang/util/logutil"
 	"go.uber.org/zap"
 	"sync"
@@ -21,9 +22,12 @@ import (
 
 	"github.com/frankhang/doppler/collector/check"
 	. "github.com/frankhang/doppler/config"
+	e "github.com/frankhang/doppler/exporter"
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/serializer"
 	"github.com/frankhang/doppler/status/health"
+
+	l "github.com/sirupsen/logrus"
 )
 
 // DefaultFlushInterval aggregator default flush interval
@@ -363,10 +367,16 @@ func (agg *BufferedAggregator) addEvent(e metrics.Event) {
 func (agg *BufferedAggregator) addSample(metricSample *metrics.MetricSample, timestamp float64) {
 	metricSample.Tags = util.SortUniqInPlace(metricSample.Tags)
 
-	logutil.BgLogger().Debug("addSample", zap.Reflect("sample", metricSample))
+	if l.GetLevel() >= l.DebugLevel {
+		logutil.BgLogger().Debug("addSample", zap.Reflect("sample", metricSample))
+	}
 
 	//agg.statsdSampler.addSample(metricSample, timestamp)
-
+	if err := e.Exporter.Export(metricSample); err!= nil {
+		err = errors.Trace(err)
+		logutil.BgLogger().Error("addSample export error", zap.Reflect("sample", metricSample))
+		errors.Log(err)
+	}
 
 }
 

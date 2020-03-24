@@ -53,6 +53,12 @@ github.com/DataDog/datadog-agent v0.0.0-20200320130619-6ad2502190cc h1:zI2G1yadj
 github.com/DataDog/datadog-agent v0.0.0-20200320130619-6ad2502190cc/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-agent v0.0.0-20200320134552-0ef25b37198f h1:cLvBUu0pKgJaPO2DPLBkp5ElOf1orB/jVsvKGPE9Anc=
 github.com/DataDog/datadog-agent v0.0.0-20200320134552-0ef25b37198f/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200320192226-5c1bcf140ea8 h1:2KyDcULsfSSTZ4LOWy10xjQ8ABrbv45tfjXR/rb5dgc=
+github.com/DataDog/datadog-agent v0.0.0-20200320192226-5c1bcf140ea8/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200323124132-a4fb8027c756 h1:3x1i798Ui+kd+Gc8awRYk+5K2f3oDQD6Aka2F170f4M=
+github.com/DataDog/datadog-agent v0.0.0-20200323124132-a4fb8027c756/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200323173905-134b3e2c6b56 h1:OH9vlRzA0H9i3rMp44g3pQkLpJtPgcVUXJRLJAxyct8=
+github.com/DataDog/datadog-agent v0.0.0-20200323173905-134b3e2c6b56/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-go v3.3.1+incompatible h1:NT/ghvYzqIzTJGiqvc3n4t9cZy8waO+I2O3I8Cok6/k=
 github.com/DataDog/datadog-go v3.3.1+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/gohai v0.0.0-20190423095225-107ebc5d16ad h1:vIwXJo4heD9Nv5LcehO9FxTw3n9Us5xPBcAk0tgUvYI=
@@ -101,6 +107,8 @@ github.com/go-kit/kit v0.9.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
+github.com/goburrow/cache v0.1.0 h1:fLNGLIWhng4Vw3AjbafHou7R3M5wiaz2tMhg6aFkqXM=
+github.com/goburrow/cache v0.1.0/go.mod h1:8oxkfud4hvjO4tNjEKZfEd+LrpDVDlBIauGYsWGEzio=
 github.com/gogo/protobuf v1.1.1 h1:72R+M5VuhED/KujmZVcIquuo8mBgX4oVda//DQb3PXo=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gogo/protobuf v1.2.1 h1:/s5zKNz0uPFCZ5hddgPdo2TK2TVrUNMn0OOX8/aZMTE=

@@ -4,20 +4,22 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"github.com/frankhang/doppler/api/healthprobe"
-	"github.com/frankhang/doppler/forwarder"
-	"github.com/frankhang/doppler/metadata"
-	"github.com/frankhang/doppler/serializer"
 	"github.com/frankhang/doppler/agent"
 	"github.com/frankhang/doppler/aggregator"
+	"github.com/frankhang/doppler/api/healthprobe"
 	. "github.com/frankhang/doppler/config"
+	e "github.com/frankhang/doppler/exporter"
+	"github.com/frankhang/doppler/forwarder"
+	"github.com/frankhang/doppler/metadata"
 	"github.com/frankhang/doppler/metrics"
+	"github.com/frankhang/doppler/serializer"
 	"github.com/frankhang/doppler/status/health"
 	"github.com/frankhang/doppler/tagger"
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/util/config"
 	"github.com/frankhang/util/logutil"
-
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"os"
@@ -116,7 +118,7 @@ func main() {
 	overrideConfig()
 	if err := Cfg.Valid(); err != nil {
 		fmt.Fprintln(os.Stderr, "invalidx config", err)
-		os.Exit(1)
+		errors.MustNil(errors.Trace(err))
 	}
 	if *configCheck {
 		fmt.Println("config check successful")
@@ -133,12 +135,30 @@ func main() {
 	}
 	setupTracing() // Should before createServer and after setup config.
 	printInfo()
-	setupMetrics()
+	runExporter()
+	//setupMetrics()
 	createServer()
 	sig.SetupSignalHandler(serverShutdown)
 	runServer()
 	//cleanup()
+
 	syncLog()
+}
+
+func runExporter() {
+
+	logutil.BgLogger().Info("runExporter...")
+	e.Exporter = e.NewPromExporter()
+	addr := fmt.Sprintf(":%d", Cfg.PromScrapePort)
+	logutil.BgLogger().Warn(fmt.Sprintf("Listening on %s for prom graspe...", addr))
+
+	http.Handle("/metrics", promhttp.Handler())
+
+	go func() {
+		err := http.ListenAndServe(addr, nil)
+		errors.MustNil(errors.Trace(err))
+	}()
+
 }
 
 func exit() {
