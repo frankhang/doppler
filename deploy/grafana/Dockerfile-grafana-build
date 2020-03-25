@@ -1,8 +1,8 @@
-FROM golang:1.13.4
+FROM golang:1.14.1
 
 RUN apt-get update \
     && apt-get install -y npm \
-    && apt-get install -y ruby-dev build-essential
+    && apt-get install -y ruby-dev build-essential \
     && npm install -g yarn \
     && gem install fpm
 

@@ -1,4 +1,4 @@
-FROM golang:1.13
+FROM frankhang/grafana-build:1.0
 ENV GOPROXY="https://goproxy.cn,direct"
 ENV PRJ_DIR="github.com/grafana/"
 # ENV CGO_ENABLED=1
@@ -7,13 +7,8 @@ ENV GOOS=linux
 WORKDIR /go/src/${PRJ_DIR}
 COPY . .
 
-RUN apt-get update \
-    && apt-get install -y npm \
-    && apt-get install -y ruby-dev build-essential \
-    && npm install -g yarn \
-    && gem install fpm \
-#    && go run build.go setup \
-    && yarn install --pure-lockfile
+RUN go run build.go setup
+#RUN yarn install --pure-lockfile
 
 CMD ["yarn", "start"]
 
