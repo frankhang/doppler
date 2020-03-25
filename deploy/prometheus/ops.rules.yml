@@ -1,0 +1,9 @@
+groups:
+- name: group1
+  rules:
+  - alert: temperature_alert
+    expr: agriculture_temperature_celsius > 25
+    for: 3s
+    annotations:
+      summary: "温度超标。"
+      description: "温度已经超过 25 mpa 并持续3秒。"

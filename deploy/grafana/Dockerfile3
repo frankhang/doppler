@@ -1,0 +1,27 @@
+FROM frankhang/grafana-build:3.0 AS builder
+ENV GOPROXY="https://goproxy.cn,direct"
+ENV PRJ_DIR="github.com/grafana/"
+# ENV CGO_ENABLED=1
+ENV GOOS=linux
+
+WORKDIR /go/src/${PRJ_DIR}
+COPY . .
+RUN  go run build.go setup \
+    && go run build.go build pkg-archive
+
+WORKDIR /go/src/${PRJ_DIR}/dist
+RUN mv * grafana.tar.gz \
+#    && tar xvf grafana.tar.gz \
+#    && rm -rf grafana.tar.gz \
+#    && mv * grafana
+
+FROM ubuntu:20.04
+ENV PRJ_DIR="github.com/grafana/"
+WORKDIR /root/
+COPY --from=builder /go/src/${PRJ_DIR}/dist/grafana.tar.gz .
+RUN tar xvf grafana.tar.gz \
+    && rm -rf grafana.tar.gz \
+    && mv * grafana
+
+WORKDIR /root/grafana
+CMD ["bin/grafana-server", "web"]

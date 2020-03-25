@@ -1,0 +1,13 @@
+FROM frankhang/grafana-build:2.0
+ENV GOPROXY="https://goproxy.cn,direct"
+ENV PRJ_DIR="github.com/grafana/"
+# ENV CGO_ENABLED=1
+ENV GOOS=linux
+
+# WORKDIR /go/src/${PRJ_DIR}
+# COPY . .
+
+RUN go run build.go build-frontend
+
+CMD ["yarn", "start"]
+

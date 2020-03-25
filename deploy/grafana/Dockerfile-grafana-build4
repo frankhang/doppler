@@ -1,0 +1,12 @@
+FROM frankhang/grafana-build:3.0
+ENV GOPROXY="https://goproxy.cn,direct"
+ENV PRJ_DIR="github.com/grafana/"
+# ENV CGO_ENABLED=1
+ENV GOOS=linux
+
+WORKDIR /go/src/${PRJ_DIR}
+
+# RUN "shopt -s extglob && rm -rf !(node_modules)"
+# RUN find . ! -name "node_module|scripts" | xargs rm -rf 
+# RUN rm -rf `ls|grep -v node_module|scripts|public`
+RUN rm -rf pkg
