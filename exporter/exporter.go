@@ -29,7 +29,7 @@ type PromExporter struct {
 
 func NewPromExporter() *PromExporter {
 	cache := c.New(
-		c.WithExpireAfterAccess(60*time.Second),
+		c.WithExpireAfterAccess(60*time.Minute),
 		c.WithRemovalListener(onRemoval),
 	)
 

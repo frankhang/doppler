@@ -40,10 +40,10 @@ func main() {
 		err = statsd.Distribution("example_metric_Distribution", 44.44, nil, 1)
 		errors.MustNil(err)
 
-		err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 55.55, nil, 1)
+		err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 5555, nil, 1)
 		errors.MustNil(err)
 
-		err = statsd.Timing("example_metric_Timing", 6666, nil, 1)
+		err = statsd.Timing("example_metric_Timing", 222222, nil, 1)
 		errors.MustNil(err)
 
 		err = statsd.Set("example_metric._Set", "7777", nil, 1)
@@ -52,7 +52,7 @@ func main() {
 
 		err = statsd.Flush()
 		errors.MustNil(err)
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond*200)
 	}
 
 
