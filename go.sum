@@ -71,6 +71,8 @@ github.com/DataDog/datadog-agent v0.0.0-20200326090351-c91b21ba70af h1:MzitVWzKK
 github.com/DataDog/datadog-agent v0.0.0-20200326090351-c91b21ba70af/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-agent v0.0.0-20200326101133-1a4bca8878a6 h1:t/izMH7AI/PdBjMRnbhG7tqzu3pC4MtdH6/ePJ7Vs8U=
 github.com/DataDog/datadog-agent v0.0.0-20200326101133-1a4bca8878a6/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
+github.com/DataDog/datadog-agent v0.0.0-20200326104010-a1be18fb081f h1:B/VRMO7UePkClxv25Mx/F/uQOSw/SJrf8xKs0oTKIuM=
+github.com/DataDog/datadog-agent v0.0.0-20200326104010-a1be18fb081f/go.mod h1:f7AFj9QYK5z18qnWk459V90uDI4UFe+0ZoOxeboeRNk=
 github.com/DataDog/datadog-go v3.3.1+incompatible h1:NT/ghvYzqIzTJGiqvc3n4t9cZy8waO+I2O3I8Cok6/k=
 github.com/DataDog/datadog-go v3.3.1+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/gohai v0.0.0-20190423095225-107ebc5d16ad h1:vIwXJo4heD9Nv5LcehO9FxTw3n9Us5xPBcAk0tgUvYI=
@@ -111,6 +113,8 @@ github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/frankhang/util v0.0.0-20191213151601-f48ac003ffe4 h1:lwh5BcQRTNFH5Wu4hf4nMWmRHSnq80m84CSnYSH/h7g=
 github.com/frankhang/util v0.0.0-20191213151601-f48ac003ffe4/go.mod h1:hhFPusMl+u9e2kIyE7TboNh079sm0r1AB1SVzzxZrGI=
+github.com/frankhang/util v0.0.0-20200326101710-e991a36b1b90 h1:UUpD4Hulud3I6VPu/+VXS4d2k2xD9g46DWLxJP8v9Cw=
+github.com/frankhang/util v0.0.0-20200326101710-e991a36b1b90/go.mod h1:hhFPusMl+u9e2kIyE7TboNh079sm0r1AB1SVzzxZrGI=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
@@ -283,6 +287,7 @@ github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:
 go.etcd.io/bbolt v1.3.2/go.mod h1:IbVyRI1SCnLcuJnV2u8VeU0CEYM7e686BmAb1XKL+uU=
 go.uber.org/atomic v1.3.2/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
 go.uber.org/atomic v1.4.0/go.mod h1:gD2HeocX3+yG+ygLZcrzQJaqmWj9AIm7n08wl/qW/PE=
+go.uber.org/atomic v1.5.0 h1:OI5t8sDa1Or+q8AeE+yKeB/SDYioSHAgcVljj9JIETY=
 go.uber.org/atomic v1.5.0/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
 go.uber.org/atomic v1.5.1 h1:rsqfU5vBkVknbhUGbAUwQKR2H4ItV8tjJ+6kJX4cxHM=
 go.uber.org/atomic v1.5.1/go.mod h1:sABNBOSYdrvTF6hTgEIbc7YasKWGhgEQZyfxyTvoXHQ=
