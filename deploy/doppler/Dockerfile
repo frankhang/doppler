@@ -1,4 +1,4 @@
-FROM golang:1.4.1 AS builder
+FROM golang:1.14.1 AS builder
 ENV GOPROXY="https://goproxy.cn,direct"
 ENV PRJ_DIR="github.com/frankhang/doppler/"
 ENV APP_DIR="server/"
