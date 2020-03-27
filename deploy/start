@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#echo $#
-#echo $1
+#for mac
+
 if [ $# = 0 ]; then
     server=true
     client=true

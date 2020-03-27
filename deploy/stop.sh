@@ -1,9 +1,7 @@
 #!/bin/bash
 
-#!/bin/bash
+#for linux
 
-#echo $#
-#echo $1
 if [ $# = 0 ]; then
     server=true
     client=true
