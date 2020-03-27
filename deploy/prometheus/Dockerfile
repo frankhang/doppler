@@ -11,4 +11,6 @@ ARG config
 COPY ${config}.* ./
 RUN mv ${config}.yml prometheus.yml
 # COPY ${config}.yml ./prometheus.yml
+
+CMD [ "--web.listen-address=:8090" ]
 ENTRYPOINT ["./prometheus", "--config.file=prometheus.yml"]
