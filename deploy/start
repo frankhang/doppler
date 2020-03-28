@@ -9,7 +9,6 @@ fi
 
 if [ "$1" = "server"  ]; then
     server=true
-
 fi
 
 if [ "$1" = "client"  ]; then
