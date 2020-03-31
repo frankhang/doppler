@@ -1,0 +1,94 @@
+#!/bin/bash
+
+#for mac & linux
+
+version=1.0
+
+if [ $# -gt 1 ]; then
+  echo "Usage: build [service]"
+  echo "  service: prom/grafana/doppler/client/server, server means prom + grafana + doppler. Default is blank, means build them all."
+  exit 0
+fi
+
+if [ $# = 0 ]; then
+  grafana=true
+  prom=true
+  doppler=true
+  client=true
+fi
+
+arg=ops
+
+if [ "$1" = "server" ]; then
+  grafana=true
+  prom=true
+  doppler=true
+fi
+
+if [ "$1" = "grafana" ]; then
+  grafana=true
+fi
+
+if [ "$1" = "prom" ]; then
+  prom=true
+fi
+
+if [ "$1" = "doppler" ]; then
+  doppler=true
+fi
+
+if [ "$1" = "client" ]; then
+  client=true
+fi
+
+echo "#### connecting to docker registry ####"
+docker login --username=frankhang --password=Ac7e4e$6534309
+if [ $? -ne 0 ]; then exit 1; fi
+
+if [ $grafana ]; then
+  echo -e
+  echo "#### building grafana image ####"
+  cd grafana
+  image=frankhang/grafana:$version
+  docker build -t $image .
+  if [ $? -ne 0 ]; then exit 1; fi
+  docker push $image
+  if [ $? -ne 0 ]; then exit 1; fi
+  cd ..
+fi
+
+if [ $prom ]; then
+  echo -e
+  echo "#### building prom image ####"
+  cd prometheus
+  image=frankhang/prom-$arg:$version
+  docker build --build-arg config=$arg -t $image .
+  if [ $? -ne 0 ]; then exit 1; fi
+  docker push $image
+  if [ $? -ne 0 ]; then exit 1; fi
+  cd ..
+fi
+
+if [ $doppler ]; then
+  echo -e
+  echo "#### building doppler image ####"
+  cd doppler
+  image=frankhang/doppler:$version
+  docker build -t $image .
+  if [ $? -ne 0 ]; then exit 1; fi
+  docker push $image
+  if [ $? -ne 0 ]; then exit 1; fi
+  cd ..
+fi
+
+if [ $client ]; then
+  echo -e
+  echo "#### building client image ####"
+  cd client
+  image=frankhang/client:$version
+  docker build -t $image .
+  if [ $? -ne 0 ]; then exit 1; fi
+  docker push $image
+  if [ $? -ne 0 ]; then exit 1; fi
+  cd ..
+fi
