@@ -42,7 +42,7 @@ if [ "$1" = "client" ]; then
 fi
 
 echo "#### connecting to docker registry ####"
-docker login --username=frankhang --password=Ac7e4e$6534309
+docker login --username=frankhang --password=Ac7e4e\$6534309
 if [ $? -ne 0 ]; then exit 1; fi
 
 if [ $grafana ]; then
@@ -74,7 +74,7 @@ if [ $doppler ]; then
   echo "#### building doppler image ####"
   cd doppler
   image=frankhang/doppler:$version
-  docker build -t $image .
+  docker build -f Dockerfile -t $image  ../..
   if [ $? -ne 0 ]; then exit 1; fi
   docker push $image
   if [ $? -ne 0 ]; then exit 1; fi
@@ -86,7 +86,7 @@ if [ $client ]; then
   echo "#### building client image ####"
   cd client
   image=frankhang/client:$version
-  docker build -t $image .
+  docker build -f Dockerfile -t $image0  ../..
   if [ $? -ne 0 ]; then exit 1; fi
   docker push $image
   if [ $? -ne 0 ]; then exit 1; fi

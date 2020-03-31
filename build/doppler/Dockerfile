@@ -15,5 +15,5 @@ ENV APP_DIR="server/"
 ENV APP_NAME="doppler"
 WORKDIR /root/
 COPY --from=builder /go/src/${PRJ_DIR}${APP_DIR}${APP_NAME} .
-ADD https://raw.githubusercontent.com/frankhang/doppler/master/deploy/doppler/doppler.toml .
+ADD https://raw.githubusercontent.com/frankhang/doppler/master/build/doppler/doppler.toml .
 ENTRYPOINT ["./doppler", "-log-file=", "-config=doppler.toml"]
