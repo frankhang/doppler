@@ -5,7 +5,7 @@
 version=1.0
 
 if [ $# -gt 1 ]; then
-  echo "Usage: build [service]"
+  echo "Usage: $0 [service]"
   echo "  service: prom/grafana/doppler/client/server, server means prom + grafana + doppler. Default is blank, means build them all."
   exit 0
 fi
@@ -86,7 +86,7 @@ if [ $client ]; then
   echo "#### building client image ####"
   cd client
   image=frankhang/client:$version
-  docker build -f Dockerfile -t $image0  ../..
+  docker build -f Dockerfile -t $image  ../..
   if [ $? -ne 0 ]; then exit 1; fi
   docker push $image
   if [ $? -ne 0 ]; then exit 1; fi

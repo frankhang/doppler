@@ -5,12 +5,12 @@
 version=1.0
 
 if [ $# -gt 1 ]; then
-  echo "Usage: start [service]"
+  echo "Usage: $0 [service]"
   echo "  service: prom/grafana/doppler/client/server, server means prom + grafana + doppler. Default is blank, meaning start them all."
   exit 0
 fi
 
-if [ $# = 1 ]; then
+if [ $# = 0 ]; then
   grafana=true
   prom=true
   doppler=true
@@ -43,16 +43,16 @@ fi
 
 if [ $grafana ]; then
   echo -e
-  echo "#### staring grafana ####"
+  echo "#### starting grafana ####"
   image=frankhang/grafana:$version
   docker run --name grafana --rm -d -p 4000:4000 $image
 fi
 
 if [ $prom ]; then
   echo -e
-  echo "#### staring prom ####"
+  echo "#### starting prom ####"
   image=frankhang/prom-$arg:$version
-  docker run --name prom --rm -d -p 8090:8090 -v promdata:/root/data $image
+  docker run --name prom --rm -d -p 8090:8090 -v ~/promdata:/etc/prometheus/data $image
 # docker run --name prom --rm -d -p 8090:8090 $image
 
 fi
@@ -60,7 +60,7 @@ fi
 
 if [ $doppler ]; then
   echo -e
-  echo "#### staring doppler ####"
+  echo "#### starting doppler ####"
   image=frankhang/doppler:$version
   docker run --name doppler --rm -d -p 8125:8125/udp -p 8825:8825 $image -L=debug
 fi

@@ -5,7 +5,7 @@
 version=1.0
 
 if [ $# -gt 2 ]; then
-  echo "Usage: start.sh [service] [-r]"
+  echo "Usage: $0 [service] [-r]"
   echo "  [service]: prom/grafana/doppler/client/server, server means prom + grafana + doppler. Default is blank, means start them all"
   echo "  [-r]: remove image before running"
   exit 0
@@ -65,7 +65,7 @@ if [ $prom ]; then
     docker image rm -f $image
   fi
 
-    docker run --name prom --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 -v promdata:/root/data $image
+    docker run --name prom --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 -v ~/promdata:/etc/prometheus/data $image
     #docker run --name prom --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
 
 fi

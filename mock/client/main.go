@@ -46,7 +46,7 @@ func main() {
 		err = statsd.Timing("example_metric_Timing", 222222, nil, 1)
 		errors.MustNil(err)
 
-		err = statsd.Set("example_metric._Set", "7777", nil, 1)
+		err = statsd.Set("example_metric_Set", "7777", nil, 1)
 		errors.MustNil(err)
 
 
