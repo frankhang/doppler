@@ -46,18 +46,21 @@ if [ $grafana ]; then
   echo -e
   echo "#### stoping grafana ####"
   docker stop grafana
+  docker rm grafana
 fi
 
 if [ $prom ]; then
   echo -e
   echo "#### stoping prom ####"
   docker stop prom
+  docker rm prom
 fi
 
 if [ $doppler ]; then
   echo -e
   echo "#### stoping doppler ####"
   docker stop doppler
+  docker rm doppler
 
 fi
 
@@ -65,6 +68,7 @@ if [ $client ]; then
   echo -e
   echo "#### stoping client  ####"
   docker stop client
+  docker rm client
 fi
 
 

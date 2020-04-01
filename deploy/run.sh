@@ -54,7 +54,9 @@ if [ $grafana ]; then
   if [ $remove ]; then
     docker image rm -f $image
   fi
-  docker run --name grafana --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 -v ~/grafanadata:/var/lib/grafana $image
+  mkdir /grafanadata
+  chmod a+rwx /grafanadata
+  docker run --name grafana -d --network=host --add-host=host.docker.internal:127.0.0.1 -v /grafanadata:/var/lib/grafana $image
 fi
 
 if [ $prom ]; then
@@ -65,8 +67,10 @@ if [ $prom ]; then
     docker image rm -f $image
   fi
 
-    docker run --name prom --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 -v ~/promdata:/etc/prometheus/data $image
-    #docker run --name prom --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
+  mkdir /promdata
+  chmod a+rwx /promdata
+  docker run --name prom -d --network=host --add-host=host.docker.internal:127.0.0.1 -v /promdata:/etc/prometheus/data $image
+
 
 fi
 
@@ -79,7 +83,7 @@ if [ $doppler ]; then
   if [ $remove ]; then
     docker image rm -f $image
   fi
-  docker run --name doppler --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 $image -L=debug
+  docker run --name doppler -d --network=host --add-host=host.docker.internal:127.0.0.1 $image -L=debug
 
 fi
 
@@ -90,5 +94,5 @@ if [ $client ]; then
   if [ $remove ]; then
     docker image rm -f $image
   fi
-  docker run --name client --rm -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
+  docker run --name client -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
 fi
