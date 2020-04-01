@@ -30,8 +30,6 @@ import (
 	"syscall"
 	"time"
 
-	//l "github.com/sirupsen/logrus"
-	sig "github.com/frankhang/util/signal"
 	"github.com/frankhang/util/sys/linux"
 	"github.com/frankhang/util/tcp"
 
@@ -138,7 +136,7 @@ func main() {
 	runExporter()
 	//setupMetrics()
 	createServer()
-	sig.SetupSignalHandler(serverShutdown)
+	//sig.SetupSignalHandler(serverShutdown)
 	runServer()
 	//cleanup()
 
