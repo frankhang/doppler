@@ -25,6 +25,7 @@ var (
 type PromExporter struct {
 	cache c.Cache
 	//cache sync.Map
+	bucketsForMilliseconds []float64
 }
 
 func NewPromExporter() *PromExporter {
@@ -35,6 +36,7 @@ func NewPromExporter() *PromExporter {
 
 	exporter := &PromExporter{
 		cache: cache,
+		bucketsForMilliseconds: prometheus.ExponentialBuckets(0.1, 1.6, 32),
 	}
 	return exporter
 }
@@ -52,7 +54,7 @@ func onRemoval(key c.Key, value c.Value) {
 	logutil.BgLogger().Debug("onRemoval", zap.Bool("removed", removed))
 }
 
-func loadMetric(key c.Key) (value c.Value, err error) {
+func (e *PromExporter) loadMetric(key c.Key) (value c.Value, err error) {
 	var pm *PromMetric
 	var ok bool
 	if pm, ok = key.(*PromMetric); !ok {
@@ -83,8 +85,9 @@ func loadMetric(key c.Key) (value c.Value, err error) {
 	case HistogramSymbol:
 		collector = prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name: pm.Name,
-				Help: pm.Name,
+				Name:    pm.Name,
+				Help:    pm.Name,
+				Buckets: e.bucketsForMilliseconds,
 			},
 			pm.LabelNames)
 		err = prometheus.Register(collector)
@@ -100,7 +103,7 @@ func loadMetric(key c.Key) (value c.Value, err error) {
 		err = errors.New(fmt.Sprintf("loadMetric: Unsupported symbol, %s", pm))
 	}
 
-	if err == nil {//register successfully
+	if err == nil { //register successfully
 		value = collector
 
 	} else { //register error
@@ -128,7 +131,7 @@ func (e *PromExporter) Export(sample *metrics.MetricSample) (err error) {
 
 	key := ps.metric.String()
 	if value, ok = e.cache.GetIfPresent(key); !ok {
-		if value, err = loadMetric(ps.metric); err != nil {
+		if value, err = e.loadMetric(ps.metric); err != nil {
 			err = errors.Trace(err)
 			return
 		}

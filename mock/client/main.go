@@ -40,7 +40,7 @@ func main() {
 		err = statsd.Distribution("example_metric_Distribution", 44.44, nil, 1)
 		errors.MustNil(err)
 
-		err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 5555, nil, 1)
+		err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 50, nil, 1)
 		errors.MustNil(err)
 
 		err = statsd.Timing("example_metric_Timing", 222222, nil, 1)

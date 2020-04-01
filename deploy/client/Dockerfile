@@ -15,5 +15,4 @@ ENV APP_DIR="mock/client/"
 ENV APP_NAME="client"
 WORKDIR /root/
 COPY --from=builder /go/src/${PRJ_DIR}${APP_DIR}${APP_NAME} .
-ADD https://raw.githubusercontent.com/frankhang/doppler/master/build/doppler/doppler.toml .
 ENTRYPOINT ["./client"]

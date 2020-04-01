@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"fmt"
 	"github.com/frankhang/doppler/metrics"
 	"sort"
 	"strings"
@@ -20,12 +21,22 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 	pm.Name = normalize(s.Name)
 	ps.Value = s.Value
 
-	tags := s.Tags
+	tags := make([]string, 0, len(s.Tags) + 3)
+	tags = append(tags, s.Tags...)
 
 	if s.Mtype == metrics.SetType {
-		tags = append(tags, s.RawValue)
+		rawValue := strings.TrimSpace(s.RawValue)
+		if rawValue != "" {
+			tags = append(tags, fmt.Sprintf("%s:1", rawValue))
+		}
 		ps.Value = 1
 	}
+
+	host := strings.TrimSpace(s.Host)
+	if host != "" {
+		tags = append(tags, fmt.Sprintf("_agent_:%s", host))
+	}
+	tags = append(tags, fmt.Sprintf("_rate_:%.3f", s.SampleRate))
 
 	if len(tags) > 0 {
 		sort.Strings(tags)
@@ -57,7 +68,6 @@ func normalize(s string) string {
 	return strings.TrimSpace(t)
 
 }
-
 
 func getMetricSymbol(sample *metrics.MetricSample) byte {
 
