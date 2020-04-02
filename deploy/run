@@ -45,7 +45,7 @@ if [ $grafana ]; then
   echo -e
   echo "#### starting grafana ####"
   image=frankhang/grafana:$version
-  docker run --name grafana -d -p 4000:4000 -v ~/grafanadata:/var/lib/grafana $image
+  docker run --name grafana -d -p 3300:3300 -v ~/grafanadata:/var/lib/grafana $image
 fi
 
 if [ $prom ]; then

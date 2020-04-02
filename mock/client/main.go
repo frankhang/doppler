@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/DataDog/datadog-go/statsd"
 	"github.com/frankhang/util/errors"
+	"math/rand"
 	"time"
 )
 
@@ -37,18 +38,29 @@ func main() {
 		err = statsd.Histogram("example_metric_Histogram", 33.33, []string{"Method:GET"}, 1)
 		errors.MustNil(err)
 
-		err = statsd.Distribution("example_metric_Distribution", 44.44, nil, 1)
-		errors.MustNil(err)
-
-		err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 50, nil, 1)
-		errors.MustNil(err)
-
-		err = statsd.Timing("example_metric_Timing", 222222, nil, 1)
-		errors.MustNil(err)
+		//
+		//err = statsd.Distribution("example_metric_Distribution", 44.44, nil, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 50, nil, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.Timing("example_metric_Timing", 222222, nil, 1)
+		//errors.MustNil(err)
 
 		err = statsd.Set("example_metric_Set", "7777", nil, 1)
 		errors.MustNil(err)
 
+		err = statsd.Histogram("msapi", rand.Float64() * 100, []string{"Method:GET", "Path:/path/of/api1"}, 1)
+		errors.MustNil(err)
+
+		err = statsd.Histogram("msapi", rand.Float64() * 100, []string{"Method:POST", "Path:/path/of/api1"}, 1)
+		errors.MustNil(err)
+
+		err = statsd.Histogram("msapi", rand.ExpFloat64(), []string{"Method:GET", "Path:/path/of/api2"}, 1)
+		errors.MustNil(err)
+		err = statsd.Histogram("msapi", rand.ExpFloat64(), []string{"Method:POST", "Path:/path/of/api2"}, 1)
+		errors.MustNil(err)
 
 		err = statsd.Flush()
 		errors.MustNil(err)
