@@ -27,7 +27,7 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 	if s.Mtype == metrics.SetType {
 		rawValue := strings.TrimSpace(s.RawValue)
 		if rawValue != "" {
-			tags = append(tags, fmt.Sprintf("%s:1", rawValue))
+			tags = append(tags, fmt.Sprintf("_setOf_%s:1", rawValue))
 		}
 		ps.Value = 1
 	}
