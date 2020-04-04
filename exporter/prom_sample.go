@@ -21,7 +21,7 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 	pm.Name = normalize(s.Name)
 	ps.Value = s.Value
 
-	tags := make([]string, 0, len(s.Tags) + 3)
+	tags := make([]string, 0, len(s.Tags)+3)
 	tags = append(tags, s.Tags...)
 
 	if s.Mtype == metrics.SetType {
@@ -48,10 +48,16 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 			//tagName := strings.TrimSpace(tagPair[0])
 			tagName := normalize(tagPair[0])
 			tagValue := strings.TrimSpace(tagPair[1])
-			if len(tagName) == 0 || len(tagValue) == 0 {
+			//if len(tagName) == 0 || len(tagValue) == 0 {
+			//	continue
+			//}
+
+			if len(tagName) == 0 {
 				continue
 			}
-
+			if len(tagValue) == 0 {
+				tagValue = "nil"
+			}
 			pm.LabelNames = append(pm.LabelNames, tagName)
 			ps.LableValues = append(ps.LableValues, tagValue)
 

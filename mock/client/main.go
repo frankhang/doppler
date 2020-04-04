@@ -29,13 +29,13 @@ func main() {
 
 	for {
 
-		err := statsd.Count("example_metric_Count", 11, nil, 1)
-		errors.MustNil(err)
+		//err := statsd.Count("example_metric_Count", 11, nil, 1)
+		//errors.MustNil(err)
+		//
+		//err = statsd.Gauge("example_metric_Gauge", 22, nil, 1)
+		//errors.MustNil(err)
 
-		err = statsd.Gauge("example_metric_Gauge", 22, nil, 1)
-		errors.MustNil(err)
-
-		//err = statsd.Histogram("example_metric_Histogram", 33.33, []string{"Method:GET"}, 1)
+		//err = statsd.Histogram("example_metric_Histogram", 33.33, []string{"method:GET"}, 1)
 		//errors.MustNil(err)
 
 		//
@@ -52,98 +52,110 @@ func main() {
 		//errors.MustNil(err)
 
 		eRate := 0.1
-		eTag := "error:1"
+		eTag := "errno:1"
+		rTag := "errno:0"
 		var tags []string
 		for i:=0; i<10;i++ {
 
-			statsd.Tags = []string{"module:UserCenter", "env:dev", "role:provider"}
+			statsd.Tags = []string{"module:UserCenter", "env:dev", "role:provider", "ds:"}
 			if errorRate(eRate) {
 				statsd.Tags = append(statsd.Tags, eTag)
+			} else {
+				statsd.Tags = append(statsd.Tags, rTag)
 			}
-			tags = []string{"Method:GET", "Path:/api/of/UserCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:GET", "path:/api/of/UserCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
-			tags = []string{"Method:POST", "Path:/api/of/UserCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:POST", "path:/api/of/UserCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 
-			statsd.Tags = []string{"module:OrgCenter", "env:dev", "role:provider"}
+			statsd.Tags = []string{"module:OrgCenter", "env:dev", "role:provider", "ds:"}
 			if errorRate(eRate) {
 				statsd.Tags = append(statsd.Tags, eTag)
+			} else {
+				statsd.Tags = append(statsd.Tags, rTag)
 			}
-			tags = []string{"Method:GET", "Path:/api/of/OrgCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:GET", "path:/api/of/OrgCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
-			tags = []string{"Method:POST", "Path:/api/of/OrgCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:POST", "path:/api/of/OrgCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 
-			statsd.Tags = []string{"module:DeviceCenter", "env:dev", "role:provider"}
+			statsd.Tags = []string{"module:DeviceCenter", "env:dev", "role:provider", "ds:"}
 			if errorRate(eRate) {
 				statsd.Tags = append(statsd.Tags, eTag)
+			} else {
+				statsd.Tags = append(statsd.Tags, rTag)
 			}
-			tags = []string{"Method:GET", "Path:/api/of/DeviceCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:GET", "path:/api/of/DeviceCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
-			tags = []string{"Method:POST", "Path:/api/of/DeviceCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:POST", "path:/api/of/DeviceCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 
-			statsd.Tags = []string{"module:TaskCenter", "env:dev", "role:provider"}
+			statsd.Tags = []string{"module:TaskCenter", "env:dev", "role:provider", "ds:"}
 			if errorRate(eRate) {
 				statsd.Tags = append(statsd.Tags, eTag)
+			} else {
+				statsd.Tags = append(statsd.Tags, rTag)
 			}
-			tags = []string{"Method:GET", "Path:/api/of/TaskCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:GET", "path:/api/of/TaskCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
-			tags = []string{"Method:POST", "Path:/api/of/TaskCenter/f" + strconv.Itoa(i)}
+			tags = []string{"method:POST", "path:/api/of/TaskCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 
-			statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider"}
+			statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider", "ds:"}
 			if errorRate(eRate) {
 				statsd.Tags = append(statsd.Tags, eTag)
+			} else {
+				statsd.Tags = append(statsd.Tags, rTag)
 			}
-			tags = []string{"Method:GET", "Path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
+			tags = []string{"method:GET", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
-			tags = []string{"Method:POST", "Path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
+			tags = []string{"method:POST", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 
-			statsd.Tags = []string{"ds:mysql1", "env:dev", "role:provider"}
+			statsd.Tags = []string{"module:", "env:dev", "role:provider", "ds:mysql1"}
 			if errorRate(eRate) {
 				statsd.Tags = append(statsd.Tags, eTag)
-
+			} else {
+				statsd.Tags = append(statsd.Tags, rTag)
 			}
-			tags = []string{"Method:GET", "Path:/api/of/Other/f" + strconv.Itoa(i)}
+
+			tags = []string{"method:GET", "path:/api/of/Other/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
-			tags = []string{"Method:POST", "Path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
+			tags = []string{"method:POST", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 
 		}
 
-		statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:consumer"}
+		statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:consumer", "ds:"}
 		if errorRate(eRate) {
 			statsd.Tags = append(statsd.Tags, eTag)
+		} else {
+			statsd.Tags = append(statsd.Tags, rTag)
 		}
-		tags = []string{"Method:GET", "Path:/api/of/UserCenter/f1"}
+		tags = []string{"method:GET", "path:/api/of/UserCenter/f1"}
 		err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 		errors.MustNil(err)
-		tags = []string{"Method:POST", "Path:/api/of/OrgCenter/f1"}
+		tags = []string{"method:POST", "path:/api/of/OrgCenter/f1"}
 		err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 		errors.MustNil(err)
-		tags = []string{"Method:GET", "Path:/api/of/DeviceCenter/f1"}
+		tags = []string{"method:GET", "path:/api/of/DeviceCenter/f1"}
 		err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 		errors.MustNil(err)
-		tags = []string{"Method:POST", "Path:/api/of/TaskCenter/f1"}
+		tags = []string{"method:POST", "path:/api/of/TaskCenter/f1"}
 		err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 		errors.MustNil(err)
-
-
-
 
 		err = statsd.Flush()
 		errors.MustNil(err)
