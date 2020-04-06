@@ -67,8 +67,10 @@ fi
 if [ $client ]; then
   echo -e
   echo "#### stoping client  ####"
-  docker stop client
-  docker rm client
+  docker stop client1
+  docker rm client1
+  docker stop client2
+  docker rm client2
 fi
 
 

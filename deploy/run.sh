@@ -89,10 +89,17 @@ fi
 
 if [ $client ]; then
   echo -e
-  echo "#### starting client  ####"
+  echo "#### starting client1  ####"
   image=frankhang/client:$version
   if [ $remove ]; then
     docker image rm -f $image
   fi
-  docker run --name client -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
+  docker run --name client1 -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
+fi
+
+if [ $client ]; then
+  echo -e
+  echo "#### starting client2  ####"
+  image=frankhang/client:$version
+  docker run --name client2 -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
 fi
