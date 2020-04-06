@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+const (
+	blankStr = "nil"
+)
+
 type PromSample struct {
 	metric      *PromMetric
 	Value       float64
@@ -56,7 +60,7 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 				continue
 			}
 			if len(tagValue) == 0 {
-				tagValue = "nil"
+				tagValue = blankStr
 			}
 			pm.LabelNames = append(pm.LabelNames, tagName)
 			ps.LableValues = append(ps.LableValues, tagValue)

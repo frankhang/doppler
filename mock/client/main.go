@@ -9,6 +9,13 @@ import (
 	"time"
 )
 
+const (
+	e400Tag = "code:400"
+	e401Tag = "code:401"
+	rTag = "code:200"
+	timeoutTag = "code:timeout"
+)
+
 var (
 	//bufio.NewWriterSize(p.BufReadConn, defaultWriterSize)
 	url = flag.String("url", "localhost:8125", "host:port")
@@ -25,7 +32,6 @@ func main() {
 	defer statsd.Close()
 
 	statsd.Namespace = "derun_"
-
 
 	for {
 
@@ -51,18 +57,12 @@ func main() {
 		//err = statsd.Set("example_metric_Set", "7777", nil, 1)
 		//errors.MustNil(err)
 
-		eRate := 0.1
-		eTag := "errno:1"
-		rTag := "errno:0"
 		var tags []string
-		for i:=0; i<10;i++ {
+		for i := 0; i < 10; i++ {
 
 			statsd.Tags = []string{"module:UserCenter", "env:dev", "role:provider", "ds:"}
-			if errorRate(eRate) {
-				statsd.Tags = append(statsd.Tags, eTag)
-			} else {
-				statsd.Tags = append(statsd.Tags, rTag)
-			}
+			statsd.Tags = appendCodeTag(statsd.Tags)
+
 			tags = []string{"method:GET", "path:/api/of/UserCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
@@ -71,11 +71,7 @@ func main() {
 			errors.MustNil(err)
 
 			statsd.Tags = []string{"module:OrgCenter", "env:dev", "role:provider", "ds:"}
-			if errorRate(eRate) {
-				statsd.Tags = append(statsd.Tags, eTag)
-			} else {
-				statsd.Tags = append(statsd.Tags, rTag)
-			}
+			statsd.Tags = appendCodeTag(statsd.Tags)
 			tags = []string{"method:GET", "path:/api/of/OrgCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
@@ -84,11 +80,7 @@ func main() {
 			errors.MustNil(err)
 
 			statsd.Tags = []string{"module:DeviceCenter", "env:dev", "role:provider", "ds:"}
-			if errorRate(eRate) {
-				statsd.Tags = append(statsd.Tags, eTag)
-			} else {
-				statsd.Tags = append(statsd.Tags, rTag)
-			}
+			statsd.Tags = appendCodeTag(statsd.Tags)
 			tags = []string{"method:GET", "path:/api/of/DeviceCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
@@ -97,11 +89,7 @@ func main() {
 			errors.MustNil(err)
 
 			statsd.Tags = []string{"module:TaskCenter", "env:dev", "role:provider", "ds:"}
-			if errorRate(eRate) {
-				statsd.Tags = append(statsd.Tags, eTag)
-			} else {
-				statsd.Tags = append(statsd.Tags, rTag)
-			}
+			statsd.Tags = appendCodeTag(statsd.Tags)
 			tags = []string{"method:GET", "path:/api/of/TaskCenter/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
@@ -110,11 +98,7 @@ func main() {
 			errors.MustNil(err)
 
 			statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider", "ds:"}
-			if errorRate(eRate) {
-				statsd.Tags = append(statsd.Tags, eTag)
-			} else {
-				statsd.Tags = append(statsd.Tags, rTag)
-			}
+			statsd.Tags = appendCodeTag(statsd.Tags)
 			tags = []string{"method:GET", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
@@ -122,14 +106,10 @@ func main() {
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 
-			statsd.Tags = []string{"module:", "env:dev", "role:provider", "ds:mysql1"}
-			if errorRate(eRate) {
-				statsd.Tags = append(statsd.Tags, eTag)
-			} else {
-				statsd.Tags = append(statsd.Tags, rTag)
-			}
+			statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider", "ds:"}
+			statsd.Tags = appendCodeTag(statsd.Tags)
 
-			tags = []string{"method:GET", "path:/api/of/Other/f" + strconv.Itoa(i)}
+			tags = []string{"method:GET", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
 			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 			tags = []string{"method:POST", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
@@ -139,11 +119,7 @@ func main() {
 		}
 
 		statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:consumer", "ds:"}
-		if errorRate(eRate) {
-			statsd.Tags = append(statsd.Tags, eTag)
-		} else {
-			statsd.Tags = append(statsd.Tags, rTag)
-		}
+		statsd.Tags = appendCodeTag(statsd.Tags)
 		tags = []string{"method:GET", "path:/api/of/UserCenter/f1"}
 		err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 		errors.MustNil(err)
@@ -164,11 +140,18 @@ func main() {
 
 }
 
-func errorRate (rate float64) bool {
-
-	if rand.Float64() < rate {
-		return true
+func appendCodeTag(tags []string) (newTags []string) {
+	r := rand.Float64()
+	if r < 0.05 {
+		newTags = append(tags, timeoutTag)
+	} else if r < 0.15 {
+		newTags = append(tags, e400Tag)
+	} else if r < 0.3 {
+		newTags = append(tags, e401Tag)
+	} else {
+		newTags = append(tags, rTag)
 	}
-	return false
+	return
 
 }
+
