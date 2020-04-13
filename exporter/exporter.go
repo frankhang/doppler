@@ -35,7 +35,7 @@ func NewPromExporter() *PromExporter {
 	)
 
 	exporter := &PromExporter{
-		cache: cache,
+		cache:                  cache,
 		bucketsForMilliseconds: prometheus.ExponentialBuckets(0.1, 1.6, 32),
 	}
 	return exporter
@@ -122,10 +122,10 @@ func (e *PromExporter) loadMetric(key c.Key) (value c.Value, err error) {
 	return
 }
 
-func (e *PromExporter) Export(sample *metrics.MetricSample) (err error) {
-
-	ps := NewPromSample(sample)
-
+func (e *PromExporter) export(ps *PromSample) (err error) {
+	if ps == nil {
+		return
+	}
 	var value interface{}
 	var ok bool
 
@@ -153,4 +153,17 @@ func (e *PromExporter) Export(sample *metrics.MetricSample) (err error) {
 	}
 
 	return
+}
+
+func (e *PromExporter) ExportMetricSample(sample *metrics.MetricSample) error {
+
+	ps := NewPromSample(sample)
+
+	return e.export(ps)
+}
+
+func (e *PromExporter) ExportServiceCheck(sc *metrics.ServiceCheck) error {
+
+	ps := NewPromSampleFromServiceCheck(sc)
+	return e.export(ps)
 }

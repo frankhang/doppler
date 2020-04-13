@@ -349,7 +349,12 @@ func (agg *BufferedAggregator) addServiceCheck(sc metrics.ServiceCheck) {
 	sc.Tags = util.SortUniqInPlace(sc.Tags)
 	logutil.BgLogger().Debug("addServiceCheck", zap.Reflect("servicecheck", sc))
 
-	agg.serviceChecks = append(agg.serviceChecks, &sc)
+	//agg.serviceChecks = append(agg.serviceChecks, &sc)
+	if err := e.Exporter.ExportServiceCheck(&sc); err !=nil {
+		err = errors.Trace(err)
+		logutil.BgLogger().Error("addServiceCheck export error", zap.Reflect("serviceCheck", &sc))
+		errors.Log(err)
+	}
 }
 
 // addEvent adds the event to the slice of current events
@@ -372,7 +377,7 @@ func (agg *BufferedAggregator) addSample(metricSample *metrics.MetricSample, tim
 	}
 
 	//agg.statsdSampler.addSample(metricSample, timestamp)
-	if err := e.Exporter.Export(metricSample); err!= nil {
+	if err := e.Exporter.ExportMetricSample(metricSample); err!= nil {
 		err = errors.Trace(err)
 		logutil.BgLogger().Error("addSample export error", zap.Reflect("sample", metricSample))
 		errors.Log(err)

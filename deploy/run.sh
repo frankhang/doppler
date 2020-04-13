@@ -53,6 +53,8 @@ if [ $grafana ]; then
   image=frankhang/grafana:$version
   if [ $remove ]; then
     docker image rm -f $image
+    docker stop grafana
+    docker rm grafana
   fi
   mkdir /grafanadata
   chmod a+rwx /grafanadata
@@ -65,16 +67,15 @@ if [ $prom ]; then
   image=frankhang/prom-$arg:$version
   if [ $remove ]; then
     docker image rm -f $image
+    docker stop prom
+    docker rm prom
   fi
 
   mkdir /promdata
   chmod a+rwx /promdata
   docker run --name prom -d --network=host --add-host=host.docker.internal:127.0.0.1 -v /promdata:/etc/prometheus/data $image
 
-
 fi
-
-
 
 if [ $doppler ]; then
   echo -e
@@ -82,6 +83,8 @@ if [ $doppler ]; then
   image=frankhang/doppler:$version
   if [ $remove ]; then
     docker image rm -f $image
+    docker stop doppler
+    docker rm doppler
   fi
   docker run --name doppler -d --network=host --add-host=host.docker.internal:127.0.0.1 $image -L=debug
 
@@ -93,6 +96,8 @@ if [ $client ]; then
   image=frankhang/client:$version
   if [ $remove ]; then
     docker image rm -f $image
+    docker stop client1
+    docker rm client1
   fi
   docker run --name client1 -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
 fi
@@ -101,5 +106,9 @@ if [ $client ]; then
   echo -e
   echo "#### starting client2  ####"
   image=frankhang/client:$version
+  if [ $remove ]; then
+    docker stop client2
+    docker rm client2
+  fi
   docker run --name client2 -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
 fi

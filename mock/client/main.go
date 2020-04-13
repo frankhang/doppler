@@ -29,38 +29,38 @@ func main() {
 
 	println("connecting : " + *url)
 
-	statsd, err := statsd.New(*url)
+	dClient, err := statsd.New(*url)
 	errors.MustNil(err)
 
-	defer statsd.Close()
+	defer dClient.Close()
 
 	host, err = os.Hostname()
 	errors.MustNil(err)
 
-	statsd.Namespace = "derun_"
+	dClient.Namespace = "derun_"
 
 	for {
 
-		//err := statsd.Count("example_metric_Count", 11, nil, 1)
+		//err := dClient.Count("example_metric_Count", 11, nil, 1)
 		//errors.MustNil(err)
 		//
-		//err = statsd.Gauge("example_metric_Gauge", 22, nil, 1)
+		//err = dClient.Gauge("example_metric_Gauge", 22, nil, 1)
 		//errors.MustNil(err)
 
-		//err = statsd.Histogram("example_metric_Histogram", 33.33, []string{"method:GET"}, 1)
+		//err = dClient.Histogram("example_metric_Histogram", 33.33, []string{"method:GET"}, 1)
 		//errors.MustNil(err)
 
 		//
-		//err = statsd.Distribution("example_metric_Distribution", 44.44, nil, 1)
+		//err = dClient.Distribution("example_metric_Distribution", 44.44, nil, 1)
 		//errors.MustNil(err)
 		//
-		//err = statsd.TimeInMilliseconds("example_metric_TimeInMilliseconds", 50, nil, 1)
+		//err = dClient.TimeInMilliseconds("example_metric_TimeInMilliseconds", 50, nil, 1)
 		//errors.MustNil(err)
 		//
-		//err = statsd.Timing("example_metric_Timing", 222222, nil, 1)
+		//err = dClient.Timing("example_metric_Timing", 222222, nil, 1)
 		//errors.MustNil(err)
 
-		//err = statsd.Set("example_metric_Set", "7777", nil, 1)
+		//err = dClient.Set("example_metric_Set", "7777", nil, 1)
 		//errors.MustNil(err)
 
 		var tags []string
@@ -69,118 +69,151 @@ func main() {
 			if hitRate((float64((i)+1) / 5)) {
 
 				println("send" + strconv.Itoa(i))
-				statsd.Tags = []string{"module:UserCenter", "env:dev", "role:provider"}
-				statsd.Tags = appendCodeTag(statsd.Tags)
+				dClient.Tags = []string{"module:UserCenter", "env:dev", "role:provider"}
+				dClient.Tags = appendCodeTag(dClient.Tags)
 
 				tags = []string{"method:GET", "path:/api/of/UserCenter/f" + strconv.Itoa(i)}
-				err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+				err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 				errors.MustNil(err)
 
 				if hitRate(0.5) {
 					tags = []string{"method:POST", "path:/api/of/UserCenter/f" + strconv.Itoa(i)}
-					err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
+				sc := statsd.NewServiceCheck("derun_UserCenter", statsd.Ok)
+				sc.Hostname = host
+				sc.Tags = []string{"env:dev"}
+				dClient.ServiceCheck(sc)
 
-				statsd.Tags = []string{"module:OrgCenter", "env:dev", "role:provider"}
-				statsd.Tags = appendCodeTag(statsd.Tags)
+
+
+				dClient.Tags = []string{"module:OrgCenter", "env:dev", "role:provider"}
+				dClient.Tags = appendCodeTag(dClient.Tags)
 				tags = []string{"method:GET", "path:/api/of/OrgCenter/f" + strconv.Itoa(i)}
-				err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+				err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 				errors.MustNil(err)
 
 				if hitRate(0.5) {
 					tags = []string{"method:POST", "path:/api/of/OrgCenter/f" + strconv.Itoa(i)}
-					err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
+				sc = statsd.NewServiceCheck("derun_OrgCenter", statsd.Warn)
+				sc.Hostname = host
+				sc.Tags = []string{"env:dev"}
+				dClient.ServiceCheck(sc)
 
-				statsd.Tags = []string{"module:DeviceCenter", "env:dev", "role:provider"}
-				statsd.Tags = appendCodeTag(statsd.Tags)
+
+
+
+				dClient.Tags = []string{"module:DeviceCenter", "env:dev", "role:provider"}
+				dClient.Tags = appendCodeTag(dClient.Tags)
 				tags = []string{"method:GET", "path:/api/of/DeviceCenter/f" + strconv.Itoa(i)}
-				err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+				err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 				errors.MustNil(err)
 
 				if hitRate(0.5) {
 
 					tags = []string{"method:POST", "path:/api/of/DeviceCenter/f" + strconv.Itoa(i)}
-					err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
+				sc = statsd.NewServiceCheck("derun_DeviceCenter", statsd.Critical)
+				sc.Hostname = host
+				sc.Tags = []string{"env:dev"}
+				dClient.ServiceCheck(sc)
 
-				statsd.Tags = []string{"module:TaskCenter", "env:dev", "role:provider"}
-				statsd.Tags = appendCodeTag(statsd.Tags)
+
+
+				dClient.Tags = []string{"module:TaskCenter", "env:dev", "role:provider"}
+				dClient.Tags = appendCodeTag(dClient.Tags)
 				tags = []string{"method:GET", "path:/api/of/TaskCenter/f" + strconv.Itoa(i)}
-				err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+				err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 				errors.MustNil(err)
 
 				if hitRate(0.5) {
 
 					tags = []string{"method:POST", "path:/api/of/TaskCenter/f" + strconv.Itoa(i)}
-					err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
+				sc = statsd.NewServiceCheck("TaskCenter", statsd.Unknown)
+				sc.Hostname = host
+				sc.Tags = []string{"env:dev"}
+				dClient.ServiceCheck(sc)
 
-				statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider"}
-				statsd.Tags = appendCodeTag(statsd.Tags)
+
+				dClient.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider"}
+				dClient.Tags = appendCodeTag(dClient.Tags)
 				tags = []string{"method:GET", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
-				err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+				err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 				errors.MustNil(err)
 
 				if hitRate(0.5) {
 
 					tags = []string{"method:POST", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
-					err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
+				//sc = statsd.NewServiceCheck("derun_PolutionPlatform", statsd.Ok)
+				//sc.Hostname = host
+				//sc.Tags = []string{"env:dev"}
+				//dClient.ServiceCheck(sc)
 
-				statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider"}
-				statsd.Tags = appendCodeTag(statsd.Tags)
 
-				tags = []string{"method:GET", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
-				err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
-				errors.MustNil(err)
-
-				if hitRate(0.5) {
-
-					tags = []string{"method:POST", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
-					err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
-					errors.MustNil(err)
-				}
+				//dClient.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider"}
+				//dClient.Tags = appendCodeTag(dClient.Tags)
+				//
+				//tags = []string{"method:GET", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
+				//err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+				//errors.MustNil(err)
+				//
+				//if hitRate(0.5) {
+				//
+				//	tags = []string{"method:POST", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
+				//	err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+				//	errors.MustNil(err)
+				//}
+				//sc = statsd.NewServiceCheck("derun_PolutionPlatform", statsd.Ok)
+				//sc.Hostname = host
+				//sc.Tags = []string{"env:dev"}
+				//dClient.ServiceCheck(sc)
 			}
 
 		}
 
 		println("send consumer")
-		statsd.Tags = []string{"module:PolutionPlatform", "env:dev", "role:consumer"}
-		statsd.Tags = appendCodeTag(statsd.Tags)
+		dClient.Tags = []string{"module:PolutionPlatform", "env:dev", "role:consumer"}
+		dClient.Tags = appendCodeTag(dClient.Tags)
 
 		if hitRate(0.8) {
 
 			tags = []string{"method:GET", "path:/api/of/UserCenter/f1"}
-			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+			err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 		}
 
 		if hitRate(0.7) {
 
 			tags = []string{"method:POST", "path:/api/of/OrgCenter/f1"}
-			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+			err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 		}
 		if hitRate(0.6) {
 
 			tags = []string{"method:GET", "path:/api/of/DeviceCenter/f1"}
-			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+			err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 		}
 		if hitRate(0.5) {
 
 			tags = []string{"method:POST", "path:/api/of/TaskCenter/f1"}
-			err = statsd.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
+			err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 		}
 
-		err = statsd.Flush()
+		err = dClient.Flush()
 		errors.MustNil(err)
 
 		time.Sleep(time.Millisecond * 200)
