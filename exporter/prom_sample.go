@@ -6,6 +6,7 @@ import (
 	"github.com/frankhang/doppler/metrics"
 	"github.com/frankhang/doppler/util"
 	"github.com/frankhang/util/hack"
+
 	"strings"
 )
 
@@ -82,9 +83,17 @@ func NewPromSampleFromServiceCheck(sc *metrics.ServiceCheck) *PromSample {
 
 	metricName, labelValue := generateMetricWithLabel(sc.CheckName)
 
-	pm.Symbol = GaugeSymbol
+	pm.Symbol = CountSymbol
 	pm.Name = metricName
 	ps.Value = float64(sc.Status)
+
+	switch sc.Status {
+	case metrics.ServiceCheckOK:
+		ps.Value = 1
+	default:
+		//return nil
+		ps.Value = 0
+	}
 
 	tags := make([]string, 0, len(sc.Tags)+2)
 	tags = append(tags, sc.Tags...)

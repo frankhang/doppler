@@ -81,10 +81,8 @@ func main() {
 					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
-				sc := statsd.NewServiceCheck("derun_UserCenter", statsd.Ok)
-				sc.Hostname = host
-				sc.Tags = []string{"env:dev"}
-				dClient.ServiceCheck(sc)
+
+
 
 
 
@@ -99,12 +97,6 @@ func main() {
 					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
-				sc = statsd.NewServiceCheck("derun_OrgCenter", statsd.Warn)
-				sc.Hostname = host
-				sc.Tags = []string{"env:dev"}
-				dClient.ServiceCheck(sc)
-
-
 
 
 				dClient.Tags = []string{"module:DeviceCenter", "env:dev", "role:provider"}
@@ -119,11 +111,6 @@ func main() {
 					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
-				sc = statsd.NewServiceCheck("derun_DeviceCenter", statsd.Critical)
-				sc.Hostname = host
-				sc.Tags = []string{"env:dev"}
-				dClient.ServiceCheck(sc)
-
 
 
 				dClient.Tags = []string{"module:TaskCenter", "env:dev", "role:provider"}
@@ -138,10 +125,8 @@ func main() {
 					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
-				sc = statsd.NewServiceCheck("TaskCenter", statsd.Unknown)
-				sc.Hostname = host
-				sc.Tags = []string{"env:dev"}
-				dClient.ServiceCheck(sc)
+
+
 
 
 				dClient.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider"}
@@ -156,29 +141,10 @@ func main() {
 					err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 					errors.MustNil(err)
 				}
-				//sc = statsd.NewServiceCheck("derun_PolutionPlatform", statsd.Ok)
-				//sc.Hostname = host
-				//sc.Tags = []string{"env:dev"}
-				//dClient.ServiceCheck(sc)
 
 
-				//dClient.Tags = []string{"module:PolutionPlatform", "env:dev", "role:provider"}
-				//dClient.Tags = appendCodeTag(dClient.Tags)
-				//
-				//tags = []string{"method:GET", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
-				//err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
-				//errors.MustNil(err)
-				//
-				//if hitRate(0.5) {
-				//
-				//	tags = []string{"method:POST", "path:/api/of/PolutionPlatform/f" + strconv.Itoa(i)}
-				//	err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
-				//	errors.MustNil(err)
-				//}
-				//sc = statsd.NewServiceCheck("derun_PolutionPlatform", statsd.Ok)
-				//sc.Hostname = host
-				//sc.Tags = []string{"env:dev"}
-				//dClient.ServiceCheck(sc)
+
+
 			}
 
 		}
@@ -212,11 +178,73 @@ func main() {
 			err = dClient.Histogram("api", float64(int(rand.Float64()*1000)), tags, 1)
 			errors.MustNil(err)
 		}
+		dClient.Tags = []string{}
+		sc := statsd.NewServiceCheck("derun_UserCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_OrgCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_DeviceCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_TaskCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_PolutionPlatform", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_MonitorCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_WarnCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_SystemCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_ReportCenter", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
+
+		dClient.Tags = []string{}
+		sc = statsd.NewServiceCheck("derun_Broker", statsd.Ok)
+		sc.Hostname = host
+		sc.Tags = []string{"env:dev"}
+		dClient.ServiceCheck(sc)
 
 		err = dClient.Flush()
 		errors.MustNil(err)
 
-		time.Sleep(time.Millisecond * 200)
+		//time.Sleep(time.Millisecond * 200)
+		time.Sleep(time.Second)
 
 	}
 
