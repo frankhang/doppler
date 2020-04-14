@@ -45,6 +45,8 @@ if [ $grafana ]; then
   echo -e
   echo "#### starting grafana ####"
   image=frankhang/grafana:$version
+  docker stop grafana
+  docker rm grafana
   docker run --name grafana -d -p 3300:3300 -v ~/grafanadata:/var/lib/grafana $image
 fi
 
@@ -52,29 +54,30 @@ if [ $prom ]; then
   echo -e
   echo "#### starting prom ####"
   image=frankhang/prom-$arg:$version
+  docker stop prom
+  docker rm prom
   docker run --name prom -d -p 8090:8090 -v ~/promdata:/etc/prometheus/data $image
 # docker run --name prom -d -p 8090:8090 $image
 
 fi
 
-
 if [ $doppler ]; then
   echo -e
   echo "#### starting doppler ####"
   image=frankhang/doppler:$version
+  docker stop doppler
+  docker rm doppler
   docker run --name doppler -d -p 8125:8125/udp -p 8825:8825 $image -L=debug
 fi
 
 if [ $client ]; then
   echo -e
-  echo "#### starting client1  ####"
+  echo "#### starting client  ####"
   image=frankhang/client:$version
+  docker stop client1
+  docker rm client1
+  docker stop client2
+  docker rm client2
   docker run --name client1 -d $image -url=host.docker.internal:8125
-fi
-
-if [ $client ]; then
-  echo -e
-  echo "#### starting client2  ####"
-  image=frankhang/client:$version
   docker run --name client2 -d $image -url=host.docker.internal:8125
 fi

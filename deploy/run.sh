@@ -11,7 +11,7 @@ if [ $# -gt 2 ]; then
   exit 0
 fi
 
-if [ "$1" = "" -o "$1" = "-r"  ]; then
+if [ "$1" = "" -o "$1" = "-r" ]; then
   grafana=true
   prom=true
   doppler=true
@@ -46,16 +46,15 @@ if [ "$1" = "-r" -o "$2" = "-r" ]; then
   remove=true
 fi
 
-
 if [ $grafana ]; then
   echo -e
   echo "#### staring grafana ####"
   image=frankhang/grafana:$version
   if [ $remove ]; then
     docker image rm -f $image
-    docker stop grafana
-    docker rm grafana
   fi
+  docker stop grafana
+  docker rm grafana
   mkdir /grafanadata
   chmod a+rwx /grafanadata
   docker run --name grafana -d --network=host --add-host=host.docker.internal:127.0.0.1 -v /grafanadata:/var/lib/grafana $image
@@ -67,9 +66,9 @@ if [ $prom ]; then
   image=frankhang/prom-$arg:$version
   if [ $remove ]; then
     docker image rm -f $image
-    docker stop prom
-    docker rm prom
   fi
+  docker stop prom
+  docker rm prom
 
   mkdir /promdata
   chmod a+rwx /promdata
@@ -83,9 +82,9 @@ if [ $doppler ]; then
   image=frankhang/doppler:$version
   if [ $remove ]; then
     docker image rm -f $image
-    docker stop doppler
-    docker rm doppler
   fi
+  docker stop doppler
+  docker rm doppler
   docker run --name doppler -d --network=host --add-host=host.docker.internal:127.0.0.1 $image -L=debug
 
 fi
@@ -96,19 +95,11 @@ if [ $client ]; then
   image=frankhang/client:$version
   if [ $remove ]; then
     docker image rm -f $image
-    docker stop client1
-    docker rm client1
   fi
+  docker stop client1
+  docker rm client1
+  docker stop client2
+  docker rm client2
   docker run --name client1 -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
-fi
-
-if [ $client ]; then
-  echo -e
-  echo "#### starting client2  ####"
-  image=frankhang/client:$version
-  if [ $remove ]; then
-    docker stop client2
-    docker rm client2
-  fi
   docker run --name client2 -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
 fi
