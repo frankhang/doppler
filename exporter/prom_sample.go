@@ -143,15 +143,17 @@ func generateMetricWithLabel(checkName string) (string, string) {
 		s1 = "doppler"
 	}
 	if len(s2) == 0 { //only has s1
-		return fmt.Sprintf("_sc_%s", s1), s1
+		//return fmt.Sprintf("_sc_%s", s1), s1
+		return "_sc_", s1
 	}
 
 	if len(s1) == 0 { //only has s2
-		return fmt.Sprintf("_sc_%s", s2), s2
+		//return fmt.Sprintf("_sc_%s", s2), s2
+		return "_sc_", s2
 	}
 	//has s1 and s2
 
-	return fmt.Sprintf("_sc_%s_%s", s1, s2), s2
+	return fmt.Sprintf("_sc_%s", s1), s2
 
 }
 
