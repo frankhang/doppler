@@ -46,6 +46,7 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 	tags = append(tags, fmt.Sprintf("_rate_:%.3f", s.SampleRate))
 
 	if len(tags) > 0 {
+		var method, path string
 		//sort.Strings(tags)
 		tags = util.SortUniqInPlace(tags)
 		for _, tag := range tags {
@@ -69,6 +70,16 @@ func NewPromSample(s *metrics.MetricSample) *PromSample {
 			pm.LabelNames = append(pm.LabelNames, tagName)
 			ps.LableValues = append(ps.LableValues, tagValue)
 
+			if tagName == "method" {
+				method = tagValue
+			} else if tagName == "path" {
+				path = tagValue
+			}
+
+		}
+		if len(method) > 0 && len(path) > 0 {
+			pm.LabelNames = append(pm.LabelNames, "apiname")
+			ps.LableValues = append(ps.LableValues, fmt.Sprintf("%s %s", method, path))
 		}
 	}
 	pm.GenerateKey()

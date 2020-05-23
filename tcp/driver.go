@@ -38,13 +38,13 @@ func (td *Driver) OpenCtx(connID uint64, capability uint32, collation uint8, dbn
 func (td *Driver) GeneratePacketIO(cc *tcp.ClientConn) *tcp.PacketIO {
 	packetIO := tcp.NewPacketIO(cc)
 
-	tierPacketIO := NewPacketIO(packetIO, td)
-	tierHandler := NewHandler(tierPacketIO, td)
+	tPacketIO := NewPacketIO(packetIO, td)
+	tHandler := NewHandler(tPacketIO, td)
 
-	packetIO.PacketReader = tierPacketIO
-	packetIO.PacketWriter = tierPacketIO
+	packetIO.PacketReader = tPacketIO
+	packetIO.PacketWriter = tPacketIO
 
-	cc.Handler = tierHandler
+	cc.Handler = tHandler
 
 	return packetIO
 }
