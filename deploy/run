@@ -14,6 +14,8 @@ if [ $# = 0 ]; then
   grafana=true
   prom=true
   doppler=true
+  telegraf=true
+  agent=true
   client=true
 fi
 
@@ -23,6 +25,7 @@ if [ "$1" = "server" ]; then
   grafana=true
   prom=true
   doppler=true
+  telegraf=true
 fi
 
 if [ "$1" = "grafana" ]; then
@@ -35,6 +38,14 @@ fi
 
 if [ "$1" = "doppler" ]; then
   doppler=true
+fi
+
+if [ "$1" = "telegraf" ]; then
+  telegraf=true
+fi
+
+if [ "$1" = "agent" ]; then
+  agent=true
 fi
 
 if [ "$1" = "client" ]; then
@@ -68,6 +79,24 @@ if [ $doppler ]; then
   docker stop doppler
   docker rm doppler
   docker run --name doppler -d -p 8125:8125/udp -p 8825:8825 $image -L=debug
+fi
+
+if [ $telegraf ]; then
+  echo -e
+  echo "#### starting telegraf ####"
+  image=frankhang/telegraf:$version
+  docker stop telegraf
+  docker rm telegraf
+  docker run --name telegraf -d -p 8094:8094/udp -p 8894:8894 $image
+fi
+
+if [ $agent ]; then
+  echo -e
+  echo "#### starting agent ####"
+  image=frankhang/agent:$version
+  docker stop agent
+  docker rm agent
+  docker run --name agent -d $image
 fi
 
 if [ $client ]; then

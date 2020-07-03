@@ -96,7 +96,7 @@
 # Configuration for the Prometheus client to spawn
 [[outputs.prometheus_client]]
   ## Address to listen on
-  listen = ":9273"
+  listen = ":8894"
 
   ## Metric version controls the mapping from Telegraf metrics into
   ## Prometheus format.  When using the prometheus input, use the same value in
@@ -204,7 +204,7 @@
   ## Each data format has its own unique set of configuration options, read
   ## more about them here:
   ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_INPUT.md
-  # data_format = "influx"
+  data_format = "json"
 
   ## Content encoding for message payloads, can be set to "gzip" to or
   ## "identity" to apply no encoding.
