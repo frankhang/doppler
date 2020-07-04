@@ -85,7 +85,7 @@
   ## Override default hostname, if empty use os.Hostname()
   hostname = ""
   ## If set to true, do no set the "host" tag in the telegraf agent.
-  omit_hostname = false
+  omit_hostname = true
 
 
 ###############################################################################
@@ -115,7 +115,7 @@
   # ip_range = []
 
   ## Path to publish the metrics on.
-  # path = "/metrics"
+  path = "/metrics"
 
   ## Expiration interval for each metric. 0 == no expiration
   # expiration_interval = "60s"
@@ -204,7 +204,7 @@
   ## Each data format has its own unique set of configuration options, read
   ## more about them here:
   ## https://github.com/influxdata/telegraf/blob/master/docs/DATA_FORMATS_INPUT.md
-  data_format = "json"
+  data_format = "influx"
 
   ## Content encoding for message payloads, can be set to "gzip" to or
   ## "identity" to apply no encoding.

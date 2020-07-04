@@ -99,6 +99,11 @@ if [ $client ]; then
   docker rm client2
 fi
 
+if [ "$1" = "tele" ]; then
+  telegraf=true
+  agent=true
+fi
+
 
 
 

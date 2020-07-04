@@ -52,6 +52,11 @@ if [ "$1" = "client" ]; then
   client=true
 fi
 
+if [ "$1" = "tele" ]; then
+  telegraf=true
+  agent=true
+fi
+
 if [ $grafana ]; then
   echo -e
   echo "#### starting grafana ####"

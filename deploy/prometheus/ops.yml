@@ -21,13 +21,21 @@ rule_files:
 # Here it's Prometheus itself.
 scrape_configs:
   # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
-  - job_name:       'doppler'
+  - job_name: 'doppler'
 
     # Override the global default and scrape targets from this job every 5 seconds.
     scrape_interval: 5s
-
     static_configs:
       - targets: ['host.docker.internal:8825']
         labels:
           group: 'doppler'
 
+
+  - job_name: 'telegraf'
+
+    # Override the global default and scrape targets from this job every 5 seconds.
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['host.docker.internal:8894']
+        labels:
+          group: 'telegraf'
