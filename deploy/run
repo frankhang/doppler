@@ -6,7 +6,7 @@ version=1.0
 
 if [ $# -gt 1 ]; then
   echo "Usage: $0 [service]"
-  echo "  service: prom/grafana/doppler/client/server, server means prom + grafana + doppler. Default is blank, meaning start them all."
+  echo "  service: prom/grafana/doppler/telegraf/agent/client/server, server means prom + grafana + doppler. Default is blank, meaning start them all."
   exit 0
 fi
 

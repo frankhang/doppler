@@ -6,7 +6,7 @@ version=1.0
 
 if [ $# -gt 2 ]; then
   echo "Usage: $0 [service] [-r]"
-  echo "  [service]: prom/grafana/doppler/client/server, server means prom + grafana + doppler. Default is blank, means start them all"
+  echo "  [service]: prom/grafana/doppler/telegraf/agent/client/server, server means prom + grafana + doppler. Default is blank, means start them all"
   echo "  [-r]: remove image before running"
   exit 0
 fi
@@ -15,6 +15,8 @@ if [ "$1" = "" -o "$1" = "-r" ]; then
   grafana=true
   prom=true
   doppler=true
+  telegraf=true
+  agent=true
   client=true
 fi
 
@@ -24,6 +26,8 @@ if [ "$1" = "server" ]; then
   grafana=true
   prom=true
   doppler=true
+  telegraf=true
+
 fi
 
 if [ "$1" = "grafana" ]; then
@@ -38,8 +42,21 @@ if [ "$1" = "doppler" ]; then
   doppler=true
 fi
 
+if [ "$1" = "telegraf" ]; then
+  telegraf=true
+fi
+
+if [ "$1" = "agent" ]; then
+  agent=true
+fi
+
 if [ "$1" = "client" ]; then
   client=true
+fi
+
+if [ "$1" = "tele" ]; then
+  telegraf=true
+  agent=true
 fi
 
 if [ "$1" = "-r" -o "$2" = "-r" ]; then
@@ -87,6 +104,27 @@ if [ $doppler ]; then
   docker rm doppler
   docker run --name doppler -d --network=host --add-host=host.docker.internal:127.0.0.1 $image -L=debug
 
+fi
+
+if [ $telegraf ]; then
+  echo -e
+  echo "#### starting telegraf ####"
+  image=frankhang/telegraf:$version
+  if [ $remove ]; then
+    docker image rm -f $image
+  fi
+  docker stop telegraf
+  docker rm telegraf
+  docker run --name telegraf -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
+fi
+
+if [ $agent ]; then
+  echo -e
+  echo "#### starting agent ####"
+  image=frankhang/agent:$version
+  docker stop agent
+  docker rm agent
+  docker run --name agent -d --network=host --add-host=host.docker.internal:127.0.0.1 $image
 fi
 
 if [ $client ]; then

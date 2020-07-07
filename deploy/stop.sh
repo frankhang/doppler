@@ -15,6 +15,8 @@ if [ $# = 0 ]; then
   grafana=true
   prom=true
   doppler=true
+  telegraf=true
+  agent=true
   client=true
 fi
 
@@ -22,6 +24,8 @@ if [ "$1" = "server" ]; then
   grafana=true
   prom=true
   doppler=true
+  telegraf=true
+
 fi
 
 if [ "$1" = "grafana" ]; then
@@ -36,10 +40,22 @@ if [ "$1" = "doppler" ]; then
   doppler=true
 fi
 
+if [ "$1" = "telegraf" ]; then
+  telegraf=true
+fi
+
+if [ "$1" = "agent" ]; then
+  agent=true
+fi
+
 if [ "$1" = "client" ]; then
   client=true
 fi
 
+if [ "$1" = "tele" ]; then
+  telegraf=true
+  agent=true
+fi
 
 
 if [ $grafana ]; then
@@ -64,6 +80,20 @@ if [ $doppler ]; then
 
 fi
 
+if [ $telegraf ]; then
+  echo -e
+  echo "#### stoping telegraf ####"
+  docker stop telegraf
+  docker rm telegraf
+fi
+
+if [ $agent ]; then
+  echo -e
+  echo "#### stoping agent ####"
+  docker stop agent
+  docker rm agent
+fi
+
 if [ $client ]; then
   echo -e
   echo "#### stoping client  ####"
@@ -72,6 +102,8 @@ if [ $client ]; then
   docker stop client2
   docker rm client2
 fi
+
+
 
 
 
