@@ -92,7 +92,7 @@ if [ $telegraf ]; then
   image=frankhang/telegraf:$version
   docker stop telegraf
   docker rm telegraf
-  docker run --name telegraf -d -p 8094:8094/udp -p 8894:8894 $image
+  docker run --name telegraf -d -p 8094:8094 -p 8894:8894 $image
 fi
 
 if [ $agent ]; then
