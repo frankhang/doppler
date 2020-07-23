@@ -1,4 +1,4 @@
-FROM telegraf:1.12.6
+FROM telegraf:1.14.5
 
 WORKDIR /etc/telegraf
 
